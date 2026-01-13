@@ -71,10 +71,8 @@ The runtime creates a REST server (powered by [Hono](https://hono.dev)) with the
       "name": "my-agent",
       "type": "adapter",
       "adapter": "langchain",
-      "endpoints": {
-        "invoke": "/agents/my-agent/invoke",
-        "chat": "/agents/my-agent/chat"
-      }
+      "invoke": { "streaming": true },
+      "chat": { "streaming": true }
     }
   ]
 }
@@ -175,11 +173,15 @@ Abstract base class for building agents from scratch.
 
 ```typescript
 abstract class Agent {
+  // Set to true if streaming is implemented
+  readonly invokeStreaming: boolean = false;
+  readonly chatStreaming: boolean = false;
+
   abstract get name(): string;
   abstract invoke(request: InvokeRequest): Promise<InvokeResponse>;
   abstract chat(request: ChatRequest): Promise<ChatResponse>;
   
-  // Optional streaming methods
+  // Override these if streaming is supported
   async *invokeStream(request: InvokeRequest): AsyncGenerator<string> { ... }
   async *chatStream(request: ChatRequest): AsyncGenerator<string> { ... }
 }
@@ -195,6 +197,10 @@ import { BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse }
 class MyFrameworkAdapter extends BaseAdapter {
   // Adapter name shown in /info endpoint
   static adapterName = 'my-framework';
+  
+  // BaseAdapter defaults both to true; override if your adapter doesn't support streaming
+  // override readonly invokeStreaming = false;
+  // override readonly chatStreaming = false;
 
   private client: MyFrameworkClient;
   private _name: string;
