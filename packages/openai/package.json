@@ -16,7 +16,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "test": "echo 'No tests yet'"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "@reminix/runtime": ">=0.1.0",
@@ -26,6 +27,7 @@
     "@reminix/runtime": "workspace:*",
     "@types/node": "^22.0.0",
     "openai": "^6.16.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.1.3"
   }
 }
