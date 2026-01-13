@@ -5,7 +5,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
-import type { Agent } from './adapters/base.js';
+import type { AgentBase } from './adapters/base.js';
 import type { InvokeRequest, ChatRequest } from './types.js';
 import { VERSION } from './version.js';
 
@@ -21,13 +21,13 @@ export interface ServeOptions {
  * @returns A Hono application instance.
  * @throws Error if no agents are provided.
  */
-export function createApp(agents: Agent[]): Hono {
+export function createApp(agents: AgentBase[]): Hono {
   if (agents.length === 0) {
     throw new Error('At least one agent is required');
   }
 
   // Build a lookup map for agents by name
-  const agentMap = new Map<string, Agent>();
+  const agentMap = new Map<string, AgentBase>();
   for (const agent of agents) {
     agentMap.set(agent.name, agent);
   }
@@ -137,7 +137,7 @@ export function createApp(agents: Agent[]): Hono {
  * @param options - Server options.
  */
 export function serve(
-  agents: Agent[],
+  agents: AgentBase[],
   options: ServeOptions = {}
 ): void {
   const { port = 8080, hostname = '0.0.0.0' } = options;

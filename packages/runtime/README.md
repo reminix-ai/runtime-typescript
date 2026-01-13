@@ -11,36 +11,30 @@ npm install @reminix/runtime
 ## Quick Start
 
 ```typescript
-import { serve, Agent, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '@reminix/runtime';
+import { serve, Agent } from '@reminix/runtime';
 
-// Create a custom agent
-class MyAgent extends Agent {
-  get name(): string {
-    return 'my-agent';
-  }
+// Create an agent with callbacks
+const agent = new Agent('my-agent');
 
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Task-oriented operation
-    const task = (request.input as Record<string, string>).task || 'unknown';
-    return { output: `Completed: ${task}` };
-  }
+agent.onInvoke(async (request) => {
+  const task = (request.input as Record<string, string>).task || 'unknown';
+  return { output: `Completed: ${task}` };
+});
 
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    // Conversational interaction
-    const userMsg = request.messages[request.messages.length - 1].content;
-    const response = `You said: ${userMsg}`;
-    return {
-      output: response,
-      messages: [
-        ...request.messages,
-        { role: 'assistant', content: response },
-      ],
-    };
-  }
-}
+agent.onChat(async (request) => {
+  const userMsg = request.messages[request.messages.length - 1].content;
+  const response = `You said: ${userMsg}`;
+  return {
+    output: response,
+    messages: [
+      ...request.messages,
+      { role: 'assistant', content: response },
+    ],
+  };
+});
 
 // Serve the agent
-serve([new MyAgent()], { port: 8080 });
+serve([agent], { port: 8080 });
 ```
 
 ## How It Works
@@ -169,27 +163,42 @@ const app = createApp([new MyAgent()]);
 
 ### `Agent`
 
-Abstract base class for building agents from scratch.
+Concrete class for building agents with callbacks.
 
 ```typescript
-abstract class Agent {
-  // Set to true if streaming is implemented
-  readonly invokeStreaming: boolean = false;
-  readonly chatStreaming: boolean = false;
+import { Agent } from '@reminix/runtime';
 
-  abstract get name(): string;
-  abstract invoke(request: InvokeRequest): Promise<InvokeResponse>;
-  abstract chat(request: ChatRequest): Promise<ChatResponse>;
-  
-  // Override these if streaming is supported
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string> { ... }
-  async *chatStream(request: ChatRequest): AsyncGenerator<string> { ... }
-}
+const agent = new Agent('my-agent', { metadata: { version: '1.0' } });
+
+agent.onInvoke(async (request) => {
+  return { output: 'Hello!' };
+});
+
+agent.onChat(async (request) => {
+  return { output: 'Hi!', messages: [...] };
+});
+
+// Optional: streaming handlers
+agent.onInvokeStream(async function* (request) {
+  yield '{"chunk": "Hello"}';
+  yield '{"chunk": " world!"}';
+});
+
+agent.onChatStream(async function* (request) {
+  yield '{"chunk": "Hi"}';
+});
 ```
+
+| Method | Description |
+|--------|-------------|
+| `onInvoke(fn)` | Register invoke handler, returns `this` for chaining |
+| `onChat(fn)` | Register chat handler, returns `this` for chaining |
+| `onInvokeStream(fn)` | Register streaming invoke handler |
+| `onChatStream(fn)` | Register streaming chat handler |
 
 ### `BaseAdapter`
 
-Extends `Agent`. Use this when wrapping an existing AI framework.
+Abstract base class for framework adapters. Use this when wrapping an existing AI framework.
 
 ```typescript
 import { BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '@reminix/runtime';

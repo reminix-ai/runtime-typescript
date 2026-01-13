@@ -9,5 +9,11 @@ export type {
   ChatResponse,
   Message,
 } from './types.js';
-export { Agent, BaseAdapter } from './adapters/base.js';
-export type { AgentMetadata } from './adapters/base.js';
+export { AgentBase, Agent, BaseAdapter } from './adapters/base.js';
+export type {
+  AgentMetadata,
+  InvokeHandler,
+  ChatHandler,
+  InvokeStreamHandler,
+  ChatStreamHandler,
+} from './adapters/base.js';
