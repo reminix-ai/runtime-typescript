@@ -16,7 +16,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "test": "echo 'No tests yet'"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "@anthropic-ai/sdk": ">=0.71.0",
@@ -26,6 +27,7 @@
     "@anthropic-ai/sdk": "^0.71.2",
     "@reminix/runtime": "workspace:*",
     "@types/node": "^22.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.1.3"
   }
 }
