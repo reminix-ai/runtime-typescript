@@ -9,7 +9,6 @@ import {
   ToolMessage,
   type BaseMessage,
 } from '@langchain/core/messages';
-import type { CompiledGraph } from '@langchain/langgraph';
 
 import {
   BaseAdapter,
@@ -29,10 +28,17 @@ interface GraphState {
 }
 
 /**
+ * Graph interface that matches LangGraph compiled graphs.
+ */
+interface LangGraphRunnable {
+  invoke(input: GraphState): Promise<GraphState>;
+}
+
+/**
  * Adapter for LangGraph compiled graphs.
  */
 export class LangGraphAdapter extends BaseAdapter {
-  private graph: CompiledGraph<GraphState>;
+  private graph: LangGraphRunnable;
   private _name: string;
 
   /**
@@ -41,7 +47,7 @@ export class LangGraphAdapter extends BaseAdapter {
    * @param graph - A LangGraph compiled graph.
    * @param name - Name for the agent.
    */
-  constructor(graph: CompiledGraph<GraphState>, name: string = 'langgraph-agent') {
+  constructor(graph: LangGraphRunnable, name: string = 'langgraph-agent') {
     super();
     this.graph = graph;
     this._name = name;
@@ -184,7 +190,7 @@ export class LangGraphAdapter extends BaseAdapter {
  * ```
  */
 export function wrap(
-  graph: CompiledGraph<GraphState>,
+  graph: LangGraphRunnable,
   name: string = 'langgraph-agent'
 ): LangGraphAdapter {
   return new LangGraphAdapter(graph, name);

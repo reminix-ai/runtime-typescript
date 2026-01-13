@@ -2,7 +2,7 @@
  * Vercel AI SDK adapter for Reminix Runtime.
  */
 
-import { generateText, type CoreMessage, type LanguageModel } from 'ai';
+import { generateText, type LanguageModel } from 'ai';
 
 import {
   BaseAdapter,
@@ -12,6 +12,14 @@ import {
   type ChatResponse,
   type Message,
 } from '@reminix/runtime';
+
+/**
+ * Message format for Vercel AI SDK.
+ */
+interface VercelAIMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
 
 /**
  * Options for wrapping a Vercel AI model.
@@ -49,11 +57,11 @@ export class VercelAIAdapter extends BaseAdapter {
   }
 
   /**
-   * Convert Reminix messages to Vercel AI CoreMessage format.
+   * Convert Reminix messages to Vercel AI message format.
    */
-  private toVercelMessages(messages: Message[]): CoreMessage[] {
+  private toVercelMessages(messages: Message[]): VercelAIMessage[] {
     return messages.map((m) => ({
-      role: m.role as CoreMessage['role'],
+      role: m.role as VercelAIMessage['role'],
       content: m.content,
     }));
   }

@@ -17,7 +17,7 @@ export interface InvokeRequest {
 
 export interface InvokeResponse {
   content: string;
-  messages: Record<string, unknown>[];
+  messages: Message[];
 }
 
 export interface ChatRequest {
@@ -27,5 +27,5 @@ export interface ChatRequest {
 
 export interface ChatResponse {
   content: string;
-  messages: Record<string, unknown>[];
+  messages: Message[];
 }
