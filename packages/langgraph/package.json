@@ -16,16 +16,19 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "test": "echo 'No tests yet'"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "@langchain/langgraph": ">=1.0.0",
     "@reminix/runtime": ">=0.1.0"
   },
   "devDependencies": {
+    "@langchain/core": "^1.1.12",
     "@langchain/langgraph": "^1.0.15",
     "@reminix/runtime": "workspace:*",
     "@types/node": "^22.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.1.3"
   }
 }
