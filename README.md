@@ -68,6 +68,11 @@ See the [examples/](./examples) directory for more.
 ### Running Tests
 
 ```bash
+# Run all tests across all packages
+pnpm test
+
+# Run tests for a specific package
+cd packages/runtime
 pnpm test
 ```
 
