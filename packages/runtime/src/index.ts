@@ -16,4 +16,5 @@ export type {
   ChatHandler,
   InvokeStreamHandler,
   ChatStreamHandler,
+  FetchHandler,
 } from './adapters/base.js';

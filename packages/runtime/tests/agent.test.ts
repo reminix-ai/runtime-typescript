@@ -244,3 +244,118 @@ describe('Agent With Context', () => {
     expect(receivedContext).toEqual({ user_id: '456' });
   });
 });
+
+describe('Agent toHandler', () => {
+  it('should return a fetch handler function', () => {
+    const agent = new Agent('test-agent');
+    const handler = agent.toHandler();
+    expect(typeof handler).toBe('function');
+  });
+
+  it('should handle /health endpoint', async () => {
+    const agent = new Agent('test-agent');
+    const handler = agent.toHandler();
+
+    const request = new Request('http://localhost/health');
+    const response = await handler(request);
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual({ status: 'ok' });
+  });
+
+  it('should handle /info endpoint', async () => {
+    const agent = new Agent('test-agent', {
+      metadata: { version: '1.0' },
+    });
+    const handler = agent.toHandler();
+
+    const request = new Request('http://localhost/info');
+    const response = await handler(request);
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.runtime.name).toBe('reminix-runtime');
+    expect(body.agents).toHaveLength(1);
+    expect(body.agents[0].name).toBe('test-agent');
+    expect(body.agents[0].version).toBe('1.0');
+  });
+
+  it('should handle /agents/{name}/invoke endpoint', async () => {
+    const agent = new Agent('test-agent');
+    agent.onInvoke(async (req) => ({
+      output: `Received: ${(req.input as Record<string, string>).message}`,
+    }));
+    const handler = agent.toHandler();
+
+    const request = new Request('http://localhost/agents/test-agent/invoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: { message: 'hello' } }),
+    });
+    const response = await handler(request);
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.output).toBe('Received: hello');
+  });
+
+  it('should handle /agents/{name}/chat endpoint', async () => {
+    const agent = new Agent('test-agent');
+    agent.onChat(async (req) => ({
+      output: `Reply to: ${req.messages[0].content}`,
+      messages: [...req.messages, { role: 'assistant', content: 'hi!' }],
+    }));
+    const handler = agent.toHandler();
+
+    const request = new Request('http://localhost/agents/test-agent/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }),
+    });
+    const response = await handler(request);
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.output).toBe('Reply to: hello');
+    expect(body.messages).toHaveLength(2);
+  });
+
+  it('should return 404 for wrong agent name', async () => {
+    const agent = new Agent('test-agent');
+    agent.onInvoke(async () => ({ output: 'ok' }));
+    const handler = agent.toHandler();
+
+    const request = new Request('http://localhost/agents/wrong-agent/invoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: { task: 'test' } }),
+    });
+    const response = await handler(request);
+
+    expect(response.status).toBe(404);
+  });
+
+  it('should return 404 for unknown path', async () => {
+    const agent = new Agent('test-agent');
+    const handler = agent.toHandler();
+
+    const request = new Request('http://localhost/unknown');
+    const response = await handler(request);
+
+    expect(response.status).toBe(404);
+  });
+
+  it('should handle CORS preflight', async () => {
+    const agent = new Agent('test-agent');
+    const handler = agent.toHandler();
+
+    const request = new Request('http://localhost/health', {
+      method: 'OPTIONS',
+    });
+    const response = await handler(request);
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get('access-control-allow-origin')).toBe('*');
+  });
+});

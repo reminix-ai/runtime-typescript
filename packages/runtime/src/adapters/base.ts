@@ -8,6 +8,12 @@ import type {
   ChatRequest,
   ChatResponse,
 } from '../types.js';
+import { VERSION } from '../version.js';
+
+/**
+ * Web-standard fetch handler type.
+ */
+export type FetchHandler = (request: Request) => Promise<Response>;
 
 /**
  * Metadata returned by agents for discovery.
@@ -103,6 +109,197 @@ export abstract class AgentBase {
     request: ChatRequest
   ): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this agent');
+  }
+
+  /**
+   * Create a web-standard fetch handler for this agent.
+   *
+   * Works with Vercel Edge Functions, Cloudflare Workers, Deno Deploy, Bun,
+   * and any platform supporting the Fetch API.
+   *
+   * @example
+   * ```typescript
+   * // Vercel Edge Function
+   * const agent = new Agent('my-agent');
+   * agent.onInvoke(async (req) => ({ output: 'Hello!' }));
+   * export default agent.toHandler();
+   *
+   * // Cloudflare Worker
+   * export default { fetch: agent.toHandler() };
+   * ```
+   */
+  toHandler(): FetchHandler {
+    const agent = this;
+
+    return async (request: Request): Promise<Response> => {
+      const url = new URL(request.url);
+      const path = url.pathname;
+      const method = request.method;
+
+      // CORS headers
+      const corsHeaders = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      };
+
+      // Handle CORS preflight
+      if (method === 'OPTIONS') {
+        return new Response(null, { status: 204, headers: corsHeaders });
+      }
+
+      try {
+        // GET /health
+        if (method === 'GET' && path === '/health') {
+          return Response.json({ status: 'ok' }, { headers: corsHeaders });
+        }
+
+        // GET /info
+        if (method === 'GET' && path === '/info') {
+          return Response.json(
+            {
+              runtime: {
+                name: 'reminix-runtime',
+                version: VERSION,
+                language: 'typescript',
+                framework: 'fetch',
+              },
+              agents: [
+                {
+                  name: agent.name,
+                  ...agent.metadata,
+                  invoke: { streaming: agent.invokeStreaming },
+                  chat: { streaming: agent.chatStreaming },
+                },
+              ],
+            },
+            { headers: corsHeaders }
+          );
+        }
+
+        // POST /agents/{name}/invoke
+        const invokeMatch = path.match(/^\/agents\/([^/]+)\/invoke$/);
+        if (method === 'POST' && invokeMatch) {
+          const agentName = invokeMatch[1];
+          if (agentName !== agent.name) {
+            return Response.json(
+              { error: `Agent '${agentName}' not found` },
+              { status: 404, headers: corsHeaders }
+            );
+          }
+
+          const body = (await request.json()) as InvokeRequest;
+
+          if (!body.input || Object.keys(body.input).length === 0) {
+            return Response.json(
+              { error: 'input is required and must not be empty' },
+              { status: 400, headers: corsHeaders }
+            );
+          }
+
+          // Handle streaming
+          if (body.stream) {
+            const stream = new ReadableStream({
+              async start(controller) {
+                const encoder = new TextEncoder();
+                try {
+                  for await (const chunk of agent.invokeStream(body)) {
+                    controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+                  }
+                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                } catch (error) {
+                  const message =
+                    error instanceof Error ? error.message : 'Unknown error';
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`)
+                  );
+                }
+                controller.close();
+              },
+            });
+
+            return new Response(stream, {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                Connection: 'keep-alive',
+              },
+            });
+          }
+
+          const response = await agent.invoke(body);
+          return Response.json(response, { headers: corsHeaders });
+        }
+
+        // POST /agents/{name}/chat
+        const chatMatch = path.match(/^\/agents\/([^/]+)\/chat$/);
+        if (method === 'POST' && chatMatch) {
+          const agentName = chatMatch[1];
+          if (agentName !== agent.name) {
+            return Response.json(
+              { error: `Agent '${agentName}' not found` },
+              { status: 404, headers: corsHeaders }
+            );
+          }
+
+          const body = (await request.json()) as ChatRequest;
+
+          if (!body.messages || body.messages.length === 0) {
+            return Response.json(
+              { error: 'messages is required and must not be empty' },
+              { status: 400, headers: corsHeaders }
+            );
+          }
+
+          // Handle streaming
+          if (body.stream) {
+            const stream = new ReadableStream({
+              async start(controller) {
+                const encoder = new TextEncoder();
+                try {
+                  for await (const chunk of agent.chatStream(body)) {
+                    controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+                  }
+                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                } catch (error) {
+                  const message =
+                    error instanceof Error ? error.message : 'Unknown error';
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`)
+                  );
+                }
+                controller.close();
+              },
+            });
+
+            return new Response(stream, {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                Connection: 'keep-alive',
+              },
+            });
+          }
+
+          const response = await agent.chat(body);
+          return Response.json(response, { headers: corsHeaders });
+        }
+
+        // Not found
+        return Response.json(
+          { error: 'Not found' },
+          { status: 404, headers: corsHeaders }
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return Response.json(
+          { error: message },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+    };
   }
 }
 

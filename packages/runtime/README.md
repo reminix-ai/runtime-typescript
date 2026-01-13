@@ -195,6 +195,31 @@ agent.onChatStream(async function* (request) {
 | `onChat(fn)` | Register chat handler, returns `this` for chaining |
 | `onInvokeStream(fn)` | Register streaming invoke handler |
 | `onChatStream(fn)` | Register streaming chat handler |
+| `toHandler()` | Returns a web-standard fetch handler for serverless |
+
+### `agent.toHandler()`
+
+Returns a web-standard `(Request) => Promise<Response>` handler for serverless deployments.
+
+```typescript
+// Vercel Edge Function
+import { Agent } from '@reminix/runtime';
+
+const agent = new Agent('my-agent');
+agent.onInvoke(async (req) => ({ output: 'Hello!' }));
+
+export const POST = agent.toHandler();
+export const GET = agent.toHandler();
+
+// Cloudflare Workers
+export default { fetch: agent.toHandler() };
+
+// Deno Deploy
+Deno.serve(agent.toHandler());
+
+// Bun
+Bun.serve({ fetch: agent.toHandler() });
+```
 
 ### `BaseAdapter`
 
