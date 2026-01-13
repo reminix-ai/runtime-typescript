@@ -2,11 +2,87 @@
  * Reminix Runtime Server
  */
 
+import { Hono } from 'hono';
+import { serve as honoServe } from '@hono/node-server';
 import type { BaseAdapter } from './adapters/base.js';
+import type { InvokeRequest, ChatRequest } from './types.js';
 
 export interface ServeOptions {
   port?: number;
   hostname?: string;
+}
+
+/**
+ * Create a Hono application with agent endpoints.
+ *
+ * @param agents - List of wrapped agents (adapters).
+ * @returns A Hono application instance.
+ * @throws Error if no agents are provided.
+ */
+export function createApp(agents: BaseAdapter[]): Hono {
+  if (agents.length === 0) {
+    throw new Error('At least one agent is required');
+  }
+
+  // Build a lookup map for agents by name
+  const agentMap = new Map<string, BaseAdapter>();
+  for (const agent of agents) {
+    agentMap.set(agent.name, agent);
+  }
+
+  const app = new Hono();
+
+  // Health check endpoint
+  app.get('/health', (c) => {
+    return c.json({ status: 'ok' });
+  });
+
+  // List available agents
+  app.get('/agents', (c) => {
+    return c.json({ agents: Array.from(agentMap.keys()) });
+  });
+
+  // Invoke endpoint
+  app.post('/:agentName/invoke', async (c) => {
+    const agentName = c.req.param('agentName');
+    const agent = agentMap.get(agentName);
+
+    if (!agent) {
+      return c.json({ error: `Agent '${agentName}' not found` }, 404);
+    }
+
+    const body = await c.req.json<InvokeRequest>();
+
+    // Validate request
+    if (!body.messages || body.messages.length === 0) {
+      return c.json({ error: 'messages is required and must not be empty' }, 400);
+    }
+
+    const response = await agent.invoke(body);
+    return c.json(response);
+  });
+
+  // Chat endpoint
+  app.post('/:agentName/chat', async (c) => {
+    const agentName = c.req.param('agentName');
+    const agent = agentMap.get(agentName);
+
+    if (!agent) {
+      return c.json({ error: `Agent '${agentName}' not found` }, 404);
+    }
+
+    const body = await c.req.json<ChatRequest>();
+
+    // Validate request
+    if (!body.messages || body.messages.length === 0) {
+      return c.json({ error: 'messages is required and must not be empty' }, 400);
+    }
+
+    const response = await agent.chat(body);
+    return c.json(response);
+  });
+
+  return app;
 }
 
 /**
@@ -21,6 +97,13 @@ export function serve(
 ): void {
   const { port = 8080, hostname = '0.0.0.0' } = options;
 
-  // TODO: Implement server using Hono
-  throw new Error('serve() is not yet implemented');
+  const app = createApp(agents);
+
+  honoServe({
+    fetch: app.fetch,
+    port,
+    hostname,
+  });
+
+  console.log(`Reminix Runtime listening on http://${hostname}:${port}`);
 }

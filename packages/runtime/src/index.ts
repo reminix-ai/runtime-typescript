@@ -1,4 +1,5 @@
-export { serve } from './server.js';
+export { serve, createApp } from './server.js';
+export type { ServeOptions } from './server.js';
 export type {
   Role,
   InvokeRequest,
