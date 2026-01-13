@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import { serve as honoServe } from '@hono/node-server';
 import type { Agent } from './adapters/base.js';
 import type { InvokeRequest, ChatRequest } from './types.js';
+import { VERSION } from './version.js';
 
 export interface ServeOptions {
   port?: number;
@@ -37,9 +38,24 @@ export function createApp(agents: Agent[]): Hono {
     return c.json({ status: 'ok' });
   });
 
-  // List available agents
-  app.get('/agents', (c) => {
-    return c.json({ agents: Array.from(agentMap.keys()) });
+  // Runtime discovery endpoint
+  app.get('/info', (c) => {
+    return c.json({
+      runtime: {
+        name: 'reminix-runtime',
+        version: VERSION,
+        language: 'typescript',
+        framework: 'hono',
+      },
+      agents: agents.map((agent) => ({
+        name: agent.name,
+        ...agent.metadata,
+        endpoints: {
+          invoke: `/agents/${agent.name}/invoke`,
+          chat: `/agents/${agent.name}/chat`,
+        },
+      })),
+    });
   });
 
   // Invoke endpoint

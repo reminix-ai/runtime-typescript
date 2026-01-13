@@ -38,6 +38,8 @@ interface LangGraphRunnable {
  * Adapter for LangGraph compiled graphs.
  */
 export class LangGraphAdapter extends BaseAdapter {
+  static adapterName = 'langgraph';
+
   private graph: LangGraphRunnable;
   private _name: string;
 

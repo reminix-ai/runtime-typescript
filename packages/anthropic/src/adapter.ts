@@ -34,6 +34,8 @@ interface AnthropicMessage {
  * Adapter for Anthropic messages API.
  */
 export class AnthropicAdapter extends BaseAdapter {
+  static adapterName = 'anthropic';
+
   private client: Anthropic;
   private _name: string;
   private _model: string;

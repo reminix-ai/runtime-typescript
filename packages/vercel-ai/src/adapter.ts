@@ -32,6 +32,8 @@ export interface VercelAIAdapterOptions {
  * Adapter for Vercel AI SDK models.
  */
 export class VercelAIAdapter extends BaseAdapter {
+  static adapterName = 'vercel-ai';
+
   private model: LanguageModel;
   private _name: string;
 

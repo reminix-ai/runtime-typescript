@@ -25,6 +25,8 @@ export interface OpenAIAdapterOptions {
  * Adapter for OpenAI chat completions.
  */
 export class OpenAIAdapter extends BaseAdapter {
+  static adapterName = 'openai';
+
   private client: OpenAI;
   private _name: string;
   private _model: string;

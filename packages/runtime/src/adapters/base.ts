@@ -10,6 +10,15 @@ import type {
 } from '../types.js';
 
 /**
+ * Metadata returned by agents for discovery.
+ */
+export interface AgentMetadata {
+  type: 'agent' | 'adapter';
+  adapter?: string;
+  [key: string]: unknown;
+}
+
+/**
  * Base class for all agents.
  */
 export abstract class Agent {
@@ -17,6 +26,14 @@ export abstract class Agent {
    * Return the agent name.
    */
   abstract get name(): string;
+
+  /**
+   * Return agent metadata for discovery.
+   * Override this to provide custom metadata.
+   */
+  get metadata(): AgentMetadata {
+    return { type: 'agent' };
+  }
 
   /**
    * Handle an invoke request.
@@ -54,6 +71,21 @@ export abstract class Agent {
  * (e.g., LangChain, OpenAI, Anthropic).
  */
 export abstract class BaseAdapter extends Agent {
+  /**
+   * The adapter name. Subclasses should override this.
+   */
+  static adapterName: string = 'unknown';
+
+  /**
+   * Return adapter metadata for discovery.
+   */
+  get metadata(): AgentMetadata {
+    return {
+      type: 'adapter',
+      adapter: (this.constructor as typeof BaseAdapter).adapterName,
+    };
+  }
+
   /**
    * Handle a streaming invoke request.
    */

@@ -24,6 +24,8 @@ import {
  * Adapter for LangChain agents and runnables.
  */
 export class LangChainAdapter extends BaseAdapter {
+  static adapterName = 'langchain';
+
   private agent: Runnable;
   private _name: string;
 

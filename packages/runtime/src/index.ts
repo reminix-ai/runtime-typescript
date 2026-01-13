@@ -1,5 +1,6 @@
 export { serve, createApp } from './server.js';
 export type { ServeOptions } from './server.js';
+export { VERSION } from './version.js';
 export type {
   Role,
   InvokeRequest,
@@ -9,3 +10,4 @@ export type {
   Message,
 } from './types.js';
 export { Agent, BaseAdapter } from './adapters/base.js';
+export type { AgentMetadata } from './adapters/base.js';

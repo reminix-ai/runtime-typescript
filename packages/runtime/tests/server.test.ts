@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   BaseAdapter,
+  VERSION,
   type InvokeRequest,
   type InvokeResponse,
   type ChatRequest,
@@ -16,6 +17,8 @@ import { createApp } from '../src/server.js';
  * A mock adapter for testing.
  */
 class MockAdapter extends BaseAdapter {
+  static adapterName = 'mock';
+
   private _name: string;
 
   constructor(name: string = 'mock-agent') {
@@ -69,14 +72,27 @@ describe('Health Endpoint', () => {
   });
 });
 
-describe('Agents Endpoint', () => {
-  it('GET /agents should return list of agent names', async () => {
+describe('Info Endpoint', () => {
+  it('GET /info should return runtime info and agents', async () => {
     const app = createApp([new MockAdapter('agent-one'), new MockAdapter('agent-two')]);
-    const response = await app.request('/agents');
+    const response = await app.request('/info');
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.agents).toEqual(['agent-one', 'agent-two']);
+
+    // Check runtime info
+    expect(data.runtime.name).toBe('reminix-runtime');
+    expect(data.runtime.version).toBe(VERSION);
+    expect(data.runtime.language).toBe('typescript');
+    expect(data.runtime.framework).toBe('hono');
+
+    // Check agents
+    expect(data.agents).toHaveLength(2);
+    expect(data.agents[0].name).toBe('agent-one');
+    expect(data.agents[0].type).toBe('adapter');
+    expect(data.agents[0].adapter).toBe('mock');
+    expect(data.agents[0].endpoints.invoke).toBe('/agents/agent-one/invoke');
+    expect(data.agents[0].endpoints.chat).toBe('/agents/agent-one/chat');
   });
 });
 

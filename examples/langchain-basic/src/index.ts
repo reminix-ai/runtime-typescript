@@ -60,6 +60,6 @@ serve([wrappedAgent], { port: 8080 });
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
-console.log('  GET  /agents');
+console.log('  GET  /info');
 console.log('  POST /agents/langchain-basic/invoke');
 console.log('  POST /agents/langchain-basic/chat');
