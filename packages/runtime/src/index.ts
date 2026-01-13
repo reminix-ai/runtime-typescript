@@ -1,5 +1,6 @@
 export { serve } from './server.js';
 export type {
+  Role,
   InvokeRequest,
   InvokeResponse,
   ChatRequest,

@@ -2,13 +2,17 @@
  * Reminix Runtime Types
  */
 
+/** Valid message roles */
+export type Role = 'user' | 'assistant' | 'system' | 'tool';
+
 export interface Message {
-  role: string;
+  role: Role;
   content: string;
 }
 
 export interface InvokeRequest {
   messages: Message[];
+  context?: Record<string, unknown>;
 }
 
 export interface InvokeResponse {
@@ -18,6 +22,7 @@ export interface InvokeResponse {
 
 export interface ChatRequest {
   messages: Message[];
+  context?: Record<string, unknown>;
 }
 
 export interface ChatResponse {
