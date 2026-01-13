@@ -31,7 +31,7 @@ interface GraphState {
  * Graph interface that matches LangGraph compiled graphs.
  */
 interface LangGraphRunnable {
-  invoke(input: GraphState): Promise<GraphState>;
+  invoke(input: unknown): Promise<unknown>;
 }
 
 /**
@@ -62,18 +62,19 @@ export class LangGraphAdapter extends BaseAdapter {
    */
   private toLangChainMessage(message: Message): BaseMessage {
     const { role, content } = message;
+    const contentStr = content || '';
 
     switch (role) {
       case 'user':
-        return new HumanMessage({ content });
+        return new HumanMessage({ content: contentStr });
       case 'assistant':
-        return new AIMessage({ content });
+        return new AIMessage({ content: contentStr });
       case 'system':
-        return new SystemMessage({ content });
+        return new SystemMessage({ content: contentStr });
       case 'tool':
-        return new ToolMessage({ content, tool_call_id: 'unknown' });
+        return new ToolMessage({ content: contentStr, tool_call_id: message.tool_call_id || 'unknown' });
       default:
-        return new HumanMessage({ content });
+        return new HumanMessage({ content: contentStr });
     }
   }
 
@@ -121,51 +122,55 @@ export class LangGraphAdapter extends BaseAdapter {
   /**
    * Handle an invoke request.
    *
-   * @param request - The invoke request with messages.
-   * @returns The invoke response with the agent's reply.
+   * For task-oriented operations. Passes the input directly to the graph.
+   *
+   * @param request - The invoke request with input data.
+   * @returns The invoke response with the output.
    */
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Convert messages to LangChain format
-    const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
+    // Pass input directly to the graph
+    const result = await this.graph.invoke(request.input);
 
-    // Call the graph with state dict format
-    const result = await this.graph.invoke({ messages: lcMessages });
+    // Extract output from result
+    let output: unknown;
+    if (result && typeof result === 'object' && 'messages' in result) {
+      const messages = (result as GraphState).messages || [];
+      output = this.getLastAIContent(messages);
+    } else if (result && typeof result === 'object') {
+      output = result;
+    } else {
+      output = String(result);
+    }
 
-    // Extract messages from result
-    const resultMessages: BaseMessage[] = result.messages || [];
-
-    // Get content from the last AI message
-    const content = this.getLastAIContent(resultMessages);
-
-    // Convert all messages back to Reminix format
-    const responseMessages = resultMessages.map((m) => this.toReminixMessage(m));
-
-    return { content, messages: responseMessages };
+    return { output };
   }
 
   /**
    * Handle a chat request.
    *
+   * For conversational interactions. Converts messages to LangChain format
+   * and invokes the graph with the state dict format.
+   *
    * @param request - The chat request with messages.
-   * @returns The chat response with the agent's reply.
+   * @returns The chat response with output and messages.
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {
     // Convert messages to LangChain format
     const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
 
     // Call the graph with state dict format
-    const result = await this.graph.invoke({ messages: lcMessages });
+    const result = await this.graph.invoke({ messages: lcMessages }) as GraphState;
 
     // Extract messages from result
     const resultMessages: BaseMessage[] = result.messages || [];
 
     // Get content from the last AI message
-    const content = this.getLastAIContent(resultMessages);
+    const output = this.getLastAIContent(resultMessages);
 
     // Convert all messages back to Reminix format
     const responseMessages = resultMessages.map((m) => this.toReminixMessage(m));
 
-    return { content, messages: responseMessages };
+    return { output, messages: responseMessages };
   }
 }
 

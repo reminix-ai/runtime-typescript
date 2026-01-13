@@ -62,19 +62,31 @@ export class VercelAIAdapter extends BaseAdapter {
   private toVercelMessages(messages: Message[]): VercelAIMessage[] {
     return messages.map((m) => ({
       role: m.role as VercelAIMessage['role'],
-      content: m.content,
+      content: m.content || '',
     }));
   }
 
   /**
    * Handle an invoke request.
    *
-   * @param request - The invoke request with messages.
-   * @returns The invoke response with the model's reply.
+   * For task-oriented operations. Expects input with 'messages' key
+   * or a 'prompt' key for simple text generation.
+   *
+   * @param request - The invoke request with input data.
+   * @returns The invoke response with the output.
    */
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Convert messages to Vercel AI format
-    const messages = this.toVercelMessages(request.messages);
+    const input = request.input as Record<string, unknown>;
+    
+    // Build messages from input
+    let messages: VercelAIMessage[];
+    if ('messages' in input) {
+      messages = input.messages as VercelAIMessage[];
+    } else if ('prompt' in input) {
+      messages = [{ role: 'user', content: String(input.prompt) }];
+    } else {
+      messages = [{ role: 'user', content: JSON.stringify(input) }];
+    }
 
     // Call generateText
     const result = await this._generateText({
@@ -83,22 +95,18 @@ export class VercelAIAdapter extends BaseAdapter {
     });
 
     // Extract content from response
-    const content = result.text;
+    const output = result.text;
 
-    // Build response messages (original + assistant response)
-    const responseMessages: Message[] = [
-      ...request.messages,
-      { role: 'assistant', content },
-    ];
-
-    return { content, messages: responseMessages };
+    return { output };
   }
 
   /**
    * Handle a chat request.
    *
+   * For conversational interactions.
+   *
    * @param request - The chat request with messages.
-   * @returns The chat response with the model's reply.
+   * @returns The chat response with output and messages.
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {
     // Convert messages to Vercel AI format
@@ -111,15 +119,15 @@ export class VercelAIAdapter extends BaseAdapter {
     });
 
     // Extract content from response
-    const content = result.text;
+    const output = result.text;
 
     // Build response messages (original + assistant response)
     const responseMessages: Message[] = [
       ...request.messages,
-      { role: 'assistant', content },
+      { role: 'assistant', content: output },
     ];
 
-    return { content, messages: responseMessages };
+    return { output, messages: responseMessages };
   }
 }
 

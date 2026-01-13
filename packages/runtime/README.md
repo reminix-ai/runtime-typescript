@@ -20,17 +20,21 @@ class MyAgent extends Agent {
   }
 
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Your agent logic here
-    return {
-      content: 'Hello!',
-      messages: [...request.messages, { role: 'assistant', content: 'Hello!' }],
-    };
+    // Task-oriented operation
+    const task = (request.input as Record<string, string>).task || 'unknown';
+    return { output: `Completed: ${task}` };
   }
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
+    // Conversational interaction
+    const userMsg = request.messages[request.messages.length - 1].content;
+    const response = `You said: ${userMsg}`;
     return {
-      content: 'Hello!',
-      messages: [...request.messages, { role: 'assistant', content: 'Hello!' }],
+      output: response,
+      messages: [
+        ...request.messages,
+        { role: 'assistant', content: response },
+      ],
     };
   }
 }
@@ -47,37 +51,66 @@ The runtime creates a REST server (powered by [Hono](https://hono.dev)) with the
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/agents` | GET | List available agents |
-| `/agents/{name}/invoke` | POST | Single-turn invocation |
-| `/agents/{name}/chat` | POST | Multi-turn chat |
+| `/agents/{name}/invoke` | POST | Task-oriented invocation |
+| `/agents/{name}/chat` | POST | Multi-turn conversation |
 
-### Request Format
+### Invoke Endpoint
 
+For task-oriented operations that take arbitrary input and return output.
+
+**Request:**
 ```json
 {
-  "messages": [
-    {"role": "system", "content": "You are helpful"},
-    {"role": "user", "content": "Hello!"}
-  ],
+  "input": {
+    "task": "summarize",
+    "text": "Lorem ipsum..."
+  },
+  "stream": false,
   "context": {}
 }
 ```
 
-### Response Format
-
+**Response:**
 ```json
 {
-  "content": "Hi there! How can I help?",
+  "output": "Summary: ..."
+}
+```
+
+### Chat Endpoint
+
+For conversational interactions with message history.
+
+**Request:**
+```json
+{
   "messages": [
     {"role": "system", "content": "You are helpful"},
-    {"role": "user", "content": "Hello!"},
-    {"role": "assistant", "content": "Hi there! How can I help?"}
+    {"role": "user", "content": "What's the weather?"}
+  ],
+  "stream": false,
+  "context": {}
+}
+```
+
+**Response:**
+```json
+{
+  "output": "The weather is 72°F and sunny!",
+  "messages": [
+    {"role": "user", "content": "What's the weather?"},
+    {"role": "assistant", "content": null, "tool_calls": [...]},
+    {"role": "tool", "content": "72°F, sunny", "tool_call_id": "..."},
+    {"role": "assistant", "content": "The weather is 72°F and sunny!"}
   ]
 }
 ```
 
+The `output` field contains the final answer, while `messages` includes the full execution history (useful for agentic workflows with tool calls).
+
 ## Framework Adapters
 
-Instead of creating custom adapters, use our pre-built adapters for popular frameworks:
+Instead of creating custom agents, use our pre-built adapters for popular frameworks:
 
 | Package | Framework |
 |---------|-----------|
@@ -148,18 +181,16 @@ class MyFrameworkAdapter extends BaseAdapter {
   }
 
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Convert messages and call your framework
-    const result = await this.client.generate(request.messages);
-    return {
-      content: result,
-      messages: [...request.messages, { role: 'assistant', content: result }],
-    };
+    // Pass input to your framework
+    const result = await this.client.run(request.input);
+    return { output: result };
   }
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
-    const result = await this.client.generate(request.messages);
+    // Convert messages and call your framework
+    const result = await this.client.chat(request.messages);
     return {
-      content: result,
+      output: result,
       messages: [...request.messages, { role: 'assistant', content: result }],
     };
   }
@@ -168,6 +199,31 @@ class MyFrameworkAdapter extends BaseAdapter {
 // Optional: provide a wrap() factory function
 export function wrap(client: MyFrameworkClient, name = 'my-framework'): MyFrameworkAdapter {
   return new MyFrameworkAdapter(client, name);
+}
+```
+
+### Request/Response Types
+
+```typescript
+interface InvokeRequest {
+  input: Record<string, unknown>;  // Arbitrary input for task execution
+  stream?: boolean;                // Whether to stream the response
+  context?: Record<string, unknown>;  // Optional metadata
+}
+
+interface InvokeResponse {
+  output: unknown;                 // The result (can be any type)
+}
+
+interface ChatRequest {
+  messages: Message[];             // Conversation history
+  stream?: boolean;                // Whether to stream the response
+  context?: Record<string, unknown>;  // Optional metadata
+}
+
+interface ChatResponse {
+  output: string;                  // The final answer
+  messages: Message[];             // Full execution history
 }
 ```
 

@@ -9,6 +9,7 @@ import type {
   InvokeResponse,
   ChatRequest,
   ChatResponse,
+  ToolCall,
 } from '../src/types.js';
 
 describe('Message', () => {
@@ -25,45 +26,68 @@ describe('Message', () => {
       expect(msg.role).toBe(role);
     }
   });
+
+  it('should allow null content for tool_calls', () => {
+    const toolCall: ToolCall = {
+      id: 'call_123',
+      type: 'function',
+      function: { name: 'get_weather', arguments: '{}' },
+    };
+    const msg: Message = { role: 'assistant', content: null, tool_calls: [toolCall] };
+    expect(msg.content).toBeNull();
+    expect(msg.tool_calls).toHaveLength(1);
+  });
+
+  it('should accept tool message fields', () => {
+    const msg: Message = {
+      role: 'tool',
+      content: 'result',
+      tool_call_id: 'call_123',
+      name: 'get_weather',
+    };
+    expect(msg.tool_call_id).toBe('call_123');
+    expect(msg.name).toBe('get_weather');
+  });
 });
 
 describe('InvokeRequest', () => {
-  it('should have messages property', () => {
+  it('should have input property', () => {
     const req: InvokeRequest = {
-      messages: [{ role: 'user', content: 'hello' }],
+      input: { task: 'summarize', text: 'hello world' },
     };
-    expect(req.messages).toHaveLength(1);
-    expect(req.messages[0].role).toBe('user');
+    expect(req.input.task).toBe('summarize');
   });
 
-  it('should accept multiple messages', () => {
+  it('should accept optional stream flag', () => {
     const req: InvokeRequest = {
-      messages: [
-        { role: 'system', content: 'You are helpful' },
-        { role: 'user', content: 'hello' },
-      ],
+      input: { task: 'test' },
+      stream: true,
     };
-    expect(req.messages).toHaveLength(2);
+    expect(req.stream).toBe(true);
   });
 
   it('should accept optional context', () => {
     const req: InvokeRequest = {
-      messages: [{ role: 'user', content: 'hello' }],
+      input: { task: 'test' },
       context: { user_id: '123' },
     };
-    
     expect(req.context).toEqual({ user_id: '123' });
   });
 });
 
 describe('InvokeResponse', () => {
-  it('should have content and messages properties', () => {
+  it('should have output property', () => {
     const resp: InvokeResponse = {
-      content: 'Hello!',
-      messages: [{ role: 'assistant', content: 'Hello!' }],
+      output: 'Result of the task',
     };
-    expect(resp.content).toBe('Hello!');
-    expect(resp.messages).toHaveLength(1);
+    expect(resp.output).toBe('Result of the task');
+  });
+
+  it('should accept any type of output', () => {
+    const resp: InvokeResponse = {
+      output: { result: 42, status: 'ok' },
+    };
+    expect(resp.output).toEqual({ result: 42, status: 'ok' });
   });
 });
 
@@ -85,18 +109,51 @@ describe('ChatRequest', () => {
     };
     expect(req.messages).toHaveLength(3);
   });
+
+  it('should accept optional stream flag', () => {
+    const req: ChatRequest = {
+      messages: [{ role: 'user', content: 'hello' }],
+      stream: true,
+    };
+    expect(req.stream).toBe(true);
+  });
+
+  it('should accept optional context', () => {
+    const req: ChatRequest = {
+      messages: [{ role: 'user', content: 'hello' }],
+      context: { user_id: '123' },
+    };
+    expect(req.context).toEqual({ user_id: '123' });
+  });
 });
 
 describe('ChatResponse', () => {
-  it('should have content and messages properties', () => {
+  it('should have output and messages properties', () => {
     const resp: ChatResponse = {
-      content: "I'm doing well!",
+      output: "I'm doing well!",
       messages: [
         { role: 'user', content: 'how are you?' },
         { role: 'assistant', content: "I'm doing well!" },
       ],
     };
-    expect(resp.content).toBe("I'm doing well!");
+    expect(resp.output).toBe("I'm doing well!");
     expect(resp.messages).toHaveLength(2);
+  });
+
+  it('should include tool call messages', () => {
+    const resp: ChatResponse = {
+      output: 'The weather is 72°F',
+      messages: [
+        { role: 'user', content: "What's the weather?" },
+        {
+          role: 'assistant',
+          content: null,
+          tool_calls: [{ id: '1', type: 'function', function: { name: 'get_weather', arguments: '{}' } }],
+        },
+        { role: 'tool', content: '72°F', tool_call_id: '1' },
+        { role: 'assistant', content: 'The weather is 72°F' },
+      ],
+    };
+    expect(resp.messages).toHaveLength(4);
   });
 });

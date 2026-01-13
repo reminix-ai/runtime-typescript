@@ -73,11 +73,11 @@ export class AnthropicAdapter extends BaseAdapter {
     for (const message of messages) {
       if (message.role === 'system') {
         // Anthropic only supports one system message, use the last one
-        system = message.content;
+        system = message.content || '';
       } else {
         anthropicMessages.push({
           role: message.role as 'user' | 'assistant',
-          content: message.content,
+          content: message.content || '',
         });
       }
     }
@@ -100,14 +100,27 @@ export class AnthropicAdapter extends BaseAdapter {
   /**
    * Handle an invoke request.
    *
-   * @param request - The invoke request with messages.
-   * @returns The invoke response with the assistant's reply.
+   * For task-oriented operations. Expects input with 'messages' key
+   * or a 'prompt' key for simple text generation.
+   *
+   * @param request - The invoke request with input data.
+   * @returns The invoke response with the output.
    */
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+    const input = request.input as Record<string, unknown>;
+    
+    // Build messages from input
+    let messages: Message[];
+    if ('messages' in input) {
+      messages = input.messages as Message[];
+    } else if ('prompt' in input) {
+      messages = [{ role: 'user', content: String(input.prompt) }];
+    } else {
+      messages = [{ role: 'user', content: JSON.stringify(input) }];
+    }
+
     // Extract system message and convert messages
-    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(
-      request.messages
-    );
+    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
 
     // Call Anthropic API
     const response = await this.client.messages.create({
@@ -118,22 +131,18 @@ export class AnthropicAdapter extends BaseAdapter {
     });
 
     // Extract content from response
-    const content = this.extractContent(response);
+    const output = this.extractContent(response);
 
-    // Build response messages (original + assistant response)
-    const responseMessages: Message[] = [
-      ...request.messages,
-      { role: 'assistant', content },
-    ];
-
-    return { content, messages: responseMessages };
+    return { output };
   }
 
   /**
    * Handle a chat request.
    *
+   * For conversational interactions.
+   *
    * @param request - The chat request with messages.
-   * @returns The chat response with the assistant's reply.
+   * @returns The chat response with output and messages.
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {
     // Extract system message and convert messages
@@ -150,15 +159,15 @@ export class AnthropicAdapter extends BaseAdapter {
     });
 
     // Extract content from response
-    const content = this.extractContent(response);
+    const output = this.extractContent(response);
 
     // Build response messages (original + assistant response)
     const responseMessages: Message[] = [
       ...request.messages,
-      { role: 'assistant', content },
+      { role: 'assistant', content: output },
     ];
 
-    return { content, messages: responseMessages };
+    return { output, messages: responseMessages };
   }
 }
 

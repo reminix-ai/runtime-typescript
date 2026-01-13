@@ -54,45 +54,54 @@ export class OpenAIAdapter extends BaseAdapter {
    * Convert a Reminix message to OpenAI format.
    */
   private toOpenAIMessage(message: Message): OpenAI.Chat.ChatCompletionMessageParam {
-    return {
+    const result: OpenAI.Chat.ChatCompletionMessageParam = {
       role: message.role as 'user' | 'assistant' | 'system',
-      content: message.content,
+      content: message.content || '',
     };
+    return result;
   }
 
   /**
    * Handle an invoke request.
    *
-   * @param request - The invoke request with messages.
-   * @returns The invoke response with the assistant's reply.
+   * For task-oriented operations. Expects input with 'messages' key
+   * or a 'prompt' key for simple text generation.
+   *
+   * @param request - The invoke request with input data.
+   * @returns The invoke response with the output.
    */
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Convert messages to OpenAI format
-    const openaiMessages = request.messages.map((m) => this.toOpenAIMessage(m));
+    // Check if input contains messages
+    let messages: OpenAI.Chat.ChatCompletionMessageParam[];
+    const input = request.input as Record<string, unknown>;
+    
+    if ('messages' in input) {
+      messages = input.messages as OpenAI.Chat.ChatCompletionMessageParam[];
+    } else if ('prompt' in input) {
+      messages = [{ role: 'user', content: String(input.prompt) }];
+    } else {
+      messages = [{ role: 'user', content: JSON.stringify(input) }];
+    }
 
     // Call OpenAI API
     const response = await this.client.chat.completions.create({
       model: this._model,
-      messages: openaiMessages,
+      messages,
     });
 
     // Extract content from response
-    const content = response.choices[0]?.message?.content ?? '';
+    const output = response.choices[0]?.message?.content ?? '';
 
-    // Build response messages (original + assistant response)
-    const responseMessages: Message[] = [
-      ...request.messages,
-      { role: 'assistant', content },
-    ];
-
-    return { content, messages: responseMessages };
+    return { output };
   }
 
   /**
    * Handle a chat request.
    *
+   * For conversational interactions.
+   *
    * @param request - The chat request with messages.
-   * @returns The chat response with the assistant's reply.
+   * @returns The chat response with output and messages.
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {
     // Convert messages to OpenAI format
@@ -105,15 +114,15 @@ export class OpenAIAdapter extends BaseAdapter {
     });
 
     // Extract content from response
-    const content = response.choices[0]?.message?.content ?? '';
+    const output = response.choices[0]?.message?.content ?? '';
 
     // Build response messages (original + assistant response)
     const responseMessages: Message[] = [
       ...request.messages,
-      { role: 'assistant', content },
+      { role: 'assistant', content: output },
     ];
 
-    return { content, messages: responseMessages };
+    return { output, messages: responseMessages };
   }
 }
 

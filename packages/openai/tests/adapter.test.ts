@@ -4,154 +4,155 @@
 
 import { describe, it, expect, vi } from 'vitest';
 
-import { BaseAdapter, type InvokeRequest, type ChatRequest } from '@reminix/runtime';
-import { wrap, OpenAIAdapter } from '../src/index.js';
-
-/**
- * Create a mock OpenAI chat completion response.
- */
-function createMockResponse(content: string = 'Hello!') {
-  return {
-    choices: [
-      {
-        message: {
-          role: 'assistant' as const,
-          content,
-        },
-      },
-    ],
-  };
-}
-
-/**
- * Create a mock OpenAI client.
- */
-function createMockClient(responseContent: string = 'Hello!') {
-  return {
-    chat: {
-      completions: {
-        create: vi.fn().mockResolvedValue(createMockResponse(responseContent)),
-      },
-    },
-  };
-}
+import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
+import { wrap, OpenAIAdapter } from '../src/adapter.js';
 
 describe('wrap', () => {
   it('should return an OpenAIAdapter', () => {
-    const mockClient = createMockClient();
-    const adapter = wrap(mockClient);
+    const mockClient = { chat: { completions: { create: vi.fn() } } };
+    const adapter = wrap(mockClient as any);
 
     expect(adapter).toBeInstanceOf(OpenAIAdapter);
-    expect(adapter).toBeInstanceOf(BaseAdapter);
   });
 
-  it('should accept a custom name', () => {
-    const mockClient = createMockClient();
-    const adapter = wrap(mockClient, { name: 'my-custom-agent' });
+  it('should accept custom options', () => {
+    const mockClient = { chat: { completions: { create: vi.fn() } } };
+    const adapter = wrap(mockClient as any, { name: 'my-agent', model: 'gpt-4o' });
 
-    expect(adapter.name).toBe('my-custom-agent');
+    expect(adapter.name).toBe('my-agent');
+    expect(adapter.model).toBe('gpt-4o');
   });
 
-  it('should use default name if not provided', () => {
-    const mockClient = createMockClient();
-    const adapter = wrap(mockClient);
+  it('should use default values if not provided', () => {
+    const mockClient = { chat: { completions: { create: vi.fn() } } };
+    const adapter = wrap(mockClient as any);
 
     expect(adapter.name).toBe('openai-agent');
-  });
-
-  it('should accept a model parameter', () => {
-    const mockClient = createMockClient();
-    const adapter = wrap(mockClient, { model: 'gpt-4o' });
-
-    expect(adapter.model).toBe('gpt-4o');
+    expect(adapter.model).toBe('gpt-4o-mini');
   });
 });
 
 describe('OpenAIAdapter.invoke', () => {
-  it('should call the OpenAI client', async () => {
-    const mockClient = createMockClient();
-    const adapter = wrap(mockClient);
+  it('should call the client', async () => {
+    const mockClient = {
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{ message: { content: 'Hello!' } }],
+          }),
+        },
+      },
+    };
+
+    const adapter = wrap(mockClient as any);
+    const request: InvokeRequest = { input: { prompt: 'Hi' } };
+
+    await adapter.invoke(request);
+
+    expect(mockClient.chat.completions.create).toHaveBeenCalled();
+  });
+
+  it('should return output', async () => {
+    const mockClient = {
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{ message: { content: 'Hello from OpenAI!' } }],
+          }),
+        },
+      },
+    };
+
+    const adapter = wrap(mockClient as any);
+    const request: InvokeRequest = { input: { prompt: 'Hi' } };
+
+    const response = await adapter.invoke(request);
+
+    expect(response.output).toBe('Hello from OpenAI!');
+  });
+
+  it('should handle messages input', async () => {
+    const mockClient = {
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{ message: { content: 'Response' } }],
+          }),
+        },
+      },
+    };
+
+    const adapter = wrap(mockClient as any);
     const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
+      input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
 
     await adapter.invoke(request);
 
-    expect(mockClient.chat.completions.create).toHaveBeenCalledOnce();
-  });
-
-  it('should pass messages to the client', async () => {
-    const mockClient = createMockClient();
-    const adapter = wrap(mockClient, { model: 'gpt-4o' });
-    const request: InvokeRequest = {
-      messages: [
-        { role: 'system', content: 'You are helpful' },
-        { role: 'user', content: 'Hello' },
-      ],
-    };
-
-    await adapter.invoke(request);
-
-    const callArgs = mockClient.chat.completions.create.mock.calls[0][0];
-    expect(callArgs.model).toBe('gpt-4o');
-    expect(callArgs.messages).toHaveLength(2);
-    expect(callArgs.messages[0].role).toBe('system');
-    expect(callArgs.messages[1].role).toBe('user');
-  });
-
-  it('should return an InvokeResponse', async () => {
-    const mockClient = createMockClient('Hello from OpenAI!');
-    const adapter = wrap(mockClient);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
-    };
-
-    const response = await adapter.invoke(request);
-
-    expect(response.content).toBe('Hello from OpenAI!');
-    expect(response.messages.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('should include original messages plus response', async () => {
-    const mockClient = createMockClient('Response');
-    const adapter = wrap(mockClient);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hello' }],
-    };
-
-    const response = await adapter.invoke(request);
-
-    expect(response.messages).toHaveLength(2);
-    expect(response.messages[0].role).toBe('user');
-    expect(response.messages[0].content).toBe('Hello');
-    expect(response.messages[1].role).toBe('assistant');
-    expect(response.messages[1].content).toBe('Response');
+    const callArg = mockClient.chat.completions.create.mock.calls[0][0];
+    expect(callArg.messages).toEqual([{ role: 'user', content: 'Hello' }]);
   });
 });
 
 describe('OpenAIAdapter.chat', () => {
-  it('should call the OpenAI client', async () => {
-    const mockClient = createMockClient();
-    const adapter = wrap(mockClient);
-    const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
+  it('should call the client', async () => {
+    const mockClient = {
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{ message: { content: 'Hello!' } }],
+          }),
+        },
+      },
     };
+
+    const adapter = wrap(mockClient as any);
+    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
 
     await adapter.chat(request);
 
-    expect(mockClient.chat.completions.create).toHaveBeenCalledOnce();
+    expect(mockClient.chat.completions.create).toHaveBeenCalled();
   });
 
-  it('should return a ChatResponse', async () => {
-    const mockClient = createMockClient('Chat response');
-    const adapter = wrap(mockClient);
-    const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
+  it('should return output and messages', async () => {
+    const mockClient = {
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{ message: { content: 'Chat response' } }],
+          }),
+        },
+      },
     };
+
+    const adapter = wrap(mockClient as any);
+    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
 
     const response = await adapter.chat(request);
 
-    expect(response.content).toBe('Chat response');
-    expect(response.messages.length).toBeGreaterThanOrEqual(1);
+    expect(response.output).toBe('Chat response');
+    expect(response.messages).toHaveLength(2);
+    expect(response.messages[1].role).toBe('assistant');
+    expect(response.messages[1].content).toBe('Chat response');
+  });
+
+  it('should use the configured model', async () => {
+    const mockClient = {
+      chat: {
+        completions: {
+          create: vi.fn().mockResolvedValue({
+            choices: [{ message: { content: 'Response' } }],
+          }),
+        },
+      },
+    };
+
+    const adapter = wrap(mockClient as any, { model: 'gpt-4o' });
+    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
+
+    await adapter.chat(request);
+
+    const callArg = mockClient.chat.completions.create.mock.calls[0][0];
+    expect(callArg.model).toBe('gpt-4o');
   });
 });

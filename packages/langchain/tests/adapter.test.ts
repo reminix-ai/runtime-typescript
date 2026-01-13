@@ -3,62 +3,99 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
-import type { Runnable } from '@langchain/core/runnables';
+import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
-import { BaseAdapter, type InvokeRequest, type ChatRequest } from '@reminix/runtime';
-import { wrap, LangChainAdapter } from '../src/index.js';
-
-/**
- * Create a mock LangChain runnable.
- */
-function createMockRunnable(response: string = 'Hello!') {
-  return {
-    invoke: vi.fn().mockResolvedValue(new AIMessage({ content: response })),
-  } as unknown as Runnable;
-}
+import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
+import { wrap, LangChainAdapter } from '../src/adapter.js';
 
 describe('wrap', () => {
   it('should return a LangChainAdapter', () => {
-    const mockRunnable = createMockRunnable();
-    const adapter = wrap(mockRunnable);
+    const mockRunnable = { invoke: vi.fn() };
+    const adapter = wrap(mockRunnable as any);
 
     expect(adapter).toBeInstanceOf(LangChainAdapter);
-    expect(adapter).toBeInstanceOf(BaseAdapter);
   });
 
   it('should accept a custom name', () => {
-    const mockRunnable = createMockRunnable();
-    const adapter = wrap(mockRunnable, 'my-custom-agent');
+    const mockRunnable = { invoke: vi.fn() };
+    const adapter = wrap(mockRunnable as any, 'my-custom-agent');
 
     expect(adapter.name).toBe('my-custom-agent');
   });
 
   it('should use default name if not provided', () => {
-    const mockRunnable = createMockRunnable();
-    const adapter = wrap(mockRunnable);
+    const mockRunnable = { invoke: vi.fn() };
+    const adapter = wrap(mockRunnable as any);
 
     expect(adapter.name).toBe('langchain-agent');
   });
 });
 
 describe('LangChainAdapter.invoke', () => {
-  it('should call the underlying runnable', async () => {
-    const mockRunnable = createMockRunnable();
-    const adapter = wrap(mockRunnable);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
+  it('should call the runnable with the input', async () => {
+    const mockRunnable = {
+      invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
     };
+
+    const adapter = wrap(mockRunnable as any);
+    const request: InvokeRequest = { input: { query: 'What is AI?' } };
 
     await adapter.invoke(request);
 
-    expect(mockRunnable.invoke).toHaveBeenCalledOnce();
+    expect(mockRunnable.invoke).toHaveBeenCalledWith({ query: 'What is AI?' });
+  });
+
+  it('should return the output from the runnable', async () => {
+    const mockRunnable = {
+      invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello from LangChain!' })),
+    };
+
+    const adapter = wrap(mockRunnable as any);
+    const request: InvokeRequest = { input: { query: 'Hi' } };
+
+    const response = await adapter.invoke(request);
+
+    expect(response.output).toBe('Hello from LangChain!');
+  });
+
+  it('should handle dict response', async () => {
+    const mockRunnable = {
+      invoke: vi.fn().mockResolvedValue({ result: 'success', value: 42 }),
+    };
+
+    const adapter = wrap(mockRunnable as any);
+    const request: InvokeRequest = { input: { task: 'compute' } };
+
+    const response = await adapter.invoke(request);
+
+    expect(response.output).toEqual({ result: 'success', value: 42 });
+  });
+});
+
+describe('LangChainAdapter.chat', () => {
+  it('should call the runnable with converted messages', async () => {
+    const mockRunnable = {
+      invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
+    };
+
+    const adapter = wrap(mockRunnable as any);
+    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
+
+    await adapter.chat(request);
+
+    expect(mockRunnable.invoke).toHaveBeenCalled();
+    const callArg = mockRunnable.invoke.mock.calls[0][0];
+    expect(callArg).toHaveLength(1);
+    expect(callArg[0]).toBeInstanceOf(HumanMessage);
   });
 
   it('should convert messages to LangChain format', async () => {
-    const mockRunnable = createMockRunnable();
-    const adapter = wrap(mockRunnable);
-    const request: InvokeRequest = {
+    const mockRunnable = {
+      invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Response' })),
+    };
+
+    const adapter = wrap(mockRunnable as any);
+    const request: ChatRequest = {
       messages: [
         { role: 'system', content: 'You are helpful' },
         { role: 'user', content: 'Hello' },
@@ -67,88 +104,29 @@ describe('LangChainAdapter.invoke', () => {
       ],
     };
 
-    await adapter.invoke(request);
-
-    const callArgs = (mockRunnable.invoke as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    expect(callArgs).toHaveLength(4);
-    expect(callArgs[0]).toBeInstanceOf(SystemMessage);
-    expect(callArgs[1]).toBeInstanceOf(HumanMessage);
-    expect(callArgs[2]).toBeInstanceOf(AIMessage);
-    expect(callArgs[3]).toBeInstanceOf(HumanMessage);
-  });
-
-  it('should return an InvokeResponse', async () => {
-    const mockRunnable = createMockRunnable('Hello from LangChain!');
-    const adapter = wrap(mockRunnable);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
-    };
-
-    const response = await adapter.invoke(request);
-
-    expect(response.content).toBe('Hello from LangChain!');
-    expect(response.messages.length).toBeGreaterThanOrEqual(1);
-    expect(response.messages[response.messages.length - 1].role).toBe('assistant');
-    expect(response.messages[response.messages.length - 1].content).toBe('Hello from LangChain!');
-  });
-
-  it('should include original messages plus response', async () => {
-    const mockRunnable = createMockRunnable('Response');
-    const adapter = wrap(mockRunnable);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hello' }],
-    };
-
-    const response = await adapter.invoke(request);
-
-    expect(response.messages).toHaveLength(2);
-    expect(response.messages[0].role).toBe('user');
-    expect(response.messages[0].content).toBe('Hello');
-    expect(response.messages[1].role).toBe('assistant');
-    expect(response.messages[1].content).toBe('Response');
-  });
-});
-
-describe('LangChainAdapter.chat', () => {
-  it('should call the underlying runnable', async () => {
-    const mockRunnable = createMockRunnable();
-    const adapter = wrap(mockRunnable);
-    const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
-    };
-
     await adapter.chat(request);
 
-    expect(mockRunnable.invoke).toHaveBeenCalledOnce();
+    const callArg = mockRunnable.invoke.mock.calls[0][0];
+    expect(callArg).toHaveLength(4);
+    expect(callArg[0]).toBeInstanceOf(SystemMessage);
+    expect(callArg[1]).toBeInstanceOf(HumanMessage);
+    expect(callArg[2]).toBeInstanceOf(AIMessage);
+    expect(callArg[3]).toBeInstanceOf(HumanMessage);
   });
 
-  it('should return a ChatResponse', async () => {
-    const mockRunnable = createMockRunnable('Chat response');
-    const adapter = wrap(mockRunnable);
-    const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
+  it('should return output and messages', async () => {
+    const mockRunnable = {
+      invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Chat response' })),
     };
+
+    const adapter = wrap(mockRunnable as any);
+    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
 
     const response = await adapter.chat(request);
 
-    expect(response.content).toBe('Chat response');
-    expect(response.messages.length).toBeGreaterThanOrEqual(1);
-  });
-});
-
-describe('Message conversion', () => {
-  it('should handle tool role messages', async () => {
-    const mockRunnable = createMockRunnable('Response');
-    const adapter = wrap(mockRunnable);
-    const request: InvokeRequest = {
-      messages: [
-        { role: 'user', content: 'Use a tool' },
-        { role: 'tool', content: 'Tool result' },
-      ],
-    };
-
-    // Should not throw an error
-    const response = await adapter.invoke(request);
-    expect(response.content).toBe('Response');
+    expect(response.output).toBe('Chat response');
+    expect(response.messages).toHaveLength(2);
+    expect(response.messages[1].role).toBe('assistant');
+    expect(response.messages[1].content).toBe('Chat response');
   });
 });

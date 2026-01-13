@@ -3,112 +3,49 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
+import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
-import { BaseAdapter, type InvokeRequest, type ChatRequest } from '@reminix/runtime';
-import { wrap, LangGraphAdapter } from '../src/index.js';
-
-/**
- * Create a mock LangGraph compiled graph.
- */
-function createMockGraph(responseContent: string = 'Hello!') {
-  return {
-    invoke: vi.fn().mockResolvedValue({
-      messages: [new AIMessage({ content: responseContent })],
-    }),
-  };
-}
+import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
+import { wrap, LangGraphAdapter } from '../src/adapter.js';
 
 describe('wrap', () => {
   it('should return a LangGraphAdapter', () => {
-    const mockGraph = createMockGraph();
-    const adapter = wrap(mockGraph);
+    const mockGraph = { invoke: vi.fn() };
+    const adapter = wrap(mockGraph as any);
 
     expect(adapter).toBeInstanceOf(LangGraphAdapter);
-    expect(adapter).toBeInstanceOf(BaseAdapter);
   });
 
   it('should accept a custom name', () => {
-    const mockGraph = createMockGraph();
-    const adapter = wrap(mockGraph, 'my-custom-agent');
+    const mockGraph = { invoke: vi.fn() };
+    const adapter = wrap(mockGraph as any, 'my-custom-agent');
 
     expect(adapter.name).toBe('my-custom-agent');
   });
 
   it('should use default name if not provided', () => {
-    const mockGraph = createMockGraph();
-    const adapter = wrap(mockGraph);
+    const mockGraph = { invoke: vi.fn() };
+    const adapter = wrap(mockGraph as any);
 
     expect(adapter.name).toBe('langgraph-agent');
   });
 });
 
 describe('LangGraphAdapter.invoke', () => {
-  it('should call the underlying graph', async () => {
-    const mockGraph = createMockGraph();
-    const adapter = wrap(mockGraph);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
-    };
-
-    await adapter.invoke(request);
-
-    expect(mockGraph.invoke).toHaveBeenCalledOnce();
-  });
-
-  it('should pass messages in state dict format', async () => {
-    const mockGraph = createMockGraph();
-    const adapter = wrap(mockGraph);
-    const request: InvokeRequest = {
-      messages: [
-        { role: 'system', content: 'You are helpful' },
-        { role: 'user', content: 'Hello' },
-      ],
-    };
-
-    await adapter.invoke(request);
-
-    const callArgs = (mockGraph.invoke as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    expect(callArgs).toHaveProperty('messages');
-    expect(callArgs.messages).toHaveLength(2);
-    expect(callArgs.messages[0]).toBeInstanceOf(SystemMessage);
-    expect(callArgs.messages[1]).toBeInstanceOf(HumanMessage);
-  });
-
-  it('should return an InvokeResponse', async () => {
-    const mockGraph = createMockGraph('Hello from LangGraph!');
-    const adapter = wrap(mockGraph);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
-    };
-
-    const response = await adapter.invoke(request);
-
-    expect(response.content).toBe('Hello from LangGraph!');
-    expect(response.messages.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('should extract content from the last AI message', async () => {
+  it('should call the graph with the input', async () => {
     const mockGraph = {
-      invoke: vi.fn().mockResolvedValue({
-        messages: [
-          new HumanMessage({ content: 'Hello' }),
-          new AIMessage({ content: 'First response' }),
-          new AIMessage({ content: 'Final response' }),
-        ],
-      }),
-    };
-    const adapter = wrap(mockGraph);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hello' }],
+      invoke: vi.fn().mockResolvedValue({ messages: [new AIMessage({ content: 'Hello!' })] }),
     };
 
-    const response = await adapter.invoke(request);
+    const adapter = wrap(mockGraph as any);
+    const request: InvokeRequest = { input: { query: 'What is AI?' } };
 
-    expect(response.content).toBe('Final response');
+    await adapter.invoke(request);
+
+    expect(mockGraph.invoke).toHaveBeenCalledWith({ query: 'What is AI?' });
   });
 
-  it('should include full conversation from graph', async () => {
+  it('should return output from messages in the result', async () => {
     const mockGraph = {
       invoke: vi.fn().mockResolvedValue({
         messages: [
@@ -117,42 +54,89 @@ describe('LangGraphAdapter.invoke', () => {
         ],
       }),
     };
-    const adapter = wrap(mockGraph);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hello' }],
-    };
+
+    const adapter = wrap(mockGraph as any);
+    const request: InvokeRequest = { input: { messages: [] } };
 
     const response = await adapter.invoke(request);
 
-    expect(response.messages).toHaveLength(2);
-    expect(response.messages[0].role).toBe('user');
-    expect(response.messages[1].role).toBe('assistant');
+    expect(response.output).toBe('Hi there!');
+  });
+
+  it('should handle dict result without messages', async () => {
+    const mockGraph = {
+      invoke: vi.fn().mockResolvedValue({ result: 'success' }),
+    };
+
+    const adapter = wrap(mockGraph as any);
+    const request: InvokeRequest = { input: { task: 'compute' } };
+
+    const response = await adapter.invoke(request);
+
+    expect(response.output).toEqual({ result: 'success' });
   });
 });
 
 describe('LangGraphAdapter.chat', () => {
-  it('should call the underlying graph', async () => {
-    const mockGraph = createMockGraph();
-    const adapter = wrap(mockGraph);
-    const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
+  it('should call the graph with state dict format', async () => {
+    const mockGraph = {
+      invoke: vi.fn().mockResolvedValue({ messages: [new AIMessage({ content: 'Hello!' })] }),
     };
+
+    const adapter = wrap(mockGraph as any);
+    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
 
     await adapter.chat(request);
 
-    expect(mockGraph.invoke).toHaveBeenCalledOnce();
+    const callArg = mockGraph.invoke.mock.calls[0][0];
+    expect(callArg).toHaveProperty('messages');
+    expect(callArg.messages).toHaveLength(1);
+    expect(callArg.messages[0]).toBeInstanceOf(HumanMessage);
   });
 
-  it('should return a ChatResponse', async () => {
-    const mockGraph = createMockGraph('Chat response');
-    const adapter = wrap(mockGraph);
+  it('should return output and all messages from the graph', async () => {
+    const mockGraph = {
+      invoke: vi.fn().mockResolvedValue({
+        messages: [
+          new HumanMessage({ content: 'Hi' }),
+          new AIMessage({ content: 'Hello! How can I help?' }),
+        ],
+      }),
+    };
+
+    const adapter = wrap(mockGraph as any);
+    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
+
+    const response = await adapter.chat(request);
+
+    expect(response.output).toBe('Hello! How can I help?');
+    expect(response.messages).toHaveLength(2);
+    expect(response.messages[1].role).toBe('assistant');
+  });
+
+  it('should convert messages correctly', async () => {
+    const mockGraph = {
+      invoke: vi.fn().mockResolvedValue({
+        messages: [
+          new SystemMessage({ content: 'You are helpful' }),
+          new HumanMessage({ content: 'Hello' }),
+          new AIMessage({ content: 'Hi!' }),
+        ],
+      }),
+    };
+
+    const adapter = wrap(mockGraph as any);
     const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
+      messages: [
+        { role: 'system', content: 'You are helpful' },
+        { role: 'user', content: 'Hello' },
+      ],
     };
 
     const response = await adapter.chat(request);
 
-    expect(response.content).toBe('Chat response');
-    expect(response.messages.length).toBeGreaterThanOrEqual(1);
+    expect(response.messages[0].role).toBe('system');
+    expect(response.messages[1].role).toBe('user');
+    expect(response.messages[2].role).toBe('assistant');
   });
 });

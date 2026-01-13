@@ -48,20 +48,19 @@ export class LangChainAdapter extends BaseAdapter {
    */
   private toLangChainMessage(message: Message): BaseMessage {
     const { role, content } = message;
+    const contentStr = content || '';
 
     switch (role) {
       case 'user':
-        return new HumanMessage({ content });
+        return new HumanMessage({ content: contentStr });
       case 'assistant':
-        return new AIMessage({ content });
+        return new AIMessage({ content: contentStr });
       case 'system':
-        return new SystemMessage({ content });
+        return new SystemMessage({ content: contentStr });
       case 'tool':
-        // Tool messages require a tool_call_id, use a placeholder if not provided
-        return new ToolMessage({ content, tool_call_id: 'unknown' });
+        return new ToolMessage({ content: contentStr, tool_call_id: message.tool_call_id || 'unknown' });
       default:
-        // Fallback to HumanMessage for unknown roles
-        return new HumanMessage({ content });
+        return new HumanMessage({ content: contentStr });
     }
   }
 
@@ -94,41 +93,38 @@ export class LangChainAdapter extends BaseAdapter {
   /**
    * Handle an invoke request.
    *
-   * @param request - The invoke request with messages.
-   * @returns The invoke response with the agent's reply.
+   * For task-oriented operations. Passes the input directly to the runnable.
+   *
+   * @param request - The invoke request with input data.
+   * @returns The invoke response with the output.
    */
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Convert messages to LangChain format
-    const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
+    // Pass input directly to the runnable
+    const response = await this.agent.invoke(request.input);
 
-    // Call the runnable
-    const response = await this.agent.invoke(lcMessages);
-
-    // Extract content from response
-    let content: string;
+    // Extract output from response
+    let output: unknown;
     if (response && typeof response === 'object' && 'content' in response) {
-      content =
+      output =
         typeof response.content === 'string'
           ? response.content
           : String(response.content);
+    } else if (response && typeof response === 'object') {
+      output = response;
     } else {
-      content = String(response);
+      output = String(response);
     }
 
-    // Build response messages (original + assistant response)
-    const responseMessages: Message[] = [
-      ...request.messages,
-      { role: 'assistant', content },
-    ];
-
-    return { content, messages: responseMessages };
+    return { output };
   }
 
   /**
    * Handle a chat request.
    *
+   * For conversational interactions. Converts messages to LangChain format.
+   *
    * @param request - The chat request with messages.
-   * @returns The chat response with the agent's reply.
+   * @returns The chat response with output and messages.
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {
     // Convert messages to LangChain format
@@ -138,23 +134,26 @@ export class LangChainAdapter extends BaseAdapter {
     const response = await this.agent.invoke(lcMessages);
 
     // Extract content from response
-    let content: string;
+    let output: string;
+    let responseMessage: Message;
     if (response && typeof response === 'object' && 'content' in response) {
-      content =
+      output =
         typeof response.content === 'string'
           ? response.content
           : String(response.content);
+      responseMessage = this.toReminixMessage(response as BaseMessage);
     } else {
-      content = String(response);
+      output = String(response);
+      responseMessage = { role: 'assistant', content: output };
     }
 
     // Build response messages (original + assistant response)
     const responseMessages: Message[] = [
       ...request.messages,
-      { role: 'assistant', content },
+      responseMessage,
     ];
 
-    return { content, messages: responseMessages };
+    return { output, messages: responseMessages };
   }
 }
 

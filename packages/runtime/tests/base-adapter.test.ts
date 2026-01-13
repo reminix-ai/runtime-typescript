@@ -20,16 +20,17 @@ class TestAdapter extends BaseAdapter {
   }
 
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+    const task = (request.input as Record<string, unknown>).task || 'unknown';
     return {
-      content: 'Hello from invoke!',
-      messages: [{ role: 'assistant', content: 'Hello from invoke!' }],
+      output: `Completed: ${task}`,
     };
   }
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
+    const userMsg = request.messages[request.messages.length - 1].content;
     return {
-      content: 'Hello from chat!',
-      messages: [{ role: 'assistant', content: 'Hello from chat!' }],
+      output: `Hello from chat: ${userMsg}`,
+      messages: [{ role: 'assistant', content: `Hello from chat: ${userMsg}` }],
     };
   }
 }
@@ -56,13 +57,12 @@ describe('Concrete Adapter', () => {
   it('should return InvokeResponse from invoke', async () => {
     const adapter = new TestAdapter();
     const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'hello' }],
+      input: { task: 'summarize' },
     };
 
     const response = await adapter.invoke(request);
 
-    expect(response.content).toBe('Hello from invoke!');
-    expect(response.messages).toHaveLength(1);
+    expect(response.output).toBe('Completed: summarize');
   });
 
   it('should return ChatResponse from chat', async () => {
@@ -73,14 +73,14 @@ describe('Concrete Adapter', () => {
 
     const response = await adapter.chat(request);
 
-    expect(response.content).toBe('Hello from chat!');
+    expect(response.output).toBe('Hello from chat: hello');
     expect(response.messages).toHaveLength(1);
   });
 
   it('should throw from invokeStream by default', async () => {
     const adapter = new TestAdapter();
     const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'hello' }],
+      input: { task: 'test' },
     };
 
     const generator = adapter.invokeStream(request);

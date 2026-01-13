@@ -4,158 +4,132 @@
 
 import { describe, it, expect, vi } from 'vitest';
 
-import { BaseAdapter, type InvokeRequest, type ChatRequest } from '@reminix/runtime';
-import { wrap, VercelAIAdapter } from '../src/index.js';
-
-/**
- * Create a mock Vercel AI model.
- */
-function createMockModel() {
-  return {
-    doGenerate: vi.fn().mockResolvedValue({
-      text: 'Hello!',
-    }),
-  };
-}
-
-/**
- * Create a mock generateText function result.
- */
-function createMockGenerateResult(content: string = 'Hello!') {
-  return {
-    text: content,
-  };
-}
+import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
+import { wrap, VercelAIAdapter } from '../src/adapter.js';
 
 describe('wrap', () => {
   it('should return a VercelAIAdapter', () => {
-    const mockModel = createMockModel();
-    const adapter = wrap(mockModel);
+    const mockModel = { modelId: 'gpt-4o' };
+    const adapter = wrap(mockModel as any);
 
     expect(adapter).toBeInstanceOf(VercelAIAdapter);
-    expect(adapter).toBeInstanceOf(BaseAdapter);
   });
 
-  it('should accept a custom name', () => {
-    const mockModel = createMockModel();
-    const adapter = wrap(mockModel, { name: 'my-custom-agent' });
+  it('should accept custom options', () => {
+    const mockModel = { modelId: 'gpt-4o' };
+    const adapter = wrap(mockModel as any, { name: 'my-agent' });
 
-    expect(adapter.name).toBe('my-custom-agent');
+    expect(adapter.name).toBe('my-agent');
   });
 
-  it('should use default name if not provided', () => {
-    const mockModel = createMockModel();
-    const adapter = wrap(mockModel);
+  it('should use default values if not provided', () => {
+    const mockModel = { modelId: 'gpt-4o' };
+    const adapter = wrap(mockModel as any);
 
     expect(adapter.name).toBe('vercel-ai-agent');
   });
 });
 
 describe('VercelAIAdapter.invoke', () => {
-  it('should call generateText with the model', async () => {
-    const mockModel = createMockModel();
-    const adapter = wrap(mockModel);
-    const request: InvokeRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
-    };
+  it('should call generateText with prompt input', async () => {
+    const mockModel = { modelId: 'gpt-4o' };
+    const adapter = wrap(mockModel as any);
 
-    // Mock the internal generateText call
-    const mockGenerateText = vi.fn().mockResolvedValue(createMockGenerateResult());
+    // Mock the internal generateText function
+    const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello!' });
     (adapter as any)._generateText = mockGenerateText;
 
+    const request: InvokeRequest = { input: { prompt: 'Hi' } };
     await adapter.invoke(request);
 
-    expect(mockGenerateText).toHaveBeenCalledOnce();
-  });
-
-  it('should pass messages to generateText', async () => {
-    const mockModel = createMockModel();
-    const adapter = wrap(mockModel);
-    const request: InvokeRequest = {
-      messages: [
-        { role: 'system', content: 'You are helpful' },
-        { role: 'user', content: 'Hello' },
-      ],
-    };
-
-    const mockGenerateText = vi.fn().mockResolvedValue(createMockGenerateResult());
-    (adapter as any)._generateText = mockGenerateText;
-
-    await adapter.invoke(request);
-
-    const callArgs = mockGenerateText.mock.calls[0][0];
-    expect(callArgs.messages).toHaveLength(2);
-  });
-
-  it('should return an InvokeResponse', async () => {
-    const mockModel = createMockModel();
-    const adapter = wrap(mockModel);
-    const request: InvokeRequest = {
+    expect(mockGenerateText).toHaveBeenCalledWith({
+      model: mockModel,
       messages: [{ role: 'user', content: 'Hi' }],
-    };
+    });
+  });
 
-    const mockGenerateText = vi
-      .fn()
-      .mockResolvedValue(createMockGenerateResult('Hello from Vercel AI!'));
+  it('should return output', async () => {
+    const mockModel = { modelId: 'gpt-4o' };
+    const adapter = wrap(mockModel as any);
+
+    const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello from Vercel AI!' });
     (adapter as any)._generateText = mockGenerateText;
 
+    const request: InvokeRequest = { input: { prompt: 'Hi' } };
     const response = await adapter.invoke(request);
 
-    expect(response.content).toBe('Hello from Vercel AI!');
-    expect(response.messages.length).toBeGreaterThanOrEqual(1);
+    expect(response.output).toBe('Hello from Vercel AI!');
   });
 
-  it('should include original messages plus response', async () => {
-    const mockModel = createMockModel();
-    const adapter = wrap(mockModel);
+  it('should handle messages input', async () => {
+    const mockModel = { modelId: 'gpt-4o' };
+    const adapter = wrap(mockModel as any);
+
+    const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
+    (adapter as any)._generateText = mockGenerateText;
+
     const request: InvokeRequest = {
+      input: { messages: [{ role: 'user', content: 'Hello' }] },
+    };
+    await adapter.invoke(request);
+
+    expect(mockGenerateText).toHaveBeenCalledWith({
+      model: mockModel,
       messages: [{ role: 'user', content: 'Hello' }],
-    };
-
-    const mockGenerateText = vi.fn().mockResolvedValue(createMockGenerateResult('Response'));
-    (adapter as any)._generateText = mockGenerateText;
-
-    const response = await adapter.invoke(request);
-
-    expect(response.messages).toHaveLength(2);
-    expect(response.messages[0].role).toBe('user');
-    expect(response.messages[0].content).toBe('Hello');
-    expect(response.messages[1].role).toBe('assistant');
-    expect(response.messages[1].content).toBe('Response');
+    });
   });
 });
 
 describe('VercelAIAdapter.chat', () => {
-  it('should call generateText', async () => {
-    const mockModel = createMockModel();
-    const adapter = wrap(mockModel);
-    const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
-    };
+  it('should call generateText with converted messages', async () => {
+    const mockModel = { modelId: 'gpt-4o' };
+    const adapter = wrap(mockModel as any);
 
-    const mockGenerateText = vi.fn().mockResolvedValue(createMockGenerateResult());
+    const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello!' });
     (adapter as any)._generateText = mockGenerateText;
 
+    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
     await adapter.chat(request);
 
-    expect(mockGenerateText).toHaveBeenCalledOnce();
+    expect(mockGenerateText).toHaveBeenCalledWith({
+      model: mockModel,
+      messages: [{ role: 'user', content: 'Hi' }],
+    });
   });
 
-  it('should return a ChatResponse', async () => {
-    const mockModel = createMockModel();
-    const adapter = wrap(mockModel);
-    const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'Hi' }],
-    };
+  it('should return output and messages', async () => {
+    const mockModel = { modelId: 'gpt-4o' };
+    const adapter = wrap(mockModel as any);
 
-    const mockGenerateText = vi
-      .fn()
-      .mockResolvedValue(createMockGenerateResult('Chat response'));
+    const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Chat response' });
     (adapter as any)._generateText = mockGenerateText;
 
+    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
     const response = await adapter.chat(request);
 
-    expect(response.content).toBe('Chat response');
-    expect(response.messages.length).toBeGreaterThanOrEqual(1);
+    expect(response.output).toBe('Chat response');
+    expect(response.messages).toHaveLength(2);
+    expect(response.messages[1].role).toBe('assistant');
+    expect(response.messages[1].content).toBe('Chat response');
+  });
+
+  it('should preserve system messages', async () => {
+    const mockModel = { modelId: 'gpt-4o' };
+    const adapter = wrap(mockModel as any);
+
+    const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
+    (adapter as any)._generateText = mockGenerateText;
+
+    const request: ChatRequest = {
+      messages: [
+        { role: 'system', content: 'You are helpful' },
+        { role: 'user', content: 'Hi' },
+      ],
+    };
+    await adapter.chat(request);
+
+    const callArg = mockGenerateText.mock.calls[0][0];
+    expect(callArg.messages).toHaveLength(2);
+    expect(callArg.messages[0].role).toBe('system');
   });
 });

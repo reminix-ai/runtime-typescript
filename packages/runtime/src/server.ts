@@ -54,8 +54,8 @@ export function createApp(agents: Agent[]): Hono {
     const body = await c.req.json<InvokeRequest>();
 
     // Validate request
-    if (!body.messages || body.messages.length === 0) {
-      return c.json({ error: 'messages is required and must not be empty' }, 400);
+    if (!body.input || Object.keys(body.input).length === 0) {
+      return c.json({ error: 'input is required and must not be empty' }, 400);
     }
 
     const response = await agent.invoke(body);

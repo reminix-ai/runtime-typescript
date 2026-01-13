@@ -28,18 +28,21 @@ class MockAdapter extends BaseAdapter {
   }
 
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    const userMessage = request.messages[request.messages.length - 1].content;
+    const task = (request.input as Record<string, unknown>).task || 'unknown';
     return {
-      content: `Invoked with: ${userMessage}`,
-      messages: [{ role: 'assistant', content: `Invoked with: ${userMessage}` }],
+      output: `Completed task: ${task}`,
     };
   }
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
     const userMessage = request.messages[request.messages.length - 1].content;
+    const responseContent = `Chat response to: ${userMessage}`;
     return {
-      content: `Chat response to: ${userMessage}`,
-      messages: [{ role: 'assistant', content: `Chat response to: ${userMessage}` }],
+      output: responseContent,
+      messages: [
+        ...request.messages,
+        { role: 'assistant', content: responseContent },
+      ],
     };
   }
 }
@@ -83,13 +86,12 @@ describe('Invoke Endpoint', () => {
     const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }),
+      body: JSON.stringify({ input: { task: 'summarize' } }),
     });
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.content).toBe('Invoked with: hello');
-    expect(data.messages).toHaveLength(1);
+    expect(data.output).toBe('Completed task: summarize');
   });
 
   it('POST /agents/{agent}/invoke should accept context', async () => {
@@ -98,7 +100,7 @@ describe('Invoke Endpoint', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: 'hello' }],
+        input: { task: 'test' },
         context: { user_id: '123' },
       }),
     });
@@ -111,7 +113,7 @@ describe('Invoke Endpoint', () => {
     const response = await app.request('/agents/unknown-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }),
+      body: JSON.stringify({ input: { task: 'test' } }),
     });
 
     expect(response.status).toBe(404);
@@ -124,7 +126,7 @@ describe('Invoke Endpoint', () => {
     const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [] }), // Empty messages not allowed
+      body: JSON.stringify({ input: {} }), // Empty input not allowed
     });
 
     expect(response.status).toBe(400);
@@ -142,8 +144,8 @@ describe('Chat Endpoint', () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.content).toBe('Chat response to: hi there');
-    expect(data.messages).toHaveLength(1);
+    expect(data.output).toBe('Chat response to: hi there');
+    expect(data.messages).toHaveLength(2); // user message + assistant response
   });
 
   it('POST /agents/{agent}/chat should return 404 for unknown agent', async () => {
