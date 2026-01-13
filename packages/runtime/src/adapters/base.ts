@@ -1,5 +1,5 @@
 /**
- * Base adapter interface that all framework adapters must implement.
+ * Base agent and adapter interface.
  */
 
 import type {
@@ -9,7 +9,10 @@ import type {
   ChatResponse,
 } from '../types.js';
 
-export abstract class BaseAdapter {
+/**
+ * Base class for all agents and adapters.
+ */
+export abstract class Agent {
   /**
    * Return the agent name.
    */
@@ -43,3 +46,6 @@ export abstract class BaseAdapter {
     throw new Error('Streaming not implemented for this adapter');
   }
 }
+
+// Alias for backwards compatibility
+export { Agent as BaseAdapter };

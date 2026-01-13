@@ -11,10 +11,10 @@ npm install @reminix/runtime
 ## Quick Start
 
 ```typescript
-import { serve, BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '@reminix/runtime';
+import { serve, Agent, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '@reminix/runtime';
 
-// Create a custom adapter
-class MyAdapter extends BaseAdapter {
+// Create a custom agent
+class MyAgent extends Agent {
   get name(): string {
     return 'my-agent';
   }
@@ -36,7 +36,7 @@ class MyAdapter extends BaseAdapter {
 }
 
 // Serve the agent
-serve([new MyAdapter()], { port: 8080 });
+serve([new MyAgent()], { port: 8080 });
 ```
 
 ## How It Works
@@ -106,16 +106,16 @@ Create a Hono app without starting the server. Useful for testing or custom depl
 ```typescript
 import { createApp } from '@reminix/runtime';
 
-const app = createApp([new MyAdapter()]);
+const app = createApp([new MyAgent()]);
 // Use with any runtime: Node.js, Deno, Bun, Cloudflare Workers, etc.
 ```
 
-### `BaseAdapter`
+### `Agent`
 
-Abstract base class for all adapters.
+Abstract base class for all agents.
 
 ```typescript
-abstract class BaseAdapter {
+abstract class Agent {
   abstract get name(): string;
   abstract invoke(request: InvokeRequest): Promise<InvokeResponse>;
   abstract chat(request: ChatRequest): Promise<ChatResponse>;
@@ -125,6 +125,8 @@ abstract class BaseAdapter {
   async *chatStream(request: ChatRequest): AsyncGenerator<string> { ... }
 }
 ```
+
+> **Note:** `BaseAdapter` is available as an alias for `Agent` for backwards compatibility.
 
 ## Links
 

@@ -4,7 +4,7 @@
 
 import { Hono } from 'hono';
 import { serve as honoServe } from '@hono/node-server';
-import type { BaseAdapter } from './adapters/base.js';
+import type { Agent } from './adapters/base.js';
 import type { InvokeRequest, ChatRequest } from './types.js';
 
 export interface ServeOptions {
@@ -15,17 +15,17 @@ export interface ServeOptions {
 /**
  * Create a Hono application with agent endpoints.
  *
- * @param agents - List of wrapped agents (adapters).
+ * @param agents - List of agents.
  * @returns A Hono application instance.
  * @throws Error if no agents are provided.
  */
-export function createApp(agents: BaseAdapter[]): Hono {
+export function createApp(agents: Agent[]): Hono {
   if (agents.length === 0) {
     throw new Error('At least one agent is required');
   }
 
   // Build a lookup map for agents by name
-  const agentMap = new Map<string, BaseAdapter>();
+  const agentMap = new Map<string, Agent>();
   for (const agent of agents) {
     agentMap.set(agent.name, agent);
   }
@@ -88,11 +88,11 @@ export function createApp(agents: BaseAdapter[]): Hono {
 /**
  * Serve agents via REST API.
  *
- * @param agents - List of wrapped agents (adapters).
+ * @param agents - List of agents.
  * @param options - Server options.
  */
 export function serve(
-  agents: BaseAdapter[],
+  agents: Agent[],
   options: ServeOptions = {}
 ): void {
   const { port = 8080, hostname = '0.0.0.0' } = options;

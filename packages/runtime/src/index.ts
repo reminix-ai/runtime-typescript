@@ -8,4 +8,4 @@ export type {
   ChatResponse,
   Message,
 } from './types.js';
-export { BaseAdapter } from './adapters/base.js';
+export { Agent, BaseAdapter } from './adapters/base.js';
