@@ -193,6 +193,9 @@ Extends `Agent`. Use this when wrapping an existing AI framework.
 import { BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '@reminix/runtime';
 
 class MyFrameworkAdapter extends BaseAdapter {
+  // Adapter name shown in /info endpoint
+  static adapterName = 'my-framework';
+
   private client: MyFrameworkClient;
   private _name: string;
 
