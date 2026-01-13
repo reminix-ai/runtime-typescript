@@ -1,29 +1,76 @@
 # @reminix/langchain
 
-Reminix adapter for LangChain agents.
+Reminix Runtime adapter for [LangChain](https://js.langchain.com). Deploy any LangChain runnable as a REST API.
 
 ## Installation
 
 ```bash
-npm install @reminix/runtime @reminix/langchain
+npm install @reminix/runtime @reminix/langchain @langchain/core
 ```
 
-## Usage
+## Quick Start
 
 ```typescript
-import { serve } from '@reminix/runtime';
+import { ChatOpenAI } from '@langchain/openai';
 import { wrap } from '@reminix/langchain';
+import { serve } from '@reminix/runtime';
 
-// Wrap your LangChain agent
-const wrappedAgent = wrap(agent, 'my-agent');
+// Create a LangChain model or chain
+const llm = new ChatOpenAI({ model: 'gpt-4o' });
 
-// Serve it
-serve([wrappedAgent], { port: 8080 });
+// Wrap it with the Reminix adapter
+const agent = wrap(llm, 'my-chatbot');
+
+// Serve it as a REST API
+serve([agent], { port: 8080 });
 ```
 
-## Documentation
+Your agent is now available at:
+- `POST /my-chatbot/invoke` - Single-turn invocation
+- `POST /my-chatbot/chat` - Multi-turn chat
 
-See the [main repository](https://github.com/reminix-ai/runtime-typescript) for full documentation.
+## API Reference
+
+### `wrap(runnable, name)`
+
+Wrap a LangChain runnable for use with Reminix Runtime.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `runnable` | `Runnable` | required | Any LangChain runnable (LLM, chain, agent, etc.) |
+| `name` | `string` | `"langchain-agent"` | Name for the agent (used in URL path) |
+
+**Returns:** `LangChainAdapter` - A Reminix adapter instance
+
+### Example with a Chain
+
+```typescript
+import { ChatOpenAI } from '@langchain/openai';
+import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { wrap } from '@reminix/langchain';
+import { serve } from '@reminix/runtime';
+
+// Create a chain
+const prompt = ChatPromptTemplate.fromMessages([
+  ['system', 'You are a helpful assistant.'],
+  ['human', '{input}'],
+]);
+const llm = new ChatOpenAI({ model: 'gpt-4o' });
+const chain = prompt.pipe(llm);
+
+// Wrap and serve
+const agent = wrap(chain, 'my-chain');
+serve([agent], { port: 8080 });
+```
+
+## Runtime Documentation
+
+For information about the server, endpoints, request/response formats, and more, see the [`@reminix/runtime`](https://www.npmjs.com/package/@reminix/runtime) package.
+
+## Links
+
+- [GitHub Repository](https://github.com/reminix-ai/runtime-typescript)
+- [LangChain.js Documentation](https://js.langchain.com)
 
 ## License
 
