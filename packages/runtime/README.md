@@ -95,7 +95,7 @@ Start the runtime server.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `agents` | `BaseAdapter[]` | required | List of wrapped agents |
+| `agents` | `Agent[]` | required | List of agents |
 | `options.port` | `number` | `8080` | Port to listen on |
 | `options.hostname` | `string` | `"0.0.0.0"` | Host to bind to |
 
@@ -112,7 +112,7 @@ const app = createApp([new MyAgent()]);
 
 ### `Agent`
 
-Abstract base class for all agents.
+Abstract base class for building agents from scratch.
 
 ```typescript
 abstract class Agent {
@@ -126,7 +126,50 @@ abstract class Agent {
 }
 ```
 
-> **Note:** `BaseAdapter` is available as an alias for `Agent` for backwards compatibility.
+### `BaseAdapter`
+
+Extends `Agent`. Use this when wrapping an existing AI framework.
+
+```typescript
+import { BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '@reminix/runtime';
+
+class MyFrameworkAdapter extends BaseAdapter {
+  private client: MyFrameworkClient;
+  private _name: string;
+
+  constructor(client: MyFrameworkClient, name = 'my-framework') {
+    super();
+    this.client = client;
+    this._name = name;
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+    // Convert messages and call your framework
+    const result = await this.client.generate(request.messages);
+    return {
+      content: result,
+      messages: [...request.messages, { role: 'assistant', content: result }],
+    };
+  }
+
+  async chat(request: ChatRequest): Promise<ChatResponse> {
+    const result = await this.client.generate(request.messages);
+    return {
+      content: result,
+      messages: [...request.messages, { role: 'assistant', content: result }],
+    };
+  }
+}
+
+// Optional: provide a wrap() factory function
+export function wrap(client: MyFrameworkClient, name = 'my-framework'): MyFrameworkAdapter {
+  return new MyFrameworkAdapter(client, name);
+}
+```
 
 ## Links
 
