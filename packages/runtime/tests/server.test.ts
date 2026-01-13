@@ -91,9 +91,8 @@ describe('Info Endpoint', () => {
     expect(data.agents[0].name).toBe('agent-one');
     expect(data.agents[0].type).toBe('adapter');
     expect(data.agents[0].adapter).toBe('mock');
-    expect(data.agents[0].capabilities.streaming).toBe(true);
-    expect(data.agents[0].endpoints.invoke).toBe('/agents/agent-one/invoke');
-    expect(data.agents[0].endpoints.chat).toBe('/agents/agent-one/chat');
+    expect(data.agents[0].invoke.streaming).toBe(true);
+    expect(data.agents[0].chat.streaming).toBe(true);
   });
 });
 

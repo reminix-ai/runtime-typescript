@@ -10,4 +10,4 @@ export type {
   Message,
 } from './types.js';
 export { Agent, BaseAdapter } from './adapters/base.js';
-export type { AgentMetadata, AgentCapabilities } from './adapters/base.js';
+export type { AgentMetadata } from './adapters/base.js';

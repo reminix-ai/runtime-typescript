@@ -51,10 +51,8 @@ export function createApp(agents: Agent[]): Hono {
       agents: agents.map((agent) => ({
         name: agent.name,
         ...agent.metadata,
-        endpoints: {
-          invoke: `/agents/${agent.name}/invoke`,
-          chat: `/agents/${agent.name}/chat`,
-        },
+        invoke: { streaming: agent.invokeStreaming },
+        chat: { streaming: agent.chatStreaming },
       })),
     });
   });

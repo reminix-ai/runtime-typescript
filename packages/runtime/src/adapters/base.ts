@@ -10,19 +10,11 @@ import type {
 } from '../types.js';
 
 /**
- * Capabilities that an agent supports.
- */
-export interface AgentCapabilities {
-  streaming: boolean;
-}
-
-/**
  * Metadata returned by agents for discovery.
  */
 export interface AgentMetadata {
   type: 'agent' | 'adapter';
   adapter?: string;
-  capabilities: AgentCapabilities;
   [key: string]: unknown;
 }
 
@@ -30,6 +22,16 @@ export interface AgentMetadata {
  * Base class for all agents.
  */
 export abstract class Agent {
+  /**
+   * Whether invoke supports streaming. Override to enable.
+   */
+  readonly invokeStreaming: boolean = false;
+
+  /**
+   * Whether chat supports streaming. Override to enable.
+   */
+  readonly chatStreaming: boolean = false;
+
   /**
    * Return the agent name.
    */
@@ -40,12 +42,7 @@ export abstract class Agent {
    * Override this to provide custom metadata.
    */
   get metadata(): AgentMetadata {
-    return {
-      type: 'agent',
-      capabilities: {
-        streaming: false,
-      },
-    };
+    return { type: 'agent' };
   }
 
   /**
@@ -90,15 +87,18 @@ export abstract class BaseAdapter extends Agent {
   static adapterName: string = 'unknown';
 
   /**
+   * All built-in adapters support streaming.
+   */
+  override readonly invokeStreaming: boolean = true;
+  override readonly chatStreaming: boolean = true;
+
+  /**
    * Return adapter metadata for discovery.
    */
   get metadata(): AgentMetadata {
     return {
       type: 'adapter',
       adapter: (this.constructor as typeof BaseAdapter).adapterName,
-      capabilities: {
-        streaming: true,
-      },
     };
   }
 
