@@ -78,9 +78,9 @@ describe('Agents Endpoint', () => {
 });
 
 describe('Invoke Endpoint', () => {
-  it('POST /{agent}/invoke should return invoke response', async () => {
+  it('POST /agents/{agent}/invoke should return invoke response', async () => {
     const app = createApp([new MockAdapter('my-agent')]);
-    const response = await app.request('/my-agent/invoke', {
+    const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }),
@@ -92,9 +92,9 @@ describe('Invoke Endpoint', () => {
     expect(data.messages).toHaveLength(1);
   });
 
-  it('POST /{agent}/invoke should accept context', async () => {
+  it('POST /agents/{agent}/invoke should accept context', async () => {
     const app = createApp([new MockAdapter('my-agent')]);
-    const response = await app.request('/my-agent/invoke', {
+    const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -106,9 +106,9 @@ describe('Invoke Endpoint', () => {
     expect(response.status).toBe(200);
   });
 
-  it('POST /{agent}/invoke should return 404 for unknown agent', async () => {
+  it('POST /agents/{agent}/invoke should return 404 for unknown agent', async () => {
     const app = createApp([new MockAdapter('my-agent')]);
-    const response = await app.request('/unknown-agent/invoke', {
+    const response = await app.request('/agents/unknown-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }),
@@ -119,9 +119,9 @@ describe('Invoke Endpoint', () => {
     expect(data.error.toLowerCase()).toContain('not found');
   });
 
-  it('POST /{agent}/invoke should return 400 for invalid request', async () => {
+  it('POST /agents/{agent}/invoke should return 400 for invalid request', async () => {
     const app = createApp([new MockAdapter('my-agent')]);
-    const response = await app.request('/my-agent/invoke', {
+    const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: [] }), // Empty messages not allowed
@@ -132,9 +132,9 @@ describe('Invoke Endpoint', () => {
 });
 
 describe('Chat Endpoint', () => {
-  it('POST /{agent}/chat should return chat response', async () => {
+  it('POST /agents/{agent}/chat should return chat response', async () => {
     const app = createApp([new MockAdapter('my-agent')]);
-    const response = await app.request('/my-agent/chat', {
+    const response = await app.request('/agents/my-agent/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: [{ role: 'user', content: 'hi there' }] }),
@@ -146,9 +146,9 @@ describe('Chat Endpoint', () => {
     expect(data.messages).toHaveLength(1);
   });
 
-  it('POST /{agent}/chat should return 404 for unknown agent', async () => {
+  it('POST /agents/{agent}/chat should return 404 for unknown agent', async () => {
     const app = createApp([new MockAdapter('my-agent')]);
-    const response = await app.request('/unknown-agent/chat', {
+    const response = await app.request('/agents/unknown-agent/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }),

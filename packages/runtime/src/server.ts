@@ -43,7 +43,7 @@ export function createApp(agents: Agent[]): Hono {
   });
 
   // Invoke endpoint
-  app.post('/:agentName/invoke', async (c) => {
+  app.post('/agents/:agentName/invoke', async (c) => {
     const agentName = c.req.param('agentName');
     const agent = agentMap.get(agentName);
 
@@ -63,7 +63,7 @@ export function createApp(agents: Agent[]): Hono {
   });
 
   // Chat endpoint
-  app.post('/:agentName/chat', async (c) => {
+  app.post('/agents/:agentName/chat', async (c) => {
     const agentName = c.req.param('agentName');
     const agent = agentMap.get(agentName);
 
