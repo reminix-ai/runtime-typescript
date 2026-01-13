@@ -55,6 +55,16 @@ pnpm install
 pnpm build
 ```
 
+### Running Examples
+
+```bash
+# Run the LangChain example
+cd examples/langchain-basic
+pnpm start
+```
+
+See the [examples/](./examples) directory for more.
+
 ### Running Tests
 
 ```bash
