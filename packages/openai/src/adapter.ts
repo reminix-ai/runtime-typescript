@@ -126,6 +126,69 @@ export class OpenAIAdapter extends BaseAdapter {
 
     return { output, messages: responseMessages };
   }
+
+  /**
+   * Handle a streaming invoke request.
+   *
+   * @param request - The invoke request with input data.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *invokeStream(
+    request: InvokeRequest
+  ): AsyncGenerator<string, void, unknown> {
+    // Build messages from input
+    let messages: OpenAI.Chat.ChatCompletionMessageParam[];
+    const input = request.input as Record<string, unknown>;
+
+    if ('messages' in input) {
+      messages = input.messages as OpenAI.Chat.ChatCompletionMessageParam[];
+    } else if ('prompt' in input) {
+      messages = [{ role: 'user', content: String(input.prompt) }];
+    } else {
+      messages = [{ role: 'user', content: JSON.stringify(input) }];
+    }
+
+    // Stream from OpenAI API
+    const stream = await this.client.chat.completions.create({
+      model: this._model,
+      messages,
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        yield JSON.stringify({ chunk: content });
+      }
+    }
+  }
+
+  /**
+   * Handle a streaming chat request.
+   *
+   * @param request - The chat request with messages.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *chatStream(
+    request: ChatRequest
+  ): AsyncGenerator<string, void, unknown> {
+    // Convert messages to OpenAI format
+    const openaiMessages = request.messages.map((m) => this.toOpenAIMessage(m));
+
+    // Stream from OpenAI API
+    const stream = await this.client.chat.completions.create({
+      model: this._model,
+      messages: openaiMessages,
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        yield JSON.stringify({ chunk: content });
+      }
+    }
+  }
 }
 
 /**

@@ -32,6 +32,7 @@ interface GraphState {
  */
 interface LangGraphRunnable {
   invoke(input: unknown): Promise<unknown>;
+  stream(input: unknown): AsyncIterable<unknown>;
 }
 
 /**
@@ -173,6 +174,77 @@ export class LangGraphAdapter extends BaseAdapter {
     const responseMessages = resultMessages.map((m) => this.toReminixMessage(m));
 
     return { output, messages: responseMessages };
+  }
+
+  /**
+   * Handle a streaming invoke request.
+   *
+   * @param request - The invoke request with input data.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *invokeStream(
+    request: InvokeRequest
+  ): AsyncGenerator<string, void, unknown> {
+    // Stream from the graph
+    for await (const chunk of this.graph.stream(request.input)) {
+      // LangGraph streams dicts with node outputs
+      if (chunk && typeof chunk === 'object') {
+        for (const [, nodeOutput] of Object.entries(chunk as Record<string, unknown>)) {
+          if (nodeOutput && typeof nodeOutput === 'object' && 'messages' in nodeOutput) {
+            const messages = (nodeOutput as { messages: BaseMessage[] }).messages;
+            for (const msg of messages) {
+              if (msg instanceof AIMessage) {
+                const content = typeof msg.content === 'string' ? msg.content : String(msg.content);
+                if (content) {
+                  yield JSON.stringify({ chunk: content });
+                }
+              }
+            }
+          } else {
+            yield JSON.stringify({ chunk: JSON.stringify(nodeOutput) });
+          }
+        }
+      } else {
+        yield JSON.stringify({ chunk: String(chunk) });
+      }
+    }
+  }
+
+  /**
+   * Handle a streaming chat request.
+   *
+   * @param request - The chat request with messages.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *chatStream(
+    request: ChatRequest
+  ): AsyncGenerator<string, void, unknown> {
+    // Convert messages to LangChain format
+    const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
+
+    // Stream from the graph
+    for await (const chunk of this.graph.stream({ messages: lcMessages })) {
+      // LangGraph streams dicts with node outputs
+      if (chunk && typeof chunk === 'object') {
+        for (const [, nodeOutput] of Object.entries(chunk as Record<string, unknown>)) {
+          if (nodeOutput && typeof nodeOutput === 'object' && 'messages' in nodeOutput) {
+            const messages = (nodeOutput as { messages: BaseMessage[] }).messages;
+            for (const msg of messages) {
+              if (msg instanceof AIMessage) {
+                const content = typeof msg.content === 'string' ? msg.content : String(msg.content);
+                if (content) {
+                  yield JSON.stringify({ chunk: content });
+                }
+              }
+            }
+          } else {
+            yield JSON.stringify({ chunk: JSON.stringify(nodeOutput) });
+          }
+        }
+      } else {
+        yield JSON.stringify({ chunk: String(chunk) });
+      }
+    }
   }
 }
 

@@ -3,6 +3,7 @@
  */
 
 import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
 import type { Agent } from './adapters/base.js';
 import type { InvokeRequest, ChatRequest } from './types.js';
@@ -74,6 +75,21 @@ export function createApp(agents: Agent[]): Hono {
       return c.json({ error: 'input is required and must not be empty' }, 400);
     }
 
+    // Handle streaming
+    if (body.stream) {
+      return streamSSE(c, async (stream) => {
+        try {
+          for await (const chunk of agent.invokeStream(body)) {
+            await stream.writeSSE({ data: chunk });
+          }
+          await stream.writeSSE({ data: '[DONE]' });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          await stream.writeSSE({ data: JSON.stringify({ error: message }) });
+        }
+      });
+    }
+
     const response = await agent.invoke(body);
     return c.json(response);
   });
@@ -92,6 +108,21 @@ export function createApp(agents: Agent[]): Hono {
     // Validate request
     if (!body.messages || body.messages.length === 0) {
       return c.json({ error: 'messages is required and must not be empty' }, 400);
+    }
+
+    // Handle streaming
+    if (body.stream) {
+      return streamSSE(c, async (stream) => {
+        try {
+          for await (const chunk of agent.chatStream(body)) {
+            await stream.writeSSE({ data: chunk });
+          }
+          await stream.writeSSE({ data: '[DONE]' });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          await stream.writeSSE({ data: JSON.stringify({ error: message }) });
+        }
+      });
     }
 
     const response = await agent.chat(body);

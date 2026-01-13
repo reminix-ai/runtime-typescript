@@ -157,6 +157,61 @@ export class LangChainAdapter extends BaseAdapter {
 
     return { output, messages: responseMessages };
   }
+
+  /**
+   * Handle a streaming invoke request.
+   *
+   * @param request - The invoke request with input data.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *invokeStream(
+    request: InvokeRequest
+  ): AsyncGenerator<string, void, unknown> {
+    // Stream from the runnable
+    for await (const chunk of await this.agent.stream(request.input)) {
+      let content: string;
+      if (chunk && typeof chunk === 'object' && 'content' in chunk) {
+        content =
+          typeof chunk.content === 'string'
+            ? chunk.content
+            : String(chunk.content);
+      } else if (typeof chunk === 'object') {
+        content = JSON.stringify(chunk);
+      } else {
+        content = String(chunk);
+      }
+      yield JSON.stringify({ chunk: content });
+    }
+  }
+
+  /**
+   * Handle a streaming chat request.
+   *
+   * @param request - The chat request with messages.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *chatStream(
+    request: ChatRequest
+  ): AsyncGenerator<string, void, unknown> {
+    // Convert messages to LangChain format
+    const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
+
+    // Stream from the runnable
+    for await (const chunk of await this.agent.stream(lcMessages)) {
+      let content: string;
+      if (chunk && typeof chunk === 'object' && 'content' in chunk) {
+        content =
+          typeof chunk.content === 'string'
+            ? chunk.content
+            : String(chunk.content);
+      } else if (typeof chunk === 'object') {
+        content = JSON.stringify(chunk);
+      } else {
+        content = String(chunk);
+      }
+      yield JSON.stringify({ chunk: content });
+    }
+  }
 }
 
 /**

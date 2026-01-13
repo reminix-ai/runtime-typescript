@@ -2,7 +2,7 @@
  * Vercel AI SDK adapter for Reminix Runtime.
  */
 
-import { generateText, type LanguageModel } from 'ai';
+import { generateText, streamText, type LanguageModel } from 'ai';
 
 import {
   BaseAdapter,
@@ -41,6 +41,11 @@ export class VercelAIAdapter extends BaseAdapter {
    * Internal generateText function, can be overridden for testing.
    */
   protected _generateText = generateText;
+
+  /**
+   * Internal streamText function, can be overridden for testing.
+   */
+  protected _streamText = streamText;
 
   /**
    * Initialize the adapter.
@@ -130,6 +135,61 @@ export class VercelAIAdapter extends BaseAdapter {
     ];
 
     return { output, messages: responseMessages };
+  }
+
+  /**
+   * Handle a streaming invoke request.
+   *
+   * @param request - The invoke request with input data.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *invokeStream(
+    request: InvokeRequest
+  ): AsyncGenerator<string, void, unknown> {
+    const input = request.input as Record<string, unknown>;
+
+    // Build messages from input
+    let messages: VercelAIMessage[];
+    if ('messages' in input) {
+      messages = input.messages as VercelAIMessage[];
+    } else if ('prompt' in input) {
+      messages = [{ role: 'user', content: String(input.prompt) }];
+    } else {
+      messages = [{ role: 'user', content: JSON.stringify(input) }];
+    }
+
+    // Stream from Vercel AI
+    const result = this._streamText({
+      model: this.model,
+      messages,
+    });
+
+    for await (const chunk of result.textStream) {
+      yield JSON.stringify({ chunk });
+    }
+  }
+
+  /**
+   * Handle a streaming chat request.
+   *
+   * @param request - The chat request with messages.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *chatStream(
+    request: ChatRequest
+  ): AsyncGenerator<string, void, unknown> {
+    // Convert messages to Vercel AI format
+    const messages = this.toVercelMessages(request.messages);
+
+    // Stream from Vercel AI
+    const result = this._streamText({
+      model: this.model,
+      messages,
+    });
+
+    for await (const chunk of result.textStream) {
+      yield JSON.stringify({ chunk });
+    }
   }
 }
 

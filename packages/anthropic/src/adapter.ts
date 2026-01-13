@@ -171,6 +171,74 @@ export class AnthropicAdapter extends BaseAdapter {
 
     return { output, messages: responseMessages };
   }
+
+  /**
+   * Handle a streaming invoke request.
+   *
+   * @param request - The invoke request with input data.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *invokeStream(
+    request: InvokeRequest
+  ): AsyncGenerator<string, void, unknown> {
+    const input = request.input as Record<string, unknown>;
+
+    // Build messages from input
+    let messages: Message[];
+    if ('messages' in input) {
+      messages = input.messages as Message[];
+    } else if ('prompt' in input) {
+      messages = [{ role: 'user', content: String(input.prompt) }];
+    } else {
+      messages = [{ role: 'user', content: JSON.stringify(input) }];
+    }
+
+    // Extract system message and convert messages
+    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
+
+    // Stream from Anthropic API
+    const stream = this.client.messages.stream({
+      model: this._model,
+      max_tokens: this._maxTokens,
+      messages: anthropicMessages,
+      ...(system && { system }),
+    });
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        yield JSON.stringify({ chunk: event.delta.text });
+      }
+    }
+  }
+
+  /**
+   * Handle a streaming chat request.
+   *
+   * @param request - The chat request with messages.
+   * @yields JSON-encoded chunks from the stream.
+   */
+  async *chatStream(
+    request: ChatRequest
+  ): AsyncGenerator<string, void, unknown> {
+    // Extract system message and convert messages
+    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(
+      request.messages
+    );
+
+    // Stream from Anthropic API
+    const stream = this.client.messages.stream({
+      model: this._model,
+      max_tokens: this._maxTokens,
+      messages: anthropicMessages,
+      ...(system && { system }),
+    });
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        yield JSON.stringify({ chunk: event.delta.text });
+      }
+    }
+  }
 }
 
 /**
