@@ -20,12 +20,12 @@
   },
   "peerDependencies": {
     "@reminix/runtime": ">=0.1.0",
-    "openai": ">=4.0.0"
+    "openai": ">=6.16.0"
   },
   "devDependencies": {
     "@reminix/runtime": "workspace:*",
-    "@types/node": "^20.0.0",
-    "openai": "^4.0.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^22.0.0",
+    "openai": "^6.16.0",
+    "typescript": "^5.9.3"
   }
 }

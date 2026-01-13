@@ -6,7 +6,7 @@ import type { BaseAdapter } from './adapters/base.js';
 
 export interface ServeOptions {
   port?: number;
-  host?: string;
+  hostname?: string;
 }
 
 /**
@@ -19,8 +19,8 @@ export function serve(
   agents: BaseAdapter[],
   options: ServeOptions = {}
 ): void {
-  const { port = 8080, host = '0.0.0.0' } = options;
+  const { port = 8080, hostname = '0.0.0.0' } = options;
 
-  // TODO: Implement server
+  // TODO: Implement server using Hono
   throw new Error('serve() is not yet implemented');
 }
