@@ -2,6 +2,7 @@
   "name": "reminix-runtime-monorepo",
   "version": "0.0.0",
   "private": true,
+  "packageManager": "pnpm@10.26.1",
   "description": "Reminix Runtime - Monorepo",
   "license": "Apache-2.0",
   "scripts": {

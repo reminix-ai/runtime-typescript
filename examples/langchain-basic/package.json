@@ -1,0 +1,23 @@
+{
+  "name": "example-langchain-basic",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Basic LangChain agent example",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@reminix/runtime": "workspace:*",
+    "@reminix/langchain": "workspace:*",
+    "@langchain/openai": "^1.2.1",
+    "@langchain/core": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}
