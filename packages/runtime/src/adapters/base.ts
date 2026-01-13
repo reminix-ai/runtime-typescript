@@ -10,11 +10,19 @@ import type {
 } from '../types.js';
 
 /**
+ * Capabilities that an agent supports.
+ */
+export interface AgentCapabilities {
+  streaming: boolean;
+}
+
+/**
  * Metadata returned by agents for discovery.
  */
 export interface AgentMetadata {
   type: 'agent' | 'adapter';
   adapter?: string;
+  capabilities: AgentCapabilities;
   [key: string]: unknown;
 }
 
@@ -32,7 +40,12 @@ export abstract class Agent {
    * Override this to provide custom metadata.
    */
   get metadata(): AgentMetadata {
-    return { type: 'agent' };
+    return {
+      type: 'agent',
+      capabilities: {
+        streaming: false,
+      },
+    };
   }
 
   /**
@@ -83,6 +96,9 @@ export abstract class BaseAdapter extends Agent {
     return {
       type: 'adapter',
       adapter: (this.constructor as typeof BaseAdapter).adapterName,
+      capabilities: {
+        streaming: true,
+      },
     };
   }
 
