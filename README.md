@@ -26,16 +26,36 @@ npm install @reminix/runtime @reminix/langchain
 
 ## Quick Start
 
+### With a Framework
+
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
 import { wrap } from '@reminix/langchain';
 import { serve } from '@reminix/runtime';
 
-// Create your agent with any framework
-const agent = createLangChainAgent({ model: new ChatOpenAI(), tools: [...] });
+const agent = new ChatOpenAI({ model: 'gpt-4o' });
 
-// Serve it via Reminix
-serve([wrap(agent)], { port: 8080 });
+serve([wrap(agent, { name: 'my-agent' })], { port: 8080 });
+```
+
+### With Handlers (No Framework)
+
+```typescript
+import { Agent, serve } from '@reminix/runtime';
+
+const agent = new Agent('my-agent')
+  .onInvoke(async (request) => {
+    return { output: `Received: ${JSON.stringify(request.input)}` };
+  })
+  .onChat(async (request) => {
+    const lastMessage = request.messages.at(-1)?.content ?? '';
+    return {
+      output: `You said: ${lastMessage}`,
+      messages: [...request.messages, { role: 'assistant', content: `You said: ${lastMessage}` }]
+    };
+  });
+
+serve([agent], { port: 8080 });
 ```
 
 ## Development
