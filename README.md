@@ -1,12 +1,16 @@
 # Reminix Runtime (TypeScript)
 
-Deploy AI agents to Reminix. Lightweight runtime with adapters for LangChain, LangGraph, OpenAI, Anthropic, Vercel AI, and more.
+Deploy AI agents as REST APIs. Lightweight runtime with adapters for LangChain, LangGraph, OpenAI, Anthropic, Vercel AI, and more.
+
+**Two interaction modes:**
+- **Invoke** (Stateless) - Single request/response
+- **Chat** (Conversational) - With message history
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| [`@reminix/runtime`](./packages/runtime) | Core runtime with `serve()` and base adapter interface |
+| [`@reminix/runtime`](./packages/runtime) | Core runtime with `serve()`, invoke/chat handlers, and base adapter |
 | [`@reminix/langchain`](./packages/langchain) | LangChain adapter |
 | [`@reminix/langgraph`](./packages/langgraph) | LangGraph adapter |
 | [`@reminix/openai`](./packages/openai) | OpenAI Agents adapter |
