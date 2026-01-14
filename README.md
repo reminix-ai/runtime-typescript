@@ -105,6 +105,21 @@ cd packages/runtime
 pnpm test
 ```
 
+### Running Integration Tests
+
+Integration tests require API keys to be set:
+
+```bash
+# Run all integration tests
+OPENAI_API_KEY=sk-... ANTHROPIC_API_KEY=sk-... pnpm test:integration
+
+# Run OpenAI integration tests only
+OPENAI_API_KEY=sk-... pnpm test:integration:openai
+
+# Run Anthropic integration tests only
+ANTHROPIC_API_KEY=sk-... pnpm test:integration:anthropic
+```
+
 ### Building
 
 ```bash

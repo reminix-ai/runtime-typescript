@@ -8,6 +8,9 @@
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
+    "test:integration": "pnpm --filter integration-tests test",
+    "test:integration:openai": "pnpm --filter integration-tests test:openai",
+    "test:integration:anthropic": "pnpm --filter integration-tests test:anthropic",
     "lint": "turbo run lint",
     "clean": "turbo run clean"
   },
