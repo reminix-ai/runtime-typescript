@@ -1,6 +1,6 @@
 {
   "name": "@reminix/langgraph",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Reminix adapter for LangGraph",
   "license": "Apache-2.0",
   "type": "module",
@@ -21,14 +21,15 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "@reminix/runtime": "workspace:*"
+  },
   "peerDependencies": {
-    "@langchain/langgraph": ">=1.0.0",
-    "@reminix/runtime": ">=0.1.0"
+    "@langchain/langgraph": ">=1.0.0"
   },
   "devDependencies": {
     "@langchain/core": "^1.1.12",
     "@langchain/langgraph": "^1.0.15",
-    "@reminix/runtime": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "^5.9.3",
     "vitest": "^3.1.3"

@@ -1,6 +1,6 @@
 {
   "name": "@reminix/langchain",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Reminix adapter for LangChain",
   "license": "Apache-2.0",
   "type": "module",
@@ -21,13 +21,14 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "@reminix/runtime": "workspace:*"
+  },
   "peerDependencies": {
-    "@langchain/core": ">=1.1.0",
-    "@reminix/runtime": ">=0.1.0"
+    "@langchain/core": ">=1.1.0"
   },
   "devDependencies": {
     "@langchain/core": "^1.1.12",
-    "@reminix/runtime": "workspace:*",
     "@types/node": "^22.0.0",
     "typescript": "^5.9.3",
     "vitest": "^3.1.3"
