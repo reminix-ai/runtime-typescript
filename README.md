@@ -1,11 +1,11 @@
 # Reminix Runtime (TypeScript)
 
-Your AI agent, live in minutes. Wrap your Vercel AI, LangChain, OpenAI, or Anthropic agent in one line — deploy and start streaming responses to your users.
+A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framework and get invoke/chat endpoints with built-in streaming.
 
 **Features:**
-- **Instant APIs**: Invoke and chat endpoints out of the box
-- **Real-Time Streaming**: Built-in SSE support
-- **Bring Your Framework**: Adapters for Vercel AI, LangChain, LangGraph, OpenAI, Anthropic
+- **REST API Server**: Invoke and chat endpoints powered by [Hono](https://hono.dev)
+- **Streaming Support**: Server-Sent Events (SSE) out of the box
+- **Framework Adapters**: Pre-built integrations for Vercel AI, LangChain, LangGraph, OpenAI, Anthropic
 
 ## Packages
 
