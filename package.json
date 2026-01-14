@@ -17,7 +17,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.check.json",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
     "prepush": "pnpm check && pnpm test",
     "clean": "turbo run clean"
