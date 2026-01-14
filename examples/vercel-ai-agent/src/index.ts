@@ -1,0 +1,76 @@
+/**
+ * Vercel AI Agent with Tools example
+ *
+ * This example shows how to create a Vercel AI ToolLoopAgent with tool calling
+ * and serve it via Reminix Runtime.
+ *
+ * Requirements:
+ *     npm install @reminix/vercel-ai ai @ai-sdk/openai zod dotenv
+ *
+ * Environment:
+ *     Create a .env file with:
+ *     OPENAI_API_KEY=your-api-key
+ *
+ * Usage:
+ *     npx tsx src/index.ts
+ *
+ * Then test the endpoints:
+ *
+ *     # Invoke endpoint (task-oriented)
+ *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
+ *       -H "Content-Type: application/json" \
+ *       -d '{"input": {"prompt": "What is the weather in Paris?"}}'
+ *
+ *     # Response: {"output": "The weather in Paris is sunny with a temperature of 22°C."}
+ *
+ *     # Chat endpoint (conversational)
+ *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/chat \
+ *       -H "Content-Type: application/json" \
+ *       -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
+ *
+ *     # Response: {"output": "The weather in Tokyo is rainy with a temperature of 18°C.", "messages": [...]}
+ */
+
+import 'dotenv/config';
+
+import { openai } from '@ai-sdk/openai';
+import { ToolLoopAgent, tool } from 'ai';
+import { z } from 'zod';
+import { wrap } from '@reminix/vercel-ai';
+import { serve } from '@reminix/runtime';
+
+// Define a tool for the agent to use
+const getWeather = tool({
+  description: 'Get the current weather for a city',
+  inputSchema: z.object({ city: z.string() }),
+  execute: async ({ city }) => {
+    const weatherData: Record<string, string> = {
+      paris: 'Sunny, 22°C',
+      london: 'Cloudy, 15°C',
+      tokyo: 'Rainy, 18°C',
+      'new york': 'Partly cloudy, 20°C',
+    };
+    return weatherData[city.toLowerCase()] ?? `Weather data not available for ${city}`;
+  },
+});
+
+// Create a Vercel AI ToolLoopAgent
+const toolAgent = new ToolLoopAgent({
+  model: openai('gpt-4o-mini'),
+  tools: { getWeather },
+});
+
+// Wrap the agent with the Reminix adapter
+const agent = wrap(toolAgent, { name: 'vercel-ai-agent' });
+
+// Serve the agent
+serve([agent], { port: 8080 });
+
+console.log('Server running on http://localhost:8080');
+console.log('\nEndpoints:');
+console.log('  GET  /health');
+console.log('  GET  /info');
+console.log('  POST /agents/vercel-ai-agent/invoke');
+console.log('  POST /agents/vercel-ai-agent/chat');
+console.log('\nAvailable tools:');
+console.log('  - getWeather(city): Get weather for Paris, London, Tokyo, or New York');

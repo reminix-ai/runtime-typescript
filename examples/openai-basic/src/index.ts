@@ -1,11 +1,11 @@
 /**
- * Basic LangChain agent example
+ * Basic OpenAI example
  *
- * This example shows how to create a simple LangChain agent
+ * This example shows how to create a simple OpenAI chat agent
  * and serve it via Reminix Runtime.
  *
  * Requirements:
- *     npm install @reminix/langchain @langchain/openai dotenv
+ *     npm install @reminix/openai openai dotenv
  *
  * Environment:
  *     Create a .env file with:
@@ -17,14 +17,14 @@
  * Then test the endpoints:
  *
  *     # Invoke endpoint (task-oriented)
- *     curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
+ *     curl -X POST http://localhost:8080/agents/openai-basic/invoke \
  *       -H "Content-Type: application/json" \
- *       -d '{"input": {"input": "What is AI?"}}'
+ *       -d '{"input": {"prompt": "What is the capital of France?"}}'
  *
- *     # Response: {"output": "AI (Artificial Intelligence) is..."}
+ *     # Response: {"output": "The capital of France is Paris."}
  *
  *     # Chat endpoint (conversational)
- *     curl -X POST http://localhost:8080/agents/langchain-basic/chat \
+ *     curl -X POST http://localhost:8080/agents/openai-basic/chat \
  *       -H "Content-Type: application/json" \
  *       -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
  *
@@ -33,15 +33,15 @@
 
 import 'dotenv/config';
 
-import { ChatOpenAI } from '@langchain/openai';
-import { wrap } from '@reminix/langchain';
+import OpenAI from 'openai';
+import { wrap } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
-// Create a LangChain chat model
-const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
+// Create an OpenAI client
+const client = new OpenAI();
 
-// Wrap the model with the Reminix adapter
-const agent = wrap(model, 'langchain-basic');
+// Wrap the client with the Reminix adapter
+const agent = wrap(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
 
 // Serve the agent
 serve([agent], { port: 8080 });
@@ -50,5 +50,5 @@ console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/langchain-basic/invoke');
-console.log('  POST /agents/langchain-basic/chat');
+console.log('  POST /agents/openai-basic/invoke');
+console.log('  POST /agents/openai-basic/chat');

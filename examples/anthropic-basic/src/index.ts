@@ -1,0 +1,54 @@
+/**
+ * Basic Anthropic example
+ *
+ * This example shows how to create a simple Anthropic Claude agent
+ * and serve it via Reminix Runtime.
+ *
+ * Requirements:
+ *     npm install @reminix/anthropic @anthropic-ai/sdk dotenv
+ *
+ * Environment:
+ *     Create a .env file with:
+ *     ANTHROPIC_API_KEY=your-api-key
+ *
+ * Usage:
+ *     npx tsx src/index.ts
+ *
+ * Then test the endpoints:
+ *
+ *     # Invoke endpoint (task-oriented)
+ *     curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
+ *       -H "Content-Type: application/json" \
+ *       -d '{"input": {"prompt": "What is the capital of France?"}}'
+ *
+ *     # Response: {"output": "The capital of France is Paris."}
+ *
+ *     # Chat endpoint (conversational)
+ *     curl -X POST http://localhost:8080/agents/anthropic-basic/chat \
+ *       -H "Content-Type: application/json" \
+ *       -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
+ *
+ *     # Response: {"output": "Hello! How can I help you today?", "messages": [...]}
+ */
+
+import 'dotenv/config';
+
+import Anthropic from '@anthropic-ai/sdk';
+import { wrap } from '@reminix/anthropic';
+import { serve } from '@reminix/runtime';
+
+// Create an Anthropic client
+const client = new Anthropic();
+
+// Wrap the client with the Reminix adapter
+const agent = wrap(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
+
+// Serve the agent
+serve([agent], { port: 8080 });
+
+console.log('Server running on http://localhost:8080');
+console.log('\nEndpoints:');
+console.log('  GET  /health');
+console.log('  GET  /info');
+console.log('  POST /agents/anthropic-basic/invoke');
+console.log('  POST /agents/anthropic-basic/chat');
