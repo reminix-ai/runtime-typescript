@@ -74,7 +74,7 @@ The runtime creates a REST server (powered by [Hono](https://hono.dev)) with the
 
 ### Invoke Endpoint
 
-For task-oriented operations that take arbitrary input and return output.
+For stateless operations that take arbitrary input and return output.
 
 **Request:**
 ```json
