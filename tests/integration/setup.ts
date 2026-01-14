@@ -2,7 +2,11 @@
  * Shared setup for integration tests.
  */
 
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load .env from the root of the monorepo
+config({ path: resolve(__dirname, '../../.env') });
 
 export function getOpenAIApiKey(): string {
   const key = process.env.OPENAI_API_KEY;

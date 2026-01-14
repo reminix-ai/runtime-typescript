@@ -108,15 +108,37 @@ export class LangGraphAdapter extends BaseAdapter {
   }
 
   /**
+   * Check if a message is an AI message.
+   */
+  private isAIMessage(message: BaseMessage): boolean {
+    // Check instanceof for proper class instances
+    if (message instanceof AIMessage) return true;
+    // Also check _getType() for deserialized messages
+    if (typeof message._getType === 'function' && message._getType() === 'ai') return true;
+    // Fallback: check constructor name
+    if (message.constructor?.name === 'AIMessage') return true;
+    return false;
+  }
+
+  /**
    * Extract content from the last AI message.
    */
   private getLastAIContent(messages: BaseMessage[]): string {
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i];
-      if (message instanceof AIMessage) {
-        return typeof message.content === 'string'
-          ? message.content
-          : String(message.content);
+      if (this.isAIMessage(message)) {
+        const content = message.content;
+        if (typeof content === 'string') {
+          if (content) return content;
+        } else if (Array.isArray(content)) {
+          // Handle array of content blocks (text, tool_use, etc.)
+          const textParts = content
+            .filter((part): part is { type: 'text'; text: string } =>
+              typeof part === 'object' && part !== null && part.type === 'text' && typeof part.text === 'string'
+            )
+            .map((part) => part.text);
+          if (textParts.length > 0) return textParts.join('');
+        }
       }
     }
     return '';

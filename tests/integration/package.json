@@ -6,14 +6,26 @@
   "scripts": {
     "test": "vitest run",
     "test:openai": "vitest run openai.test.ts",
-    "test:anthropic": "vitest run anthropic.test.ts"
+    "test:anthropic": "vitest run anthropic.test.ts",
+    "test:langchain": "vitest run langchain.test.ts",
+    "test:langgraph": "vitest run langgraph.test.ts",
+    "test:vercel-ai": "vitest run vercel-ai.test.ts"
   },
   "devDependencies": {
     "@reminix/runtime": "workspace:*",
     "@reminix/openai": "workspace:*",
     "@reminix/anthropic": "workspace:*",
+    "@reminix/langchain": "workspace:*",
+    "@reminix/langgraph": "workspace:*",
+    "@reminix/vercel-ai": "workspace:*",
     "openai": "^4.77.0",
     "@anthropic-ai/sdk": "^0.39.0",
+    "@langchain/openai": "^0.3.0",
+    "@langchain/core": "^0.3.0",
+    "@langchain/langgraph": "^0.2.0",
+    "ai": "^6.0.0",
+    "@ai-sdk/openai": "^3.0.0",
+    "zod": "^3.23.0",
     "hono": "^4.11.4",
     "dotenv": "^16.4.0",
     "vitest": "^3.1.3",
