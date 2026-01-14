@@ -62,8 +62,8 @@ serve([reminixAgent], { port: 8080 });
 ```
 
 Your agent is now available at:
-- `POST /<name>/invoke` - Stateless invocation
-- `POST /<name>/chat` - Conversational chat
+- `POST /agents/<name>/invoke` - Stateless invocation
+- `POST /agents/<name>/chat` - Conversational chat
 
 ## API Reference
 
