@@ -12,7 +12,7 @@
   "dependencies": {
     "@reminix/runtime": "workspace:*",
     "@reminix/anthropic": "workspace:*",
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@anthropic-ai/sdk": "^0.71.0",
     "dotenv": "^16.4.0"
   },
   "devDependencies": {

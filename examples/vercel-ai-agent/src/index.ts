@@ -8,7 +8,7 @@
  *     npm install @reminix/vercel-ai ai @ai-sdk/openai zod dotenv
  *
  * Environment:
- *     Create a .env file with:
+ *     Create a .env file in the repository root with:
  *     OPENAI_API_KEY=your-api-key
  *
  * Usage:
@@ -31,7 +31,12 @@
  *     # Response: {"output": "The weather in Tokyo is rainy with a temperature of 18°C.", "messages": [...]}
  */
 
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+config({ path: resolve(__dirname, '../../../.env') });
 
 import { openai } from '@ai-sdk/openai';
 import { ToolLoopAgent, tool } from 'ai';

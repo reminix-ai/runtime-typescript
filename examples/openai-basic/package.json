@@ -12,7 +12,7 @@
   "dependencies": {
     "@reminix/runtime": "workspace:*",
     "@reminix/openai": "workspace:*",
-    "openai": "^4.0.0",
+    "openai": "^6.16.0",
     "dotenv": "^16.4.0"
   },
   "devDependencies": {

@@ -8,7 +8,7 @@
  *     npm install @reminix/openai openai dotenv
  *
  * Environment:
- *     Create a .env file with:
+ *     Create a .env file in the repository root with:
  *     OPENAI_API_KEY=your-api-key
  *
  * Usage:
@@ -31,7 +31,12 @@
  *     # Response: {"output": "Hello! How can I help you today?", "messages": [...]}
  */
 
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+config({ path: resolve(__dirname, '../../../.env') });
 
 import OpenAI from 'openai';
 import { wrap } from '@reminix/openai';
