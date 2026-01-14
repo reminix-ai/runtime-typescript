@@ -1,10 +1,11 @@
 # Reminix Runtime (TypeScript)
 
-Build AI agents with simple code. REST APIs included. Adapters available for LangChain, LangGraph, OpenAI, Anthropic, and Vercel AI.
+Your AI agent, live in minutes. Wrap your Vercel AI, LangChain, OpenAI, or Anthropic agent in one line — deploy and start streaming responses to your users.
 
-**Two interaction modes:**
-- **Invoke** (Stateless) - Single request/response
-- **Chat** (Conversational) - With message history
+**Features:**
+- **Instant APIs**: Invoke and chat endpoints out of the box
+- **Real-Time Streaming**: Built-in SSE support
+- **Bring Your Framework**: Adapters for Vercel AI, LangChain, LangGraph, OpenAI, Anthropic
 
 ## Packages
 
