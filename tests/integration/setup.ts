@@ -19,17 +19,3 @@ export function getAnthropicApiKey(): string {
   }
   return key;
 }
-
-export function skipIfNoOpenAIKey(): void {
-  if (!process.env.OPENAI_API_KEY) {
-    console.log('Skipping: OPENAI_API_KEY not set');
-    process.exit(0);
-  }
-}
-
-export function skipIfNoAnthropicKey(): void {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log('Skipping: ANTHROPIC_API_KEY not set');
-    process.exit(0);
-  }
-}
