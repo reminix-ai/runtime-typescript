@@ -1,6 +1,9 @@
 # @reminix/vercel-ai
 
-Reminix Runtime adapter for the [Vercel AI SDK](https://sdk.vercel.ai/). Deploy AI models as a REST API.
+Reminix Runtime adapter for the [Vercel AI SDK](https://sdk.vercel.ai/). Supports both:
+
+- **ToolLoopAgent** - Full agents with tools and automatic tool loop handling
+- **Model** - Simple completions via `generateText`/`streamText` without tools
 
 ## Installation
 
@@ -8,41 +11,74 @@ Reminix Runtime adapter for the [Vercel AI SDK](https://sdk.vercel.ai/). Deploy 
 npm install @reminix/runtime @reminix/vercel-ai ai @ai-sdk/openai
 ```
 
-## Quick Start
+## Quick Start with ToolLoopAgent
+
+For agents with tools, use `ToolLoopAgent`:
 
 ```typescript
+import { ToolLoopAgent, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
 import { wrap } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
-// Create a model using Vercel AI SDK
+const weatherTool = tool({
+  description: 'Get the current weather for a city',
+  parameters: z.object({
+    city: z.string()
+  }),
+  execute: async ({ city }) => {
+    return { city, temp: 72, condition: 'sunny' };
+  }
+});
+
+const agent = new ToolLoopAgent({
+  model: openai('gpt-4o'),
+  instructions: 'You help users check the weather.',
+  tools: { getWeather: weatherTool }
+});
+
+const reminixAgent = wrap(agent, { name: 'weather-agent' });
+
+serve([reminixAgent], { port: 8080 });
+```
+
+## Quick Start with Model
+
+For simple completions without tools, pass the model directly:
+
+```typescript
+import { openai } from '@ai-sdk/openai';
+
+import { wrap } from '@reminix/vercel-ai';
+import { serve } from '@reminix/runtime';
+
 const model = openai('gpt-4o');
 
-// Wrap it with the Reminix adapter
-const agent = wrap(model, { name: 'my-chatbot' });
+const reminixAgent = wrap(model, { name: 'chat-agent' });
 
-// Serve it as a REST API
-serve([agent], { port: 8080 });
+serve([reminixAgent], { port: 8080 });
 ```
 
 Your agent is now available at:
-- `POST /my-chatbot/invoke` - Single-turn invocation
-- `POST /my-chatbot/chat` - Multi-turn chat
+- `POST /<name>/invoke` - Stateless invocation
+- `POST /<name>/chat` - Conversational chat
 
 ## API Reference
 
-### `wrap(model, options)`
+### `wrap(modelOrAgent, options)`
 
-Wrap a Vercel AI SDK model for use with Reminix Runtime.
+Wrap a Vercel AI SDK ToolLoopAgent or Model for use with Reminix Runtime.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `model` | `LanguageModel` | required | A Vercel AI SDK language model |
+| `modelOrAgent` | `ToolLoopAgent \| LanguageModel` | required | A ToolLoopAgent or language model |
 | `options.name` | `string` | `"vercel-ai-agent"` | Name for the agent (used in URL path) |
 
 **Returns:** `VercelAIAdapter` - A Reminix adapter instance
 
-### Using Different Providers
+## Using Different Providers
 
 The Vercel AI SDK supports multiple providers:
 
@@ -53,14 +89,19 @@ import { google } from '@ai-sdk/google';
 import { wrap } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
-// Use different providers
 const gpt = wrap(openai('gpt-4o'), { name: 'gpt' });
 const claude = wrap(anthropic('claude-sonnet-4-20250514'), { name: 'claude' });
 const gemini = wrap(google('gemini-pro'), { name: 'gemini' });
 
-// Serve all of them
 serve([gpt, claude, gemini], { port: 8080 });
 ```
+
+## When to Use Each Option
+
+| Option | Use Case |
+|--------|----------|
+| **ToolLoopAgent** | Agents that need tools, multi-step reasoning, automatic tool loop |
+| **Model** | Simple completions, providers without dedicated adapters (Google, Mistral, etc.) |
 
 ## Runtime Documentation
 

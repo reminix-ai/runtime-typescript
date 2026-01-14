@@ -44,7 +44,7 @@ describe('VercelAIAdapter.invoke', () => {
 
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: mockModel,
-      messages: [{ role: 'user', content: 'Hi' }],
+      prompt: 'Hi',
     });
   });
 
@@ -61,7 +61,7 @@ describe('VercelAIAdapter.invoke', () => {
     expect(response.output).toBe('Hello from Vercel AI!');
   });
 
-  it('should handle messages input', async () => {
+  it('should handle messages input by converting to prompt', async () => {
     const mockModel = { modelId: 'gpt-4o' };
     const adapter = wrap(mockModel as any);
 
@@ -73,9 +73,10 @@ describe('VercelAIAdapter.invoke', () => {
     };
     await adapter.invoke(request);
 
+    // Messages are concatenated into a prompt for invoke (stateless)
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: mockModel,
-      messages: [{ role: 'user', content: 'Hello' }],
+      prompt: 'Hello',
     });
   });
 });

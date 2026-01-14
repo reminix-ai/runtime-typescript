@@ -1,8 +1,16 @@
 /**
  * Vercel AI SDK adapter for Reminix Runtime.
+ *
+ * Supports both ToolLoopAgent (for agents with tools) and LanguageModel (for generateText).
  */
 
-import { generateText, streamText, type LanguageModel } from 'ai';
+import {
+  generateText,
+  streamText,
+  ToolLoopAgent,
+  type LanguageModel,
+  type ModelMessage,
+} from 'ai';
 
 import {
   BaseAdapter,
@@ -14,27 +22,36 @@ import {
 } from '@reminix/runtime';
 
 /**
- * Message format for Vercel AI SDK.
- */
-interface VercelAIMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
-/**
- * Options for wrapping a Vercel AI model.
+ * Options for wrapping a Vercel AI model or agent.
  */
 export interface VercelAIAdapterOptions {
   name?: string;
 }
 
 /**
- * Adapter for Vercel AI SDK models.
+ * Type guard to check if the input is a ToolLoopAgent.
+ */
+function isToolLoopAgent(input: unknown): input is ToolLoopAgent {
+  return (
+    input !== null &&
+    typeof input === 'object' &&
+    'generate' in input &&
+    typeof (input as ToolLoopAgent).generate === 'function'
+  );
+}
+
+/**
+ * Adapter for Vercel AI SDK models and agents.
+ *
+ * Supports:
+ * - ToolLoopAgent: Full agent with tools and automatic tool loop handling
+ * - LanguageModel: Simple model for text generation without tools
  */
 export class VercelAIAdapter extends BaseAdapter {
   static adapterName = 'vercel-ai';
 
-  private model: LanguageModel;
+  private modelOrAgent: LanguageModel | ToolLoopAgent;
+  private isAgent: boolean;
   private _name: string;
 
   /**
@@ -50,12 +67,13 @@ export class VercelAIAdapter extends BaseAdapter {
   /**
    * Initialize the adapter.
    *
-   * @param model - A Vercel AI SDK language model.
+   * @param modelOrAgent - A Vercel AI SDK ToolLoopAgent or LanguageModel.
    * @param options - Adapter options.
    */
-  constructor(model: LanguageModel, options: VercelAIAdapterOptions = {}) {
+  constructor(modelOrAgent: LanguageModel | ToolLoopAgent, options: VercelAIAdapterOptions = {}) {
     super();
-    this.model = model;
+    this.modelOrAgent = modelOrAgent;
+    this.isAgent = isToolLoopAgent(modelOrAgent);
     this._name = options.name ?? 'vercel-ai-agent';
   }
 
@@ -64,11 +82,11 @@ export class VercelAIAdapter extends BaseAdapter {
   }
 
   /**
-   * Convert Reminix messages to Vercel AI message format.
+   * Convert Reminix messages to Vercel AI ModelMessage format.
    */
-  private toVercelMessages(messages: Message[]): VercelAIMessage[] {
+  private toModelMessages(messages: Message[]): ModelMessage[] {
     return messages.map((m) => ({
-      role: m.role as VercelAIMessage['role'],
+      role: m.role as 'user' | 'assistant' | 'system',
       content: m.content || '',
     }));
   }
@@ -84,25 +102,34 @@ export class VercelAIAdapter extends BaseAdapter {
    */
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
     const input = request.input as Record<string, unknown>;
-    
-    // Build messages from input
-    let messages: VercelAIMessage[];
-    if ('messages' in input) {
-      messages = input.messages as VercelAIMessage[];
-    } else if ('prompt' in input) {
-      messages = [{ role: 'user', content: String(input.prompt) }];
+
+    // Build prompt from input
+    let prompt: string;
+    if ('prompt' in input) {
+      prompt = String(input.prompt);
+    } else if ('messages' in input) {
+      const messages = input.messages as Array<{ role: string; content: string }>;
+      prompt = messages.map(m => m.content).join('\n');
     } else {
-      messages = [{ role: 'user', content: JSON.stringify(input) }];
+      prompt = JSON.stringify(input);
     }
 
-    // Call generateText
-    const result = await this._generateText({
-      model: this.model,
-      messages,
-    });
+    let output: string;
 
-    // Extract content from response
-    const output = result.text;
+    if (this.isAgent) {
+      // Use ToolLoopAgent.generate()
+      const agent = this.modelOrAgent as ToolLoopAgent;
+      const result = await agent.generate({ prompt });
+      output = result.text;
+    } else {
+      // Use generateText with LanguageModel
+      const model = this.modelOrAgent as LanguageModel;
+      const result = await this._generateText({
+        model,
+        prompt,
+      });
+      output = result.text;
+    }
 
     return { output };
   }
@@ -116,17 +143,24 @@ export class VercelAIAdapter extends BaseAdapter {
    * @returns The chat response with output and messages.
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {
-    // Convert messages to Vercel AI format
-    const messages = this.toVercelMessages(request.messages);
+    const messages = this.toModelMessages(request.messages);
 
-    // Call generateText
-    const result = await this._generateText({
-      model: this.model,
-      messages,
-    });
+    let output: string;
 
-    // Extract content from response
-    const output = result.text;
+    if (this.isAgent) {
+      // Use ToolLoopAgent.generate()
+      const agent = this.modelOrAgent as ToolLoopAgent;
+      const result = await agent.generate({ messages });
+      output = result.text;
+    } else {
+      // Use generateText with LanguageModel
+      const model = this.modelOrAgent as LanguageModel;
+      const result = await this._generateText({
+        model,
+        messages,
+      });
+      output = result.text;
+    }
 
     // Build response messages (original + assistant response)
     const responseMessages: Message[] = [
@@ -148,24 +182,34 @@ export class VercelAIAdapter extends BaseAdapter {
   ): AsyncGenerator<string, void, unknown> {
     const input = request.input as Record<string, unknown>;
 
-    // Build messages from input
-    let messages: VercelAIMessage[];
-    if ('messages' in input) {
-      messages = input.messages as VercelAIMessage[];
-    } else if ('prompt' in input) {
-      messages = [{ role: 'user', content: String(input.prompt) }];
+    // Build prompt from input
+    let prompt: string;
+    if ('prompt' in input) {
+      prompt = String(input.prompt);
+    } else if ('messages' in input) {
+      const messages = input.messages as Array<{ role: string; content: string }>;
+      prompt = messages.map(m => m.content).join('\n');
     } else {
-      messages = [{ role: 'user', content: JSON.stringify(input) }];
+      prompt = JSON.stringify(input);
     }
 
-    // Stream from Vercel AI
-    const result = this._streamText({
-      model: this.model,
-      messages,
-    });
-
-    for await (const chunk of result.textStream) {
-      yield JSON.stringify({ chunk });
+    if (this.isAgent) {
+      // Use ToolLoopAgent.stream()
+      const agent = this.modelOrAgent as ToolLoopAgent;
+      const result = await agent.stream({ prompt });
+      for await (const chunk of result.textStream) {
+        yield JSON.stringify({ chunk });
+      }
+    } else {
+      // Use streamText with LanguageModel
+      const model = this.modelOrAgent as LanguageModel;
+      const result = this._streamText({
+        model,
+        prompt,
+      });
+      for await (const chunk of result.textStream) {
+        yield JSON.stringify({ chunk });
+      }
     }
   }
 
@@ -178,42 +222,71 @@ export class VercelAIAdapter extends BaseAdapter {
   async *chatStream(
     request: ChatRequest
   ): AsyncGenerator<string, void, unknown> {
-    // Convert messages to Vercel AI format
-    const messages = this.toVercelMessages(request.messages);
+    const messages = this.toModelMessages(request.messages);
 
-    // Stream from Vercel AI
-    const result = this._streamText({
-      model: this.model,
-      messages,
-    });
-
-    for await (const chunk of result.textStream) {
-      yield JSON.stringify({ chunk });
+    if (this.isAgent) {
+      // Use ToolLoopAgent.stream()
+      const agent = this.modelOrAgent as ToolLoopAgent;
+      const result = await agent.stream({ messages });
+      for await (const chunk of result.textStream) {
+        yield JSON.stringify({ chunk });
+      }
+    } else {
+      // Use streamText with LanguageModel
+      const model = this.modelOrAgent as LanguageModel;
+      const result = this._streamText({
+        model,
+        messages,
+      });
+      for await (const chunk of result.textStream) {
+        yield JSON.stringify({ chunk });
+      }
     }
   }
 }
 
 /**
- * Wrap a Vercel AI SDK model for use with Reminix Runtime.
+ * Wrap a Vercel AI SDK model or agent for use with Reminix Runtime.
  *
- * @param model - A Vercel AI SDK language model.
+ * Supports both ToolLoopAgent (for agents with tools) and LanguageModel (for generateText).
+ *
+ * @param modelOrAgent - A Vercel AI SDK ToolLoopAgent or LanguageModel.
  * @param options - Adapter options.
  * @returns A VercelAIAdapter instance.
  *
  * @example
  * ```typescript
+ * // Option 1: ToolLoopAgent (with tools)
+ * import { ToolLoopAgent, tool } from 'ai';
  * import { openai } from '@ai-sdk/openai';
  * import { wrap } from '@reminix/vercel-ai';
  * import { serve } from '@reminix/runtime';
  *
+ * const agent = new ToolLoopAgent({
+ *   model: openai('gpt-4o'),
+ *   tools: {
+ *     getWeather: tool({
+ *       description: 'Get weather for a city',
+ *       parameters: z.object({ city: z.string() }),
+ *       execute: async ({ city }) => ({ temp: 72, condition: 'sunny' })
+ *     })
+ *   }
+ * });
+ *
+ * const reminixAgent = wrap(agent, { name: 'weather-agent' });
+ * serve([reminixAgent], { port: 8080 });
+ *
+ * // Option 2: Model (simple completions with generateText)
+ * import { openai } from '@ai-sdk/openai';
+ * import { wrap } from '@reminix/vercel-ai';
+ *
  * const model = openai('gpt-4o');
- * const agent = wrap(model, { name: 'my-agent' });
- * serve([agent], { port: 8080 });
+ * const reminixAgent = wrap(model, { name: 'chat-agent' });
  * ```
  */
 export function wrap(
-  model: LanguageModel,
+  modelOrAgent: LanguageModel | ToolLoopAgent,
   options: VercelAIAdapterOptions = {}
 ): VercelAIAdapter {
-  return new VercelAIAdapter(model, options);
+  return new VercelAIAdapter(modelOrAgent, options);
 }
