@@ -1,8 +1,8 @@
 # @reminix/runtime
 
-Deploy AI agents with instant REST APIs. Define handlers, wrap your existing framework, and serve with built-in streaming.
+Core runtime package for serving AI agents via REST APIs. Provides the `serve()` function, `Agent` class, and `BaseAdapter` for building framework integrations.
 
-**Works with:** Vercel AI, LangChain, LangGraph, OpenAI, Anthropic — or build custom agents from scratch.
+Built on [Hono](https://hono.dev) for portability across Node.js, Deno, Bun, and edge runtimes.
 
 ## Installation
 
