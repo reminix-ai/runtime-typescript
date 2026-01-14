@@ -185,6 +185,9 @@ importers:
       dotenv:
         specifier: ^16.4.0
         version: 16.6.1
+      hono:
+        specifier: ^4.11.4
+        version: 4.11.4
       openai:
         specifier: ^4.77.0
         version: 4.104.0(zod@3.25.76)
