@@ -20,11 +20,12 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-imports': 'error',
     },
   },
-  // Test files - allow unused vars/imports
+  // Test files - allow unused vars/imports and any types
   {
     files: ['**/*.test.ts', '**/tests/**/*.ts'],
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   // Base adapter - allow abstract method patterns
