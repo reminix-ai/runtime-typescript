@@ -267,7 +267,7 @@ export class VercelAIAdapter extends BaseAdapter {
  *   tools: {
  *     getWeather: tool({
  *       description: 'Get weather for a city',
- *       parameters: z.object({ city: z.string() }),
+ *       inputSchema: z.object({ city: z.string() }),
  *       execute: async ({ city }) => ({ temp: 72, condition: 'sunny' })
  *     })
  *   }

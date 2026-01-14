@@ -25,7 +25,7 @@ import { serve } from '@reminix/runtime';
 
 const weatherTool = tool({
   description: 'Get the current weather for a city',
-  parameters: z.object({
+  inputSchema: z.object({
     city: z.string()
   }),
   execute: async ({ city }) => {
@@ -102,6 +102,63 @@ serve([gpt, claude, gemini], { port: 8080 });
 |--------|----------|
 | **ToolLoopAgent** | Agents that need tools, multi-step reasoning, automatic tool loop |
 | **Model** | Simple completions, providers without dedicated adapters (Google, Mistral, etc.) |
+
+## Endpoint Input/Output Formats
+
+### POST /agents/{name}/invoke
+
+Stateless invocation for task-oriented operations.
+
+**Request:**
+```json
+{
+  "input": {
+    "prompt": "Summarize this text: ..."
+  }
+}
+```
+
+Or with messages:
+```json
+{
+  "input": {
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "output": "Hello! How can I help you today?"
+}
+```
+
+### POST /agents/{name}/chat
+
+Conversational chat with message history.
+
+**Request:**
+```json
+{
+  "messages": [
+    {"role": "user", "content": "What is the capital of France?"}
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "output": "The capital of France is Paris.",
+  "messages": [
+    {"role": "user", "content": "What is the capital of France?"},
+    {"role": "assistant", "content": "The capital of France is Paris."}
+  ]
+}
+```
 
 ## Runtime Documentation
 

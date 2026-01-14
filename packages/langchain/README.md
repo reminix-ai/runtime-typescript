@@ -63,6 +63,52 @@ const agent = wrap(chain, 'my-chain');
 serve([agent], { port: 8080 });
 ```
 
+## Endpoint Input/Output Formats
+
+### POST /agents/{name}/invoke
+
+Stateless invocation. Input is passed directly to the LangChain runnable.
+
+**Request:**
+```json
+{
+  "input": {
+    "input": "Hello, how are you?"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "output": "I'm doing well, thank you for asking!"
+}
+```
+
+### POST /agents/{name}/chat
+
+Conversational chat with message history.
+
+**Request:**
+```json
+{
+  "messages": [
+    {"role": "user", "content": "What is the capital of France?"}
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "output": "The capital of France is Paris.",
+  "messages": [
+    {"role": "user", "content": "What is the capital of France?"},
+    {"role": "assistant", "content": "The capital of France is Paris."}
+  ]
+}
+```
+
 ## Runtime Documentation
 
 For information about the server, endpoints, request/response formats, and more, see the [`@reminix/runtime`](https://www.npmjs.com/package/@reminix/runtime) package.
