@@ -63,18 +63,14 @@ agent.onInvoke(async (request) => {
 // Register chat handler - conversational interactions
 agent.onChat(async (request) => {
   // Get the last user message
-  const userMessage = request.messages.length > 0
-    ? request.messages[request.messages.length - 1].content
-    : '';
+  const userMessage =
+    request.messages.length > 0 ? request.messages[request.messages.length - 1].content : '';
 
   const response = `You said: ${userMessage}`;
 
   return {
     output: response,
-    messages: [
-      ...request.messages,
-      { role: 'assistant', content: response },
-    ],
+    messages: [...request.messages, { role: 'assistant', content: response }],
   };
 });
 
@@ -92,9 +88,8 @@ agent.onInvokeStream(async function* (request) {
 
 // Register streaming chat handler
 agent.onChatStream(async function* (request) {
-  const userMessage = request.messages.length > 0
-    ? request.messages[request.messages.length - 1].content
-    : '';
+  const userMessage =
+    request.messages.length > 0 ? request.messages[request.messages.length - 1].content : '';
 
   // Stream the response word by word
   const words = `You said: ${userMessage}`.split(' ');

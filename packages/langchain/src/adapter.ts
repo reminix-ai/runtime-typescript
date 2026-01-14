@@ -60,7 +60,10 @@ export class LangChainAdapter extends BaseAdapter {
       case 'system':
         return new SystemMessage({ content: contentStr });
       case 'tool':
-        return new ToolMessage({ content: contentStr, tool_call_id: message.tool_call_id || 'unknown' });
+        return new ToolMessage({
+          content: contentStr,
+          tool_call_id: message.tool_call_id || 'unknown',
+        });
       default:
         return new HumanMessage({ content: contentStr });
     }
@@ -84,10 +87,7 @@ export class LangChainAdapter extends BaseAdapter {
       role = 'assistant';
     }
 
-    const content =
-      typeof message.content === 'string'
-        ? message.content
-        : String(message.content);
+    const content = typeof message.content === 'string' ? message.content : String(message.content);
 
     return { role, content };
   }
@@ -107,10 +107,7 @@ export class LangChainAdapter extends BaseAdapter {
     // Extract output from response
     let output: unknown;
     if (response && typeof response === 'object' && 'content' in response) {
-      output =
-        typeof response.content === 'string'
-          ? response.content
-          : String(response.content);
+      output = typeof response.content === 'string' ? response.content : String(response.content);
     } else if (response && typeof response === 'object') {
       output = response;
     } else {
@@ -139,10 +136,7 @@ export class LangChainAdapter extends BaseAdapter {
     let output: string;
     let responseMessage: Message;
     if (response && typeof response === 'object' && 'content' in response) {
-      output =
-        typeof response.content === 'string'
-          ? response.content
-          : String(response.content);
+      output = typeof response.content === 'string' ? response.content : String(response.content);
       responseMessage = this.toReminixMessage(response as BaseMessage);
     } else {
       output = String(response);
@@ -150,10 +144,7 @@ export class LangChainAdapter extends BaseAdapter {
     }
 
     // Build response messages (original + assistant response)
-    const responseMessages: Message[] = [
-      ...request.messages,
-      responseMessage,
-    ];
+    const responseMessages: Message[] = [...request.messages, responseMessage];
 
     return { output, messages: responseMessages };
   }
@@ -164,17 +155,12 @@ export class LangChainAdapter extends BaseAdapter {
    * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(
-    request: InvokeRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     // Stream from the runnable
     for await (const chunk of await this.agent.stream(request.input)) {
       let content: string;
       if (chunk && typeof chunk === 'object' && 'content' in chunk) {
-        content =
-          typeof chunk.content === 'string'
-            ? chunk.content
-            : String(chunk.content);
+        content = typeof chunk.content === 'string' ? chunk.content : String(chunk.content);
       } else if (typeof chunk === 'object') {
         content = JSON.stringify(chunk);
       } else {
@@ -190,9 +176,7 @@ export class LangChainAdapter extends BaseAdapter {
    * @param request - The chat request with messages.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *chatStream(
-    request: ChatRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
     // Convert messages to LangChain format
     const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
 
@@ -200,10 +184,7 @@ export class LangChainAdapter extends BaseAdapter {
     for await (const chunk of await this.agent.stream(lcMessages)) {
       let content: string;
       if (chunk && typeof chunk === 'object' && 'content' in chunk) {
-        content =
-          typeof chunk.content === 'string'
-            ? chunk.content
-            : String(chunk.content);
+        content = typeof chunk.content === 'string' ? chunk.content : String(chunk.content);
       } else if (typeof chunk === 'object') {
         content = JSON.stringify(chunk);
       } else {
@@ -232,9 +213,6 @@ export class LangChainAdapter extends BaseAdapter {
  * serve([agent], { port: 8080 });
  * ```
  */
-export function wrap(
-  agent: Runnable,
-  name: string = 'langchain-agent'
-): LangChainAdapter {
+export function wrap(agent: Runnable, name: string = 'langchain-agent'): LangChainAdapter {
   return new LangChainAdapter(agent, name);
 }

@@ -133,6 +133,28 @@ pnpm test:integration:anthropic
 pnpm build
 ```
 
+### Code Quality
+
+```bash
+# Format code (auto-fix)
+pnpm format
+
+# Check formatting (CI)
+pnpm format:check
+
+# Lint code
+pnpm lint
+
+# Type check
+pnpm typecheck
+
+# Run all checks (before pushing)
+pnpm check
+
+# Run all checks + tests (before pushing)
+pnpm prepush
+```
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request.

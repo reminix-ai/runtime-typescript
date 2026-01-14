@@ -2,12 +2,7 @@
  * Base agent and adapter interface.
  */
 
-import type {
-  InvokeRequest,
-  InvokeResponse,
-  ChatRequest,
-  ChatResponse,
-} from '../types.js';
+import type { InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '../types.js';
 import { VERSION } from '../version.js';
 
 /**
@@ -37,16 +32,12 @@ export type ChatHandler = (request: ChatRequest) => Promise<ChatResponse>;
 /**
  * Handler type for streaming invoke requests.
  */
-export type InvokeStreamHandler = (
-  request: InvokeRequest
-) => AsyncGenerator<string, void, unknown>;
+export type InvokeStreamHandler = (request: InvokeRequest) => AsyncGenerator<string, void, unknown>;
 
 /**
  * Handler type for streaming chat requests.
  */
-export type ChatStreamHandler = (
-  request: ChatRequest
-) => AsyncGenerator<string, void, unknown>;
+export type ChatStreamHandler = (request: ChatRequest) => AsyncGenerator<string, void, unknown>;
 
 /**
  * Abstract base class defining the agent interface.
@@ -96,18 +87,14 @@ export abstract class AgentBase {
   /**
    * Handle a streaming invoke request.
    */
-  async *invokeStream(
-    request: InvokeRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this agent');
   }
 
   /**
    * Handle a streaming chat request.
    */
-  async *chatStream(
-    request: ChatRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this agent');
   }
 
@@ -208,8 +195,7 @@ export abstract class AgentBase {
                   }
                   controller.enqueue(encoder.encode('data: [DONE]\n\n'));
                 } catch (error) {
-                  const message =
-                    error instanceof Error ? error.message : 'Unknown error';
+                  const message = error instanceof Error ? error.message : 'Unknown error';
                   controller.enqueue(
                     encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`)
                   );
@@ -263,8 +249,7 @@ export abstract class AgentBase {
                   }
                   controller.enqueue(encoder.encode('data: [DONE]\n\n'));
                 } catch (error) {
-                  const message =
-                    error instanceof Error ? error.message : 'Unknown error';
+                  const message = error instanceof Error ? error.message : 'Unknown error';
                   controller.enqueue(
                     encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`)
                   );
@@ -288,16 +273,10 @@ export abstract class AgentBase {
         }
 
         // Not found
-        return Response.json(
-          { error: 'Not found' },
-          { status: 404, headers: corsHeaders }
-        );
+        return Response.json({ error: 'Not found' }, { status: 404, headers: corsHeaders });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
-        return Response.json(
-          { error: message },
-          { status: 500, headers: corsHeaders }
-        );
+        return Response.json({ error: message }, { status: 500, headers: corsHeaders });
       }
     };
   }
@@ -447,13 +426,9 @@ export class Agent extends AgentBase {
   /**
    * Handle a streaming invoke request.
    */
-  async *invokeStream(
-    request: InvokeRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     if (this._invokeStreamHandler === null) {
-      throw new Error(
-        `No streaming invoke handler registered for agent '${this._name}'`
-      );
+      throw new Error(`No streaming invoke handler registered for agent '${this._name}'`);
     }
     yield* this._invokeStreamHandler(request);
   }
@@ -461,13 +436,9 @@ export class Agent extends AgentBase {
   /**
    * Handle a streaming chat request.
    */
-  async *chatStream(
-    request: ChatRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
     if (this._chatStreamHandler === null) {
-      throw new Error(
-        `No streaming chat handler registered for agent '${this._name}'`
-      );
+      throw new Error(`No streaming chat handler registered for agent '${this._name}'`);
     }
     yield* this._chatStreamHandler(request);
   }
@@ -509,18 +480,14 @@ export abstract class BaseAdapter extends AgentBase {
   /**
    * Handle a streaming invoke request.
    */
-  async *invokeStream(
-    request: InvokeRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this adapter');
   }
 
   /**
    * Handle a streaming chat request.
    */
-  async *chatStream(
-    request: ChatRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this adapter');
   }
 }

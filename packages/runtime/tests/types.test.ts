@@ -148,7 +148,9 @@ describe('ChatResponse', () => {
         {
           role: 'assistant',
           content: null,
-          tool_calls: [{ id: '1', type: 'function', function: { name: 'get_weather', arguments: '{}' } }],
+          tool_calls: [
+            { id: '1', type: 'function', function: { name: 'get_weather', arguments: '{}' } },
+          ],
         },
         { role: 'tool', content: '72°F', tool_call_id: '1' },
         { role: 'assistant', content: 'The weather is 72°F' },

@@ -53,9 +53,10 @@ describe('Agent Handler Registration', () => {
       return { output: 'test', messages: [] };
     });
 
-    await expect(
-      agent.chat({ messages: [{ role: 'user', content: 'hi' }] })
-    ).resolves.toEqual({ output: 'test', messages: [] });
+    await expect(agent.chat({ messages: [{ role: 'user', content: 'hi' }] })).resolves.toEqual({
+      output: 'test',
+      messages: [],
+    });
   });
 
   it('should return this for method chaining', () => {
@@ -145,9 +146,9 @@ describe('Agent Chat', () => {
   it('should throw when no chat handler registered', async () => {
     const agent = new Agent('test-agent');
 
-    await expect(
-      agent.chat({ messages: [{ role: 'user', content: 'hi' }] })
-    ).rejects.toThrow("No chat handler registered for agent 'test-agent'");
+    await expect(agent.chat({ messages: [{ role: 'user', content: 'hi' }] })).rejects.toThrow(
+      "No chat handler registered for agent 'test-agent'"
+    );
   });
 });
 

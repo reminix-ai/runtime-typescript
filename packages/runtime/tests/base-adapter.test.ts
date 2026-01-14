@@ -85,9 +85,7 @@ describe('Concrete Adapter', () => {
 
     const generator = adapter.invokeStream(request);
 
-    await expect(generator.next()).rejects.toThrow(
-      'Streaming not implemented for this adapter'
-    );
+    await expect(generator.next()).rejects.toThrow('Streaming not implemented for this adapter');
   });
 
   it('should throw from chatStream by default', async () => {
@@ -98,8 +96,6 @@ describe('Concrete Adapter', () => {
 
     const generator = adapter.chatStream(request);
 
-    await expect(generator.next()).rejects.toThrow(
-      'Streaming not implemented for this adapter'
-    );
+    await expect(generator.next()).rejects.toThrow('Streaming not implemented for this adapter');
   });
 });

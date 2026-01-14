@@ -76,7 +76,7 @@ export class OpenAIAdapter extends BaseAdapter {
     // Check if input contains messages
     let messages: OpenAI.Chat.ChatCompletionMessageParam[];
     const input = request.input as Record<string, unknown>;
-    
+
     if ('messages' in input) {
       messages = input.messages as OpenAI.Chat.ChatCompletionMessageParam[];
     } else if ('prompt' in input) {
@@ -133,9 +133,7 @@ export class OpenAIAdapter extends BaseAdapter {
    * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(
-    request: InvokeRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     // Build messages from input
     let messages: OpenAI.Chat.ChatCompletionMessageParam[];
     const input = request.input as Record<string, unknown>;
@@ -169,9 +167,7 @@ export class OpenAIAdapter extends BaseAdapter {
    * @param request - The chat request with messages.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *chatStream(
-    request: ChatRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
     // Convert messages to OpenAI format
     const openaiMessages = request.messages.map((m) => this.toOpenAIMessage(m));
 
@@ -209,9 +205,6 @@ export class OpenAIAdapter extends BaseAdapter {
  * serve([agent], { port: 8080 });
  * ```
  */
-export function wrap(
-  client: OpenAI,
-  options: OpenAIAdapterOptions = {}
-): OpenAIAdapter {
+export function wrap(client: OpenAI, options: OpenAIAdapterOptions = {}): OpenAIAdapter {
   return new OpenAIAdapter(client, options);
 }

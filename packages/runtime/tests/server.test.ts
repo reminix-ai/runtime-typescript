@@ -42,10 +42,7 @@ class MockAdapter extends BaseAdapter {
     const responseContent = `Chat response to: ${userMessage}`;
     return {
       output: responseContent,
-      messages: [
-        ...request.messages,
-        { role: 'assistant', content: responseContent },
-      ],
+      messages: [...request.messages, { role: 'assistant', content: responseContent }],
     };
   }
 }

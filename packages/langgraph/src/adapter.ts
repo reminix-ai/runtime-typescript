@@ -75,7 +75,10 @@ export class LangGraphAdapter extends BaseAdapter {
       case 'system':
         return new SystemMessage({ content: contentStr });
       case 'tool':
-        return new ToolMessage({ content: contentStr, tool_call_id: message.tool_call_id || 'unknown' });
+        return new ToolMessage({
+          content: contentStr,
+          tool_call_id: message.tool_call_id || 'unknown',
+        });
       default:
         return new HumanMessage({ content: contentStr });
     }
@@ -99,10 +102,7 @@ export class LangGraphAdapter extends BaseAdapter {
       role = 'assistant';
     }
 
-    const content =
-      typeof message.content === 'string'
-        ? message.content
-        : String(message.content);
+    const content = typeof message.content === 'string' ? message.content : String(message.content);
 
     return { role, content };
   }
@@ -133,8 +133,12 @@ export class LangGraphAdapter extends BaseAdapter {
         } else if (Array.isArray(content)) {
           // Handle array of content blocks (text, tool_use, etc.)
           const textParts = content
-            .filter((part): part is { type: 'text'; text: string } =>
-              typeof part === 'object' && part !== null && part.type === 'text' && typeof part.text === 'string'
+            .filter(
+              (part): part is { type: 'text'; text: string } =>
+                typeof part === 'object' &&
+                part !== null &&
+                part.type === 'text' &&
+                typeof part.text === 'string'
             )
             .map((part) => part.text);
           if (textParts.length > 0) return textParts.join('');
@@ -184,7 +188,7 @@ export class LangGraphAdapter extends BaseAdapter {
     const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
 
     // Call the graph with state dict format
-    const result = await this.graph.invoke({ messages: lcMessages }) as GraphState;
+    const result = (await this.graph.invoke({ messages: lcMessages })) as GraphState;
 
     // Extract messages from result
     const resultMessages: BaseMessage[] = result.messages || [];
@@ -204,9 +208,7 @@ export class LangGraphAdapter extends BaseAdapter {
    * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(
-    request: InvokeRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     // Stream from the graph (await if stream returns a promise)
     const streamResult = this.graph.stream(request.input);
     const stream = streamResult instanceof Promise ? await streamResult : streamResult;
@@ -240,9 +242,7 @@ export class LangGraphAdapter extends BaseAdapter {
    * @param request - The chat request with messages.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *chatStream(
-    request: ChatRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
     // Convert messages to LangChain format
     const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
 
@@ -294,9 +294,6 @@ export class LangGraphAdapter extends BaseAdapter {
  * serve([agent], { port: 8080 });
  * ```
  */
-export function wrap(
-  graph: LangGraphRunnable,
-  name: string = 'langgraph-agent'
-): LangGraphAdapter {
+export function wrap(graph: LangGraphRunnable, name: string = 'langgraph-agent'): LangGraphAdapter {
   return new LangGraphAdapter(graph, name);
 }

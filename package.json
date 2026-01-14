@@ -14,11 +14,22 @@
     "test:integration:langchain": "pnpm --filter integration-tests test:langchain",
     "test:integration:langgraph": "pnpm --filter integration-tests test:langgraph",
     "test:integration:vercel-ai": "pnpm --filter integration-tests test:vercel-ai",
-    "lint": "turbo run lint",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck",
+    "prepush": "pnpm check && pnpm test",
     "clean": "turbo run clean"
   },
   "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "prettier": "^3.4.2",
     "turbo": "^2.7.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.53.0"
   }
 }

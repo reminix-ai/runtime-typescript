@@ -4,13 +4,8 @@
  * Supports both ToolLoopAgent (for agents with tools) and LanguageModel (for generateText).
  */
 
-import {
-  generateText,
-  streamText,
-  ToolLoopAgent,
-  type LanguageModel,
-  type ModelMessage,
-} from 'ai';
+import type { ToolLoopAgent } from 'ai';
+import { generateText, streamText, type LanguageModel, type ModelMessage } from 'ai';
 
 import {
   BaseAdapter,
@@ -73,7 +68,10 @@ export class VercelAIAdapter extends BaseAdapter {
    * @param modelOrAgent - A Vercel AI SDK ToolLoopAgent or LanguageModel.
    * @param options - Adapter options.
    */
-  constructor(modelOrAgent: LanguageModel | AnyToolLoopAgent, options: VercelAIAdapterOptions = {}) {
+  constructor(
+    modelOrAgent: LanguageModel | AnyToolLoopAgent,
+    options: VercelAIAdapterOptions = {}
+  ) {
     super();
     this.modelOrAgent = modelOrAgent;
     this.isAgent = isToolLoopAgent(modelOrAgent);
@@ -112,7 +110,7 @@ export class VercelAIAdapter extends BaseAdapter {
       prompt = String(input.prompt);
     } else if ('messages' in input) {
       const messages = input.messages as Array<{ role: string; content: string }>;
-      prompt = messages.map(m => m.content).join('\n');
+      prompt = messages.map((m) => m.content).join('\n');
     } else {
       prompt = JSON.stringify(input);
     }
@@ -180,9 +178,7 @@ export class VercelAIAdapter extends BaseAdapter {
    * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(
-    request: InvokeRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     const input = request.input as Record<string, unknown>;
 
     // Build prompt from input
@@ -191,7 +187,7 @@ export class VercelAIAdapter extends BaseAdapter {
       prompt = String(input.prompt);
     } else if ('messages' in input) {
       const messages = input.messages as Array<{ role: string; content: string }>;
-      prompt = messages.map(m => m.content).join('\n');
+      prompt = messages.map((m) => m.content).join('\n');
     } else {
       prompt = JSON.stringify(input);
     }
@@ -222,9 +218,7 @@ export class VercelAIAdapter extends BaseAdapter {
    * @param request - The chat request with messages.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *chatStream(
-    request: ChatRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
     const messages = this.toModelMessages(request.messages);
 
     if (this.isAgent) {

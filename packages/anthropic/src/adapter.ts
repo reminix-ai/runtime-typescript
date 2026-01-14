@@ -66,9 +66,10 @@ export class AnthropicAdapter extends BaseAdapter {
   /**
    * Extract system message and convert remaining messages to Anthropic format.
    */
-  private extractSystemAndMessages(
-    messages: Message[]
-  ): { system: string | undefined; messages: AnthropicMessage[] } {
+  private extractSystemAndMessages(messages: Message[]): {
+    system: string | undefined;
+    messages: AnthropicMessage[];
+  } {
     let system: string | undefined;
     const anthropicMessages: AnthropicMessage[] = [];
 
@@ -110,7 +111,7 @@ export class AnthropicAdapter extends BaseAdapter {
    */
   async invoke(request: InvokeRequest): Promise<InvokeResponse> {
     const input = request.input as Record<string, unknown>;
-    
+
     // Build messages from input
     let messages: Message[];
     if ('messages' in input) {
@@ -148,9 +149,7 @@ export class AnthropicAdapter extends BaseAdapter {
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {
     // Extract system message and convert messages
-    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(
-      request.messages
-    );
+    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(request.messages);
 
     // Call Anthropic API
     const response = await this.client.messages.create({
@@ -178,9 +177,7 @@ export class AnthropicAdapter extends BaseAdapter {
    * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(
-    request: InvokeRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     const input = request.input as Record<string, unknown>;
 
     // Build messages from input
@@ -217,13 +214,9 @@ export class AnthropicAdapter extends BaseAdapter {
    * @param request - The chat request with messages.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *chatStream(
-    request: ChatRequest
-  ): AsyncGenerator<string, void, unknown> {
+  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
     // Extract system message and convert messages
-    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(
-      request.messages
-    );
+    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(request.messages);
 
     // Stream from Anthropic API
     const stream = this.client.messages.stream({
@@ -259,9 +252,6 @@ export class AnthropicAdapter extends BaseAdapter {
  * serve([agent], { port: 8080 });
  * ```
  */
-export function wrap(
-  client: Anthropic,
-  options: AnthropicAdapterOptions = {}
-): AnthropicAdapter {
+export function wrap(client: Anthropic, options: AnthropicAdapterOptions = {}): AnthropicAdapter {
   return new AnthropicAdapter(client, options);
 }

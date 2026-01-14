@@ -48,10 +48,7 @@ describe('LangGraphAdapter.invoke', () => {
   it('should return output from messages in the result', async () => {
     const mockGraph = {
       invoke: vi.fn().mockResolvedValue({
-        messages: [
-          new HumanMessage({ content: 'Hello' }),
-          new AIMessage({ content: 'Hi there!' }),
-        ],
+        messages: [new HumanMessage({ content: 'Hello' }), new AIMessage({ content: 'Hi there!' })],
       }),
     };
 
