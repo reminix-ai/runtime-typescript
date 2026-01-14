@@ -20,7 +20,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.check.json",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
     "prepush": "pnpm check && pnpm test",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "bump-version": "tsx scripts/bump-version.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
