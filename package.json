@@ -7,7 +7,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "turbo run build",
-    "test": "turbo run test",
+    "test": "turbo run test --filter=!integration-tests",
     "test:integration": "pnpm --filter integration-tests test",
     "test:integration:openai": "pnpm --filter integration-tests test:openai",
     "test:integration:anthropic": "pnpm --filter integration-tests test:anthropic",
