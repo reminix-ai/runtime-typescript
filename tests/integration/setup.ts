@@ -2,6 +2,8 @@
  * Shared setup for integration tests.
  */
 
+import 'dotenv/config';
+
 export function getOpenAIApiKey(): string {
   const key = process.env.OPENAI_API_KEY;
   if (!key) {
