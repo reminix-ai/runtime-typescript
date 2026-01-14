@@ -32,7 +32,7 @@ interface GraphState {
  */
 interface LangGraphRunnable {
   invoke(input: unknown): Promise<unknown>;
-  stream(input: unknown): AsyncIterable<unknown>;
+  stream(input: unknown): AsyncIterable<unknown> | Promise<AsyncIterable<unknown>>;
 }
 
 /**
@@ -207,8 +207,10 @@ export class LangGraphAdapter extends BaseAdapter {
   async *invokeStream(
     request: InvokeRequest
   ): AsyncGenerator<string, void, unknown> {
-    // Stream from the graph
-    for await (const chunk of this.graph.stream(request.input)) {
+    // Stream from the graph (await if stream returns a promise)
+    const streamResult = this.graph.stream(request.input);
+    const stream = streamResult instanceof Promise ? await streamResult : streamResult;
+    for await (const chunk of stream) {
       // LangGraph streams dicts with node outputs
       if (chunk && typeof chunk === 'object') {
         for (const [, nodeOutput] of Object.entries(chunk as Record<string, unknown>)) {
@@ -244,8 +246,10 @@ export class LangGraphAdapter extends BaseAdapter {
     // Convert messages to LangChain format
     const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
 
-    // Stream from the graph
-    for await (const chunk of this.graph.stream({ messages: lcMessages })) {
+    // Stream from the graph (await if stream returns a promise)
+    const streamResult = this.graph.stream({ messages: lcMessages });
+    const stream = streamResult instanceof Promise ? await streamResult : streamResult;
+    for await (const chunk of stream) {
       // LangGraph streams dicts with node outputs
       if (chunk && typeof chunk === 'object') {
         for (const [, nodeOutput] of Object.entries(chunk as Record<string, unknown>)) {

@@ -28,15 +28,18 @@ export interface VercelAIAdapterOptions {
   name?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyToolLoopAgent = ToolLoopAgent<any, any, any>;
+
 /**
  * Type guard to check if the input is a ToolLoopAgent.
  */
-function isToolLoopAgent(input: unknown): input is ToolLoopAgent {
+function isToolLoopAgent(input: unknown): input is AnyToolLoopAgent {
   return (
     input !== null &&
     typeof input === 'object' &&
     'generate' in input &&
-    typeof (input as ToolLoopAgent).generate === 'function'
+    typeof (input as AnyToolLoopAgent).generate === 'function'
   );
 }
 
@@ -50,7 +53,7 @@ function isToolLoopAgent(input: unknown): input is ToolLoopAgent {
 export class VercelAIAdapter extends BaseAdapter {
   static adapterName = 'vercel-ai';
 
-  private modelOrAgent: LanguageModel | ToolLoopAgent;
+  private modelOrAgent: LanguageModel | AnyToolLoopAgent;
   private isAgent: boolean;
   private _name: string;
 
@@ -70,7 +73,7 @@ export class VercelAIAdapter extends BaseAdapter {
    * @param modelOrAgent - A Vercel AI SDK ToolLoopAgent or LanguageModel.
    * @param options - Adapter options.
    */
-  constructor(modelOrAgent: LanguageModel | ToolLoopAgent, options: VercelAIAdapterOptions = {}) {
+  constructor(modelOrAgent: LanguageModel | AnyToolLoopAgent, options: VercelAIAdapterOptions = {}) {
     super();
     this.modelOrAgent = modelOrAgent;
     this.isAgent = isToolLoopAgent(modelOrAgent);
@@ -118,8 +121,8 @@ export class VercelAIAdapter extends BaseAdapter {
 
     if (this.isAgent) {
       // Use ToolLoopAgent.generate()
-      const agent = this.modelOrAgent as ToolLoopAgent;
-      const result = await agent.generate({ prompt });
+      const agent = this.modelOrAgent as AnyToolLoopAgent;
+      const result = await agent.generate({ prompt, options: {} });
       output = result.text;
     } else {
       // Use generateText with LanguageModel
@@ -149,8 +152,8 @@ export class VercelAIAdapter extends BaseAdapter {
 
     if (this.isAgent) {
       // Use ToolLoopAgent.generate()
-      const agent = this.modelOrAgent as ToolLoopAgent;
-      const result = await agent.generate({ messages });
+      const agent = this.modelOrAgent as AnyToolLoopAgent;
+      const result = await agent.generate({ messages, options: {} });
       output = result.text;
     } else {
       // Use generateText with LanguageModel
@@ -195,8 +198,8 @@ export class VercelAIAdapter extends BaseAdapter {
 
     if (this.isAgent) {
       // Use ToolLoopAgent.stream()
-      const agent = this.modelOrAgent as ToolLoopAgent;
-      const result = await agent.stream({ prompt });
+      const agent = this.modelOrAgent as AnyToolLoopAgent;
+      const result = await agent.stream({ prompt, options: {} });
       for await (const chunk of result.textStream) {
         yield JSON.stringify({ chunk });
       }
@@ -226,8 +229,8 @@ export class VercelAIAdapter extends BaseAdapter {
 
     if (this.isAgent) {
       // Use ToolLoopAgent.stream()
-      const agent = this.modelOrAgent as ToolLoopAgent;
-      const result = await agent.stream({ messages });
+      const agent = this.modelOrAgent as AnyToolLoopAgent;
+      const result = await agent.stream({ messages, options: {} });
       for await (const chunk of result.textStream) {
         yield JSON.stringify({ chunk });
       }
@@ -285,7 +288,7 @@ export class VercelAIAdapter extends BaseAdapter {
  * ```
  */
 export function wrap(
-  modelOrAgent: LanguageModel | ToolLoopAgent,
+  modelOrAgent: LanguageModel | AnyToolLoopAgent,
   options: VercelAIAdapterOptions = {}
 ): VercelAIAdapter {
   return new VercelAIAdapter(modelOrAgent, options);
