@@ -16,16 +16,21 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
+import { wrapAndServe } from '@reminix/anthropic';
+
+const client = new Anthropic();
+wrapAndServe(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514', port: 8080 });
+```
+
+For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+
+```typescript
+import Anthropic from '@anthropic-ai/sdk';
 import { wrap } from '@reminix/anthropic';
 import { serve } from '@reminix/runtime';
 
-// Create an Anthropic client
 const client = new Anthropic();
-
-// Wrap it with the Reminix adapter
 const agent = wrap(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
-
-// Serve it as a REST API
 serve([agent], { port: 8080 });
 ```
 
@@ -35,9 +40,22 @@ Your agent is now available at:
 
 ## API Reference
 
+### `wrapAndServe(client, options)`
+
+Wrap an Anthropic client and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | `Anthropic` | required | An Anthropic client |
+| `options.name` | `string` | `"anthropic-agent"` | Name for the agent (used in URL path) |
+| `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
+| `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
+| `options.port` | `number` | `8080` | Port to serve on |
+| `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
+
 ### `wrap(client, options)`
 
-Wrap an Anthropic client for use with Reminix Runtime.
+Wrap an Anthropic client for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|

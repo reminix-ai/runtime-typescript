@@ -17,17 +17,24 @@ This will also install `@reminix/runtime` as a dependency.
 ```typescript
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatOpenAI } from '@langchain/openai';
+import { wrapAndServe } from '@reminix/langgraph';
+
+const llm = new ChatOpenAI({ model: 'gpt-4o' });
+const graph = createReactAgent({ llm, tools: [] });
+wrapAndServe(graph, { name: 'my-agent', port: 8080 });
+```
+
+For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+
+```typescript
+import { createReactAgent } from '@langchain/langgraph/prebuilt';
+import { ChatOpenAI } from '@langchain/openai';
 import { wrap } from '@reminix/langgraph';
 import { serve } from '@reminix/runtime';
 
-// Create a LangGraph agent
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const graph = createReactAgent({ llm, tools: [] });
-
-// Wrap it with the Reminix adapter
 const agent = wrap(graph, 'my-agent');
-
-// Serve it as a REST API
 serve([agent], { port: 8080 });
 ```
 
@@ -37,9 +44,20 @@ Your agent is now available at:
 
 ## API Reference
 
+### `wrapAndServe(graph, options)`
+
+Wrap a LangGraph graph and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
+| `options.name` | `string` | `"langgraph-agent"` | Name for the agent (used in URL path) |
+| `options.port` | `number` | `8080` | Port to serve on |
+| `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
+
 ### `wrap(graph, name)`
 
-Wrap a LangGraph compiled graph for use with Reminix Runtime.
+Wrap a LangGraph compiled graph for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|

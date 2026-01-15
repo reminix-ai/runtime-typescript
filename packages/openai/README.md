@@ -16,16 +16,21 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import OpenAI from 'openai';
+import { wrapAndServe } from '@reminix/openai';
+
+const client = new OpenAI();
+wrapAndServe(client, { name: 'my-chatbot', model: 'gpt-4o', port: 8080 });
+```
+
+For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+
+```typescript
+import OpenAI from 'openai';
 import { wrap } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
-// Create an OpenAI client
 const client = new OpenAI();
-
-// Wrap it with the Reminix adapter
 const agent = wrap(client, { name: 'my-chatbot', model: 'gpt-4o' });
-
-// Serve it as a REST API
 serve([agent], { port: 8080 });
 ```
 
@@ -35,9 +40,21 @@ Your agent is now available at:
 
 ## API Reference
 
+### `wrapAndServe(client, options)`
+
+Wrap an OpenAI client and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `client` | `OpenAI` | required | An OpenAI client |
+| `options.name` | `string` | `"openai-agent"` | Name for the agent (used in URL path) |
+| `options.model` | `string` | `"gpt-4o-mini"` | Model to use for completions |
+| `options.port` | `number` | `8080` | Port to serve on |
+| `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
+
 ### `wrap(client, options)`
 
-Wrap an OpenAI client for use with Reminix Runtime.
+Wrap an OpenAI client for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|

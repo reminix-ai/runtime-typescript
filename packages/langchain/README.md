@@ -16,16 +16,21 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
+import { wrapAndServe } from '@reminix/langchain';
+
+const llm = new ChatOpenAI({ model: 'gpt-4o' });
+wrapAndServe(llm, { name: 'my-chatbot', port: 8080 });
+```
+
+For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+
+```typescript
+import { ChatOpenAI } from '@langchain/openai';
 import { wrap } from '@reminix/langchain';
 import { serve } from '@reminix/runtime';
 
-// Create a LangChain model or chain
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
-
-// Wrap it with the Reminix adapter
 const agent = wrap(llm, 'my-chatbot');
-
-// Serve it as a REST API
 serve([agent], { port: 8080 });
 ```
 
@@ -35,9 +40,20 @@ Your agent is now available at:
 
 ## API Reference
 
+### `wrapAndServe(runnable, options)`
+
+Wrap a LangChain runnable and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `runnable` | `Runnable` | required | Any LangChain runnable (LLM, chain, agent, etc.) |
+| `options.name` | `string` | `"langchain-agent"` | Name for the agent (used in URL path) |
+| `options.port` | `number` | `8080` | Port to serve on |
+| `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
+
 ### `wrap(runnable, name)`
 
-Wrap a LangChain runnable for use with Reminix Runtime.
+Wrap a LangChain runnable for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
