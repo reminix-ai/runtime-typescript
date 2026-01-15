@@ -1,7 +1,7 @@
 {
   "name": "@reminix/runtime",
   "version": "0.0.1",
-  "description": "Reminix Runtime - Deploy AI agents via REST APIs",
+  "description": "Reminix Runtime - Serve AI agents as REST APIs with streaming support",
   "license": "Apache-2.0",
   "author": {
     "name": "Reminix Team",

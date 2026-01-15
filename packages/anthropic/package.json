@@ -1,7 +1,7 @@
 {
   "name": "@reminix/anthropic",
   "version": "0.0.1",
-  "description": "Reminix adapter for Anthropic",
+  "description": "Reminix integration for Anthropic Claude - serve agents as REST APIs",
   "license": "Apache-2.0",
   "author": {
     "name": "Reminix Team",

@@ -1,7 +1,7 @@
 {
   "name": "@reminix/langgraph",
   "version": "0.0.1",
-  "description": "Reminix adapter for LangGraph",
+  "description": "Reminix integration for LangGraph - serve graph-based agents as REST APIs",
   "license": "Apache-2.0",
   "author": {
     "name": "Reminix Team",
