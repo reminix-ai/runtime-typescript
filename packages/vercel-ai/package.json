@@ -1,6 +1,6 @@
 {
   "name": "@reminix/vercel-ai",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Reminix adapter for Vercel AI SDK",
   "license": "Apache-2.0",
   "type": "module",
