@@ -21,7 +21,8 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck",
     "prepush": "pnpm check && pnpm test",
     "clean": "turbo run clean",
-    "bump-version": "tsx scripts/bump-version.ts"
+    "bump-version": "tsx scripts/bump-version.ts",
+    "check-tag-version": "tsx scripts/check-tag-version.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

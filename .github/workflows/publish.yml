@@ -62,19 +62,13 @@ jobs:
         run: pnpm install
 
       - name: Verify tag matches runtime version
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          VERSION="$(node -p "require('./packages/runtime/package.json').version")"
-          if [ "$TAG" != "$VERSION" ]; then
-            echo "Tag v$TAG does not match runtime version $VERSION"
-            exit 1
-          fi
+        run: pnpm check-tag-version
 
       - name: Build packages
         run: pnpm build
 
       - name: Publish packages
         # pnpm publish --recursive automatically skips packages marked as "private": true
-        run: pnpm publish --recursive --access public --no-git-checks
+        run: pnpm -r --filter './packages/**' publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
