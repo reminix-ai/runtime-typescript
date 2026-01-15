@@ -4,7 +4,7 @@ Core runtime package for serving AI agents via REST APIs. Provides the `serve()`
 
 Built on [Hono](https://hono.dev) for portability across Node.js, Deno, Bun, and edge runtimes.
 
-> **Ready to go live?** [Deploy to Reminix](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
+> **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 
 ## Installation
 
@@ -313,7 +313,7 @@ interface ChatResponse {
 
 Ready to go live?
 
-- **[Deploy to Reminix](https://reminix.com/docs/deployment)** - Zero-config cloud hosting
+- **[Deploy to Reminix Cloud](https://reminix.com/docs/deployment)** - Zero-config cloud hosting
 - **[Self-host](https://reminix.com/docs/deployment/self-hosting)** - Run on your own infrastructure
 
 ## Links
