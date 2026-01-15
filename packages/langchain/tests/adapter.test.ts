@@ -2,11 +2,22 @@
  * Tests for the LangChain adapter.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
-import { wrap, LangChainAdapter } from '../src/adapter.js';
+import { wrap, wrapAndServe, LangChainAdapter } from '../src/adapter.js';
+
+// Mock @reminix/runtime serve function
+vi.mock('@reminix/runtime', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as object),
+    serve: vi.fn(),
+  };
+});
+
+import { serve } from '@reminix/runtime';
 
 describe('wrap', () => {
   it('should return a LangChainAdapter', () => {
@@ -128,5 +139,36 @@ describe('LangChainAdapter.chat', () => {
     expect(response.messages).toHaveLength(2);
     expect(response.messages[1].role).toBe('assistant');
     expect(response.messages[1].content).toBe('Chat response');
+  });
+});
+
+describe('wrapAndServe', () => {
+  beforeEach(() => {
+    vi.mocked(serve).mockClear();
+  });
+
+  it('should be callable', () => {
+    expect(typeof wrapAndServe).toBe('function');
+  });
+
+  it('should call serve with wrapped adapter', () => {
+    const mockRunnable = { invoke: vi.fn() };
+
+    wrapAndServe(mockRunnable as any, { name: 'test-agent' });
+
+    expect(serve).toHaveBeenCalledTimes(1);
+    const serveCall = vi.mocked(serve).mock.calls[0];
+    expect(serveCall[0]).toHaveLength(1);
+    expect(serveCall[0][0]).toBeInstanceOf(LangChainAdapter);
+    expect(serveCall[0][0].name).toBe('test-agent');
+  });
+
+  it('should pass serve options', () => {
+    const mockRunnable = { invoke: vi.fn() };
+
+    wrapAndServe(mockRunnable as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
+
+    const serveCall = vi.mocked(serve).mock.calls[0];
+    expect(serveCall[1]).toEqual({ port: 3000, hostname: 'localhost' });
   });
 });
