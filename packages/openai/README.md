@@ -5,8 +5,10 @@ Reminix Runtime adapter for the [OpenAI API](https://platform.openai.com/docs). 
 ## Installation
 
 ```bash
-npm install @reminix/runtime @reminix/openai openai
+npm install @reminix/openai openai
 ```
+
+This will also install `@reminix/runtime` as a dependency.
 
 ## Quick Start
 

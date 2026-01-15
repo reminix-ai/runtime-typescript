@@ -8,8 +8,10 @@ Reminix Runtime adapter for the [Vercel AI SDK](https://sdk.vercel.ai/). Support
 ## Installation
 
 ```bash
-npm install @reminix/runtime @reminix/vercel-ai ai @ai-sdk/openai
+npm install @reminix/vercel-ai ai @ai-sdk/openai
 ```
+
+This will also install `@reminix/runtime` as a dependency.
 
 ## Quick Start with ToolLoopAgent
 

@@ -5,8 +5,10 @@ Reminix Runtime adapter for [LangChain](https://js.langchain.com). Deploy any La
 ## Installation
 
 ```bash
-npm install @reminix/runtime @reminix/langchain @langchain/core
+npm install @reminix/langchain @langchain/core
 ```
+
+This will also install `@reminix/runtime` as a dependency.
 
 ## Quick Start
 

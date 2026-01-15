@@ -5,8 +5,10 @@ Reminix Runtime adapter for [LangGraph](https://langchain-ai.github.io/langgraph
 ## Installation
 
 ```bash
-npm install @reminix/runtime @reminix/langgraph @langchain/langgraph
+npm install @reminix/langgraph @langchain/langgraph
 ```
+
+This will also install `@reminix/runtime` as a dependency.
 
 ## Quick Start
 

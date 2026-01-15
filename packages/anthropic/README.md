@@ -5,8 +5,10 @@ Reminix Runtime adapter for the [Anthropic API](https://docs.anthropic.com/). De
 ## Installation
 
 ```bash
-npm install @reminix/runtime @reminix/anthropic @anthropic-ai/sdk
+npm install @reminix/anthropic @anthropic-ai/sdk
 ```
+
+This will also install `@reminix/runtime` as a dependency.
 
 ## Quick Start
 
