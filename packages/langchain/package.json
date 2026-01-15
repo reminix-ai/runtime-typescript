@@ -1,6 +1,6 @@
 {
   "name": "@reminix/langchain",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Reminix adapter for LangChain - serve agents as REST APIs",
   "license": "Apache-2.0",
   "author": {
@@ -8,7 +8,14 @@
     "email": "team@reminix.com",
     "url": "https://reminix.com"
   },
-  "keywords": ["ai", "agents", "langchain", "llm", "reminix", "typescript"],
+  "keywords": [
+    "ai",
+    "agents",
+    "langchain",
+    "llm",
+    "reminix",
+    "typescript"
+  ],
   "homepage": "https://reminix.com",
   "repository": {
     "type": "git",
