@@ -310,7 +310,7 @@ interface ChatResponse {
 ## Links
 
 - [GitHub Repository](https://github.com/reminix-ai/runtime-typescript)
-- [Documentation](https://docs.reminix.ai)
+- [Documentation](https://reminix.com/docs)
 
 ## License
 
