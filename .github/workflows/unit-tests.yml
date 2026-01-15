@@ -45,6 +45,9 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
+      - name: Build
+        run: pnpm build
+
   test:
     runs-on: ubuntu-latest
     strategy:
