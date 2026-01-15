@@ -1,7 +1,7 @@
 {
   "name": "@reminix/langchain",
   "version": "0.0.1",
-  "description": "Reminix integration for LangChain - serve chains and agents as REST APIs",
+  "description": "Reminix adapter for LangChain - serve agents as REST APIs",
   "license": "Apache-2.0",
   "author": {
     "name": "Reminix Team",

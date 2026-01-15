@@ -1,7 +1,7 @@
 {
   "name": "@reminix/openai",
   "version": "0.0.1",
-  "description": "Reminix integration for OpenAI Agents SDK - serve agents as REST APIs",
+  "description": "Reminix adapter for OpenAI - serve agents as REST APIs",
   "license": "Apache-2.0",
   "author": {
     "name": "Reminix Team",

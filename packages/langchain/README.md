@@ -1,6 +1,6 @@
 # @reminix/langchain
 
-Reminix Runtime adapter for [LangChain](https://js.langchain.com). Deploy any LangChain runnable as a REST API.
+Reminix Runtime adapter for [LangChain](https://js.langchain.com). Serve any LangChain runnable as a REST API.
 
 ## Installation
 

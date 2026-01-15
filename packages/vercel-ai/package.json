@@ -1,7 +1,7 @@
 {
   "name": "@reminix/vercel-ai",
   "version": "0.0.1",
-  "description": "Reminix integration for Vercel AI SDK - serve AI apps as REST APIs",
+  "description": "Reminix adapter for Vercel AI SDK - serve agents as REST APIs",
   "license": "Apache-2.0",
   "author": {
     "name": "Reminix Team",
