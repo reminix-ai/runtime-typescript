@@ -42,11 +42,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Type check
-        run: pnpm typecheck
-
       - name: Build
         run: pnpm build
+
+      - name: Type check
+        run: pnpm typecheck
 
   test:
     runs-on: ubuntu-latest
