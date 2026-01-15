@@ -103,11 +103,7 @@ function updatePackageJson(
   return false;
 }
 
-function updateDependencyVersion(
-  current: string,
-  oldVersion: string,
-  newVersion: string
-): string {
+function updateDependencyVersion(current: string, oldVersion: string, newVersion: string): string {
   if (current.startsWith('workspace:')) {
     return current;
   }
@@ -149,10 +145,7 @@ function updateRuntimeVersionFiles(root: string, newVersion: string, dryRun: boo
 
   try {
     const content = readFileSync(runtimeReadme, 'utf-8');
-    const next = content.replace(
-      /"version":\s*"\d+\.\d+\.\d+"/g,
-      `"version": "${newVersion}"`
-    );
+    const next = content.replace(/"version":\s*"\d+\.\d+\.\d+"/g, `"version": "${newVersion}"`);
     if (next !== content) {
       if (!dryRun) {
         writeFileSync(runtimeReadme, next, 'utf-8');
