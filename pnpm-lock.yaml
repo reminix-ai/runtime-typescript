@@ -195,7 +195,7 @@ importers:
   packages/anthropic:
     dependencies:
       '@reminix/runtime':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../runtime
     devDependencies:
       '@anthropic-ai/sdk':
@@ -214,7 +214,7 @@ importers:
   packages/langchain:
     dependencies:
       '@reminix/runtime':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../runtime
     devDependencies:
       '@langchain/core':
@@ -233,7 +233,7 @@ importers:
   packages/langgraph:
     dependencies:
       '@reminix/runtime':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../runtime
     devDependencies:
       '@langchain/core':
@@ -255,7 +255,7 @@ importers:
   packages/openai:
     dependencies:
       '@reminix/runtime':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../runtime
     devDependencies:
       '@types/node':
@@ -293,7 +293,7 @@ importers:
   packages/vercel-ai:
     dependencies:
       '@reminix/runtime':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../runtime
     devDependencies:
       '@types/node':

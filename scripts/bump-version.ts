@@ -84,9 +84,9 @@ function updatePackageJson(
         // Only update @reminix/* packages
         if (pkg.startsWith('@reminix/')) {
           const current = data[depType]![pkg];
-          // Update if it's an exact version match (not workspace:*)
-          if (current === oldVersion) {
-            data[depType]![pkg] = newVersion;
+          const updated = updateDependencyVersion(current, oldVersion, newVersion);
+          if (updated !== current) {
+            data[depType]![pkg] = updated;
             changed = true;
           }
         }
@@ -101,6 +101,69 @@ function updatePackageJson(
     return true;
   }
   return false;
+}
+
+function updateDependencyVersion(
+  current: string,
+  oldVersion: string,
+  newVersion: string
+): string {
+  if (current.startsWith('workspace:')) {
+    return current;
+  }
+
+  const match = current.match(/^(>=|\^|~)?(\d+\.\d+\.\d+)$/);
+  if (!match) {
+    return current;
+  }
+
+  const prefix = match[1] ?? '';
+  const version = match[2];
+  if (version !== oldVersion) {
+    return current;
+  }
+
+  return `${prefix}${newVersion}`;
+}
+
+function updateRuntimeVersionFiles(root: string, newVersion: string, dryRun: boolean): string[] {
+  const updated: string[] = [];
+  const runtimeVersion = join(root, 'packages', 'runtime', 'src', 'version.ts');
+  const runtimeReadme = join(root, 'packages', 'runtime', 'README.md');
+
+  try {
+    const content = readFileSync(runtimeVersion, 'utf-8');
+    const next = content.replace(
+      /export const VERSION = '\d+\.\d+\.\d+';/,
+      `export const VERSION = '${newVersion}';`
+    );
+    if (next !== content) {
+      if (!dryRun) {
+        writeFileSync(runtimeVersion, next, 'utf-8');
+      }
+      updated.push(runtimeVersion);
+    }
+  } catch {
+    // ignore missing file
+  }
+
+  try {
+    const content = readFileSync(runtimeReadme, 'utf-8');
+    const next = content.replace(
+      /"version":\s*"\d+\.\d+\.\d+"/g,
+      `"version": "${newVersion}"`
+    );
+    if (next !== content) {
+      if (!dryRun) {
+        writeFileSync(runtimeReadme, next, 'utf-8');
+      }
+      updated.push(runtimeReadme);
+    }
+  } catch {
+    // ignore missing file
+  }
+
+  return updated;
 }
 
 function findPackageJsonFiles(root: string, dir: string = root, files: string[] = []): string[] {
@@ -184,6 +247,11 @@ function main() {
       console.log(`  ✓ ${relPath}`);
       updatedCount++;
     }
+  }
+
+  for (const updatedFile of updateRuntimeVersionFiles(root, newVersion, dryRun)) {
+    console.log(`  ✓ ${relative(root, updatedFile)}`);
+    updatedCount++;
   }
 
   if (dryRun) {

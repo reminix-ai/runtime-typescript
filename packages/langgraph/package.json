@@ -22,7 +22,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@reminix/runtime": "workspace:*"
+    "@reminix/runtime": "workspace:^"
   },
   "peerDependencies": {
     "@langchain/langgraph": ">=1.0.0"

@@ -22,7 +22,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@reminix/runtime": "workspace:*"
+    "@reminix/runtime": "workspace:^"
   },
   "peerDependencies": {
     "@anthropic-ai/sdk": ">=0.71.0"

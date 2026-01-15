@@ -22,7 +22,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@reminix/runtime": "workspace:*"
+    "@reminix/runtime": "workspace:^"
   },
   "peerDependencies": {
     "ai": ">=6.0.0"
