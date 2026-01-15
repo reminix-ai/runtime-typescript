@@ -1,6 +1,8 @@
 # @reminix/vercel-ai
 
-Reminix Runtime adapter for the [Vercel AI SDK](https://sdk.vercel.ai/). Supports both:
+Reminix Runtime adapter for the [Vercel AI SDK](https://ai-sdk.dev). Serve AI agents as a REST API.
+
+Supports both:
 
 - **ToolLoopAgent** - Full agents with tools and automatic tool loop handling
 - **Model** - Simple completions via `generateText`/`streamText` without tools
