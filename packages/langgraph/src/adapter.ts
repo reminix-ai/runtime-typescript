@@ -12,6 +12,8 @@ import {
 
 import {
   BaseAdapter,
+  serve,
+  type ServeOptions,
   type InvokeRequest,
   type InvokeResponse,
   type ChatRequest,
@@ -296,4 +298,36 @@ export class LangGraphAdapter extends BaseAdapter {
  */
 export function wrap(graph: LangGraphRunnable, name: string = 'langgraph-agent'): LangGraphAdapter {
   return new LangGraphAdapter(graph, name);
+}
+
+/**
+ * Options for wrapping and serving a LangGraph graph.
+ */
+export interface WrapAndServeOptions extends ServeOptions {
+  name?: string;
+}
+
+/**
+ * Wrap a LangGraph graph and serve it immediately.
+ *
+ * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ *
+ * @param graph - A LangGraph compiled graph.
+ * @param options - Combined adapter and server options.
+ *
+ * @example
+ * ```typescript
+ * import { createReactAgent } from '@langchain/langgraph/prebuilt';
+ * import { ChatOpenAI } from '@langchain/openai';
+ * import { wrapAndServe } from '@reminix/langgraph';
+ *
+ * const llm = new ChatOpenAI({ model: 'gpt-4' });
+ * const graph = createReactAgent({ llm, tools: [] });
+ * wrapAndServe(graph, { name: 'my-agent', port: 8080 });
+ * ```
+ */
+export function wrapAndServe(graph: LangGraphRunnable, options: WrapAndServeOptions = {}): void {
+  const { port, hostname, name } = options;
+  const agent = wrap(graph, name);
+  serve([agent], { port, hostname });
 }

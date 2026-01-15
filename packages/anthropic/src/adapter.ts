@@ -6,6 +6,8 @@ import type Anthropic from '@anthropic-ai/sdk';
 
 import {
   BaseAdapter,
+  serve,
+  type ServeOptions,
   type InvokeRequest,
   type InvokeResponse,
   type ChatRequest,
@@ -254,4 +256,32 @@ export class AnthropicAdapter extends BaseAdapter {
  */
 export function wrap(client: Anthropic, options: AnthropicAdapterOptions = {}): AnthropicAdapter {
   return new AnthropicAdapter(client, options);
+}
+
+/**
+ * Options for wrapping and serving an Anthropic client.
+ */
+export interface WrapAndServeOptions extends AnthropicAdapterOptions, ServeOptions {}
+
+/**
+ * Wrap an Anthropic client and serve it immediately.
+ *
+ * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ *
+ * @param client - An Anthropic client.
+ * @param options - Combined adapter and server options.
+ *
+ * @example
+ * ```typescript
+ * import Anthropic from '@anthropic-ai/sdk';
+ * import { wrapAndServe } from '@reminix/anthropic';
+ *
+ * const client = new Anthropic();
+ * wrapAndServe(client, { name: 'my-agent', model: 'claude-sonnet-4-20250514', port: 8080 });
+ * ```
+ */
+export function wrapAndServe(client: Anthropic, options: WrapAndServeOptions = {}): void {
+  const { port, hostname, ...adapterOptions } = options;
+  const agent = wrap(client, adapterOptions);
+  serve([agent], { port, hostname });
 }

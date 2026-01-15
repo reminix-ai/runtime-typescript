@@ -1,2 +1,2 @@
-export { AnthropicAdapter, wrap } from './adapter.js';
-export type { AnthropicAdapterOptions } from './adapter.js';
+export { AnthropicAdapter, wrap, wrapAndServe } from './adapter.js';
+export type { AnthropicAdapterOptions, WrapAndServeOptions } from './adapter.js';

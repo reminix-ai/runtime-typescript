@@ -9,6 +9,8 @@ import { generateText, streamText, type LanguageModel, type ModelMessage } from 
 
 import {
   BaseAdapter,
+  serve,
+  type ServeOptions,
   type InvokeRequest,
   type InvokeResponse,
   type ChatRequest,
@@ -286,4 +288,35 @@ export function wrap(
   options: VercelAIAdapterOptions = {}
 ): VercelAIAdapter {
   return new VercelAIAdapter(modelOrAgent, options);
+}
+
+/**
+ * Options for wrapping and serving a Vercel AI model or agent.
+ */
+export interface WrapAndServeOptions extends VercelAIAdapterOptions, ServeOptions {}
+
+/**
+ * Wrap a Vercel AI model or agent and serve it immediately.
+ *
+ * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ *
+ * @param modelOrAgent - A Vercel AI SDK ToolLoopAgent or LanguageModel.
+ * @param options - Combined adapter and server options.
+ *
+ * @example
+ * ```typescript
+ * import { openai } from '@ai-sdk/openai';
+ * import { wrapAndServe } from '@reminix/vercel-ai';
+ *
+ * const model = openai('gpt-4o');
+ * wrapAndServe(model, { name: 'my-agent', port: 8080 });
+ * ```
+ */
+export function wrapAndServe(
+  modelOrAgent: LanguageModel | AnyToolLoopAgent,
+  options: WrapAndServeOptions = {}
+): void {
+  const { port, hostname, ...adapterOptions } = options;
+  const agent = wrap(modelOrAgent, adapterOptions);
+  serve([agent], { port, hostname });
 }

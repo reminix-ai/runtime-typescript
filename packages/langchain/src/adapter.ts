@@ -13,6 +13,8 @@ import type { Runnable } from '@langchain/core/runnables';
 
 import {
   BaseAdapter,
+  serve,
+  type ServeOptions,
   type InvokeRequest,
   type InvokeResponse,
   type ChatRequest,
@@ -215,4 +217,34 @@ export class LangChainAdapter extends BaseAdapter {
  */
 export function wrap(agent: Runnable, name: string = 'langchain-agent'): LangChainAdapter {
   return new LangChainAdapter(agent, name);
+}
+
+/**
+ * Options for wrapping and serving a LangChain runnable.
+ */
+export interface WrapAndServeOptions extends ServeOptions {
+  name?: string;
+}
+
+/**
+ * Wrap a LangChain runnable and serve it immediately.
+ *
+ * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ *
+ * @param agent - A LangChain runnable (e.g., ChatModel, chain, agent).
+ * @param options - Combined adapter and server options.
+ *
+ * @example
+ * ```typescript
+ * import { ChatOpenAI } from '@langchain/openai';
+ * import { wrapAndServe } from '@reminix/langchain';
+ *
+ * const llm = new ChatOpenAI({ model: 'gpt-4' });
+ * wrapAndServe(llm, { name: 'my-agent', port: 8080 });
+ * ```
+ */
+export function wrapAndServe(agent: Runnable, options: WrapAndServeOptions = {}): void {
+  const { port, hostname, name } = options;
+  const wrappedAgent = wrap(agent, name);
+  serve([wrappedAgent], { port, hostname });
 }

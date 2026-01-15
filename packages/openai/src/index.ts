@@ -1,2 +1,2 @@
-export { OpenAIAdapter, wrap } from './adapter.js';
-export type { OpenAIAdapterOptions } from './adapter.js';
+export { OpenAIAdapter, wrap, wrapAndServe } from './adapter.js';
+export type { OpenAIAdapterOptions, WrapAndServeOptions } from './adapter.js';

@@ -6,6 +6,8 @@ import type OpenAI from 'openai';
 
 import {
   BaseAdapter,
+  serve,
+  type ServeOptions,
   type InvokeRequest,
   type InvokeResponse,
   type ChatRequest,
@@ -207,4 +209,32 @@ export class OpenAIAdapter extends BaseAdapter {
  */
 export function wrap(client: OpenAI, options: OpenAIAdapterOptions = {}): OpenAIAdapter {
   return new OpenAIAdapter(client, options);
+}
+
+/**
+ * Options for wrapping and serving an OpenAI client.
+ */
+export interface WrapAndServeOptions extends OpenAIAdapterOptions, ServeOptions {}
+
+/**
+ * Wrap an OpenAI client and serve it immediately.
+ *
+ * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ *
+ * @param client - An OpenAI client.
+ * @param options - Combined adapter and server options.
+ *
+ * @example
+ * ```typescript
+ * import OpenAI from 'openai';
+ * import { wrapAndServe } from '@reminix/openai';
+ *
+ * const client = new OpenAI();
+ * wrapAndServe(client, { name: 'my-agent', model: 'gpt-4o', port: 8080 });
+ * ```
+ */
+export function wrapAndServe(client: OpenAI, options: WrapAndServeOptions = {}): void {
+  const { port, hostname, ...adapterOptions } = options;
+  const agent = wrap(client, adapterOptions);
+  serve([agent], { port, hostname });
 }

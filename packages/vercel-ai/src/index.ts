@@ -1,2 +1,2 @@
-export { VercelAIAdapter, wrap } from './adapter.js';
-export type { VercelAIAdapterOptions } from './adapter.js';
+export { VercelAIAdapter, wrap, wrapAndServe } from './adapter.js';
+export type { VercelAIAdapterOptions, WrapAndServeOptions } from './adapter.js';
