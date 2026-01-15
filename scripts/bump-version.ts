@@ -48,6 +48,8 @@ function bumpVersion(version: string, bumpType: BumpType): string {
       return formatVersion(major, minor + 1, 0);
     case 'patch':
       return formatVersion(major, minor, patch + 1);
+    default:
+      throw new Error(`Invalid bump type: ${bumpType}`);
   }
 }
 
@@ -234,8 +236,8 @@ function main() {
     process.exit(1);
   }
 
-  const bumpDescription = ['major', 'minor', 'patch'].includes(bumpTypeOrVersion) 
-    ? bumpTypeOrVersion 
+  const bumpDescription = ['major', 'minor', 'patch'].includes(bumpTypeOrVersion)
+    ? bumpTypeOrVersion
     : `custom (${bumpTypeOrVersion})`;
   console.log(`Bumping version from ${currentVersion} to ${newVersion} (${bumpDescription})`);
   if (dryRun) {
