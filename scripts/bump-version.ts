@@ -19,7 +19,7 @@
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
 
-type BumpType = 'major' | 'minor' | 'patch';
+type BumpType = 'major' | 'minor' | 'patch' | string; // string for custom version
 
 interface PackageJson {
   name?: string;
@@ -195,13 +195,22 @@ function getCurrentVersion(root: string): string | null {
   return null;
 }
 
+function isValidVersion(version: string): boolean {
+  // Check if it's a valid semver format (x.y.z)
+  const semverRegex = /^\d+\.\d+\.\d+$/;
+  return semverRegex.test(version);
+}
+
 function main() {
   const args = process.argv.slice(2);
-  const bumpType = args[0] as BumpType;
+  const bumpTypeOrVersion = args[0];
   const dryRun = args.includes('--dry-run');
 
-  if (!bumpType || !['major', 'minor', 'patch'].includes(bumpType)) {
-    console.error('Usage: bump-version <major|minor|patch> [--dry-run]');
+  if (!bumpTypeOrVersion) {
+    console.error('Usage: bump-version <major|minor|patch|version> [--dry-run]');
+    console.error('  Examples:');
+    console.error('    bump-version patch        # Bump patch version');
+    console.error('    bump-version 1.2.3       # Set to specific version');
     process.exit(1);
   }
 
@@ -213,9 +222,22 @@ function main() {
     process.exit(1);
   }
 
-  const newVersion = bumpVersion(currentVersion, bumpType);
+  // Check if it's a custom version or a bump type
+  let newVersion: string;
+  if (['major', 'minor', 'patch'].includes(bumpTypeOrVersion)) {
+    newVersion = bumpVersion(currentVersion, bumpTypeOrVersion as BumpType);
+  } else if (isValidVersion(bumpTypeOrVersion)) {
+    newVersion = bumpTypeOrVersion;
+  } else {
+    console.error(`Error: Invalid version or bump type: ${bumpTypeOrVersion}`);
+    console.error('Must be one of: major, minor, patch, or a version string (e.g., 1.2.3)');
+    process.exit(1);
+  }
 
-  console.log(`Bumping version from ${currentVersion} to ${newVersion} (${bumpType})`);
+  const bumpDescription = ['major', 'minor', 'patch'].includes(bumpTypeOrVersion) 
+    ? bumpTypeOrVersion 
+    : `custom (${bumpTypeOrVersion})`;
+  console.log(`Bumping version from ${currentVersion} to ${newVersion} (${bumpDescription})`);
   if (dryRun) {
     console.log('\n[DRY RUN] Would update the following files:');
   } else {
