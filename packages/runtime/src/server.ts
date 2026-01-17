@@ -137,7 +137,7 @@ export function createApp(agents: AgentBase[]): Hono {
  * @param options - Server options.
  */
 export function serve(agents: AgentBase[], options: ServeOptions = {}): void {
-  const { port = 8080, hostname = '0.0.0.0' } = options;
+  const { port = 8080, hostname = '::' } = options;
 
   const app = createApp(agents);
 
