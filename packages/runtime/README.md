@@ -160,8 +160,8 @@ Start the runtime server.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `agents` | `Agent[]` | required | List of agents |
-| `options.port` | `number` | `8080` | Port to listen on |
-| `options.hostname` | `string` | `"::"` | Host to bind to (IPv6, also accepts IPv4) |
+| `options.port` | `number` | `8080` | Port to listen on. Falls back to `PORT` environment variable if not provided. |
+| `options.hostname` | `string` | `"0.0.0.0"` | Host to bind to (all interfaces). Can be overridden via `HOST` env var. |
 
 ### `createApp(agents)`
 

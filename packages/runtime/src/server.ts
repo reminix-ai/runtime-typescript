@@ -137,7 +137,11 @@ export function createApp(agents: AgentBase[]): Hono {
  * @param options - Server options.
  */
 export function serve(agents: AgentBase[], options: ServeOptions = {}): void {
-  const { port = 8080, hostname = '::' } = options;
+  // Default to 0.0.0.0 for Fly's load balancer compatibility
+  // Can be overridden via HOST env var or options.hostname
+  const defaultHostname = process.env.HOST || '0.0.0.0';
+  const defaultPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
+  const { port = defaultPort, hostname = defaultHostname } = options;
 
   const app = createApp(agents);
 
