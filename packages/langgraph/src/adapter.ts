@@ -11,7 +11,7 @@ import {
 } from '@langchain/core/messages';
 
 import {
-  BaseAdapter,
+  AdapterBase,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -40,7 +40,7 @@ interface LangGraphRunnable {
 /**
  * Adapter for LangGraph compiled graphs.
  */
-export class LangGraphAdapter extends BaseAdapter {
+export class LangGraphAdapter extends AdapterBase {
   static adapterName = 'langgraph';
 
   private graph: LangGraphRunnable;
@@ -292,11 +292,14 @@ export class LangGraphAdapter extends BaseAdapter {
  *
  * const llm = new ChatOpenAI({ model: 'gpt-4' });
  * const graph = createReactAgent({ llm, tools: [] });
- * const agent = wrap(graph, 'my-agent');
- * serve([agent], { port: 8080 });
+ * const agent = wrapAgent(graph, 'my-agent');
+ * serve({ agents: [agent], port: 8080 });
  * ```
  */
-export function wrap(graph: LangGraphRunnable, name: string = 'langgraph-agent'): LangGraphAdapter {
+export function wrapAgent(
+  graph: LangGraphRunnable,
+  name: string = 'langgraph-agent'
+): LangGraphAdapter {
   return new LangGraphAdapter(graph, name);
 }
 
@@ -310,7 +313,7 @@ export interface WrapAndServeOptions extends ServeOptions {
 /**
  * Wrap a LangGraph graph and serve it immediately.
  *
- * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ * This is a convenience function that combines `wrapAgent` and `serve` for single-agent setups.
  *
  * @param graph - A LangGraph compiled graph.
  * @param options - Combined adapter and server options.
@@ -319,15 +322,15 @@ export interface WrapAndServeOptions extends ServeOptions {
  * ```typescript
  * import { createReactAgent } from '@langchain/langgraph/prebuilt';
  * import { ChatOpenAI } from '@langchain/openai';
- * import { wrapAndServe } from '@reminix/langgraph';
+ * import { serveAgent } from '@reminix/langgraph';
  *
  * const llm = new ChatOpenAI({ model: 'gpt-4' });
  * const graph = createReactAgent({ llm, tools: [] });
- * wrapAndServe(graph, { name: 'my-agent', port: 8080 });
+ * serveAgent(graph, { name: 'my-agent', port: 8080 });
  * ```
  */
-export function wrapAndServe(graph: LangGraphRunnable, options: WrapAndServeOptions = {}): void {
+export function serveAgent(graph: LangGraphRunnable, options: WrapAndServeOptions = {}): void {
   const { port, hostname, name } = options;
-  const agent = wrap(graph, name);
-  serve([agent], { port, hostname });
+  const agent = wrapAgent(graph, name);
+  serve({ agents: [agent], port, hostname });
 }

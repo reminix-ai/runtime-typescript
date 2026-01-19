@@ -21,10 +21,10 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import { openai } from '@ai-sdk/openai';
-import { wrapAndServe } from '@reminix/vercel-ai';
+import { serveAgent } from '@reminix/vercel-ai';
 
 const model = openai('gpt-4o');
-wrapAndServe(model, { name: 'chat-agent', port: 8080 });
+serveAgent(model, { name: 'chat-agent', port: 8080 });
 ```
 
 ## Quick Start with ToolLoopAgent
@@ -35,7 +35,7 @@ For agents with tools, use `ToolLoopAgent`:
 import { ToolLoopAgent, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
-import { wrapAndServe } from '@reminix/vercel-ai';
+import { serveAgent } from '@reminix/vercel-ai';
 
 const weatherTool = tool({
   description: 'Get the current weather for a city',
@@ -53,19 +53,19 @@ const agent = new ToolLoopAgent({
   tools: { getWeather: weatherTool }
 });
 
-wrapAndServe(agent, { name: 'weather-agent', port: 8080 });
+serveAgent(agent, { name: 'weather-agent', port: 8080 });
 ```
 
-For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
 
 ```typescript
 import { openai } from '@ai-sdk/openai';
-import { wrap } from '@reminix/vercel-ai';
+import { wrapAgent } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
 const model = openai('gpt-4o');
-const reminixAgent = wrap(model, { name: 'chat-agent' });
-serve([reminixAgent], { port: 8080 });
+const reminixAgent = wrapAgent(model, { name: 'chat-agent' });
+serve({ agents: [reminixAgent], port: 8080 });
 ```
 
 Your agent is now available at:
@@ -74,9 +74,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `wrapAndServe(modelOrAgent, options)`
+### `serveAgent(modelOrAgent, options)`
 
-Wrap a Vercel AI SDK model or agent and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+Wrap a Vercel AI SDK model or agent and serve it immediately. Combines `wrapAgent` and `serve` for single-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -85,7 +85,7 @@ Wrap a Vercel AI SDK model or agent and serve it immediately. Combines `wrap` an
 | `options.port` | `number` | `8080` | Port to serve on |
 | `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
 
-### `wrap(modelOrAgent, options)`
+### `wrapAgent(modelOrAgent, options)`
 
 Wrap a Vercel AI SDK ToolLoopAgent or Model for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
 
@@ -104,14 +104,14 @@ The Vercel AI SDK supports multiple providers:
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
-import { wrap } from '@reminix/vercel-ai';
+import { wrapAgent } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
-const gpt = wrap(openai('gpt-4o'), { name: 'gpt' });
-const claude = wrap(anthropic('claude-sonnet-4-20250514'), { name: 'claude' });
-const gemini = wrap(google('gemini-pro'), { name: 'gemini' });
+const gpt = wrapAgent(openai('gpt-4o'), { name: 'gpt' });
+const claude = wrapAgent(anthropic('claude-sonnet-4-20250514'), { name: 'claude' });
+const gemini = wrapAgent(google('gemini-pro'), { name: 'gemini' });
 
-serve([gpt, claude, gemini], { port: 8080 });
+serve({ agents: [gpt, claude, gemini], port: 8080 });
 ```
 
 ## When to Use Each Option

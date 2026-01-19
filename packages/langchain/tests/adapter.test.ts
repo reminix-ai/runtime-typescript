@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
-import { wrap, wrapAndServe, LangChainAdapter } from '../src/adapter.js';
+import { wrapAgent, serveAgent, LangChainAdapter } from '../src/adapter.js';
 
 // Mock @reminix/runtime serve function
 vi.mock('@reminix/runtime', async (importOriginal) => {
@@ -22,21 +22,21 @@ import { serve } from '@reminix/runtime';
 describe('wrap', () => {
   it('should return a LangChainAdapter', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const adapter = wrap(mockRunnable as any);
+    const adapter = wrapAgent(mockRunnable as any);
 
     expect(adapter).toBeInstanceOf(LangChainAdapter);
   });
 
   it('should accept a custom name', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const adapter = wrap(mockRunnable as any, 'my-custom-agent');
+    const adapter = wrapAgent(mockRunnable as any, 'my-custom-agent');
 
     expect(adapter.name).toBe('my-custom-agent');
   });
 
   it('should use default name if not provided', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const adapter = wrap(mockRunnable as any);
+    const adapter = wrapAgent(mockRunnable as any);
 
     expect(adapter.name).toBe('langchain-agent');
   });
@@ -48,7 +48,7 @@ describe('LangChainAdapter.invoke', () => {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
     };
 
-    const adapter = wrap(mockRunnable as any);
+    const adapter = wrapAgent(mockRunnable as any);
     const request: InvokeRequest = { input: { query: 'What is AI?' } };
 
     await adapter.invoke(request);
@@ -61,7 +61,7 @@ describe('LangChainAdapter.invoke', () => {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello from LangChain!' })),
     };
 
-    const adapter = wrap(mockRunnable as any);
+    const adapter = wrapAgent(mockRunnable as any);
     const request: InvokeRequest = { input: { query: 'Hi' } };
 
     const response = await adapter.invoke(request);
@@ -74,7 +74,7 @@ describe('LangChainAdapter.invoke', () => {
       invoke: vi.fn().mockResolvedValue({ result: 'success', value: 42 }),
     };
 
-    const adapter = wrap(mockRunnable as any);
+    const adapter = wrapAgent(mockRunnable as any);
     const request: InvokeRequest = { input: { task: 'compute' } };
 
     const response = await adapter.invoke(request);
@@ -89,7 +89,7 @@ describe('LangChainAdapter.chat', () => {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
     };
 
-    const adapter = wrap(mockRunnable as any);
+    const adapter = wrapAgent(mockRunnable as any);
     const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
 
     await adapter.chat(request);
@@ -105,7 +105,7 @@ describe('LangChainAdapter.chat', () => {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Response' })),
     };
 
-    const adapter = wrap(mockRunnable as any);
+    const adapter = wrapAgent(mockRunnable as any);
     const request: ChatRequest = {
       messages: [
         { role: 'system', content: 'You are helpful' },
@@ -130,7 +130,7 @@ describe('LangChainAdapter.chat', () => {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Chat response' })),
     };
 
-    const adapter = wrap(mockRunnable as any);
+    const adapter = wrapAgent(mockRunnable as any);
     const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
 
     const response = await adapter.chat(request);
@@ -142,33 +142,34 @@ describe('LangChainAdapter.chat', () => {
   });
 });
 
-describe('wrapAndServe', () => {
+describe('serveAgent', () => {
   beforeEach(() => {
     vi.mocked(serve).mockClear();
   });
 
   it('should be callable', () => {
-    expect(typeof wrapAndServe).toBe('function');
+    expect(typeof serveAgent).toBe('function');
   });
 
   it('should call serve with wrapped adapter', () => {
     const mockRunnable = { invoke: vi.fn() };
 
-    wrapAndServe(mockRunnable as any, { name: 'test-agent' });
+    serveAgent(mockRunnable as any, { name: 'test-agent' });
 
     expect(serve).toHaveBeenCalledTimes(1);
-    const serveCall = vi.mocked(serve).mock.calls[0];
-    expect(serveCall[0]).toHaveLength(1);
-    expect(serveCall[0][0]).toBeInstanceOf(LangChainAdapter);
-    expect(serveCall[0][0].name).toBe('test-agent');
+    const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
+    expect(serveCall.agents).toHaveLength(1);
+    expect(serveCall.agents[0]).toBeInstanceOf(LangChainAdapter);
+    expect(serveCall.agents[0].name).toBe('test-agent');
   });
 
   it('should pass serve options', () => {
     const mockRunnable = { invoke: vi.fn() };
 
-    wrapAndServe(mockRunnable as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
+    serveAgent(mockRunnable as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
 
-    const serveCall = vi.mocked(serve).mock.calls[0];
-    expect(serveCall[1]).toEqual({ port: 3000, hostname: 'localhost' });
+    const serveCall = vi.mocked(serve).mock.calls[0][0] as { port?: number; hostname?: string };
+    expect(serveCall.port).toBe(3000);
+    expect(serveCall.hostname).toBe('localhost');
   });
 });

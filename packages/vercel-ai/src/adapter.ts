@@ -8,7 +8,7 @@ import type { ToolLoopAgent } from 'ai';
 import { generateText, streamText, type LanguageModel, type ModelMessage } from 'ai';
 
 import {
-  BaseAdapter,
+  AdapterBase,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -47,7 +47,7 @@ function isToolLoopAgent(input: unknown): input is AnyToolLoopAgent {
  * - ToolLoopAgent: Full agent with tools and automatic tool loop handling
  * - LanguageModel: Simple model for text generation without tools
  */
-export class VercelAIAdapter extends BaseAdapter {
+export class VercelAIAdapter extends AdapterBase {
   static adapterName = 'vercel-ai';
 
   private modelOrAgent: LanguageModel | AnyToolLoopAgent;
@@ -272,18 +272,18 @@ export class VercelAIAdapter extends BaseAdapter {
  *   }
  * });
  *
- * const reminixAgent = wrap(agent, { name: 'weather-agent' });
- * serve([reminixAgent], { port: 8080 });
+ * const reminixAgent = wrapAgent(agent, { name: 'weather-agent' });
+ * serve({ agents: [reminixAgent], port: 8080 });
  *
  * // Option 2: Model (simple completions with generateText)
  * import { openai } from '@ai-sdk/openai';
  * import { wrap } from '@reminix/vercel-ai';
  *
  * const model = openai('gpt-4o');
- * const reminixAgent = wrap(model, { name: 'chat-agent' });
+ * const reminixAgent = wrapAgent(model, { name: 'chat-agent' });
  * ```
  */
-export function wrap(
+export function wrapAgent(
   modelOrAgent: LanguageModel | AnyToolLoopAgent,
   options: VercelAIAdapterOptions = {}
 ): VercelAIAdapter {
@@ -298,7 +298,7 @@ export interface WrapAndServeOptions extends VercelAIAdapterOptions, ServeOption
 /**
  * Wrap a Vercel AI model or agent and serve it immediately.
  *
- * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ * This is a convenience function that combines `wrapAgent` and `serve` for single-agent setups.
  *
  * @param modelOrAgent - A Vercel AI SDK ToolLoopAgent or LanguageModel.
  * @param options - Combined adapter and server options.
@@ -306,17 +306,17 @@ export interface WrapAndServeOptions extends VercelAIAdapterOptions, ServeOption
  * @example
  * ```typescript
  * import { openai } from '@ai-sdk/openai';
- * import { wrapAndServe } from '@reminix/vercel-ai';
+ * import { serveAgent } from '@reminix/vercel-ai';
  *
  * const model = openai('gpt-4o');
- * wrapAndServe(model, { name: 'my-agent', port: 8080 });
+ * serveAgent(model, { name: 'my-agent', port: 8080 });
  * ```
  */
-export function wrapAndServe(
+export function serveAgent(
   modelOrAgent: LanguageModel | AnyToolLoopAgent,
   options: WrapAndServeOptions = {}
 ): void {
   const { port, hostname, ...adapterOptions } = options;
-  const agent = wrap(modelOrAgent, adapterOptions);
-  serve([agent], { port, hostname });
+  const agent = wrapAgent(modelOrAgent, adapterOptions);
+  serve({ agents: [agent], port, hostname });
 }

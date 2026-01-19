@@ -5,7 +5,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
 import {
-  BaseAdapter,
+  AdapterBase,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -35,7 +35,7 @@ interface AnthropicMessage {
 /**
  * Adapter for Anthropic messages API.
  */
-export class AnthropicAdapter extends BaseAdapter {
+export class AnthropicAdapter extends AdapterBase {
   static adapterName = 'anthropic';
 
   private client: Anthropic;
@@ -250,11 +250,14 @@ export class AnthropicAdapter extends BaseAdapter {
  * import { serve } from '@reminix/runtime';
  *
  * const client = new Anthropic();
- * const agent = wrap(client, { name: 'my-agent', model: 'claude-sonnet-4-20250514' });
- * serve([agent], { port: 8080 });
+ * const agent = wrapAgent(client, { name: 'my-agent', model: 'claude-sonnet-4-20250514' });
+ * serve({ agents: [agent], port: 8080 });
  * ```
  */
-export function wrap(client: Anthropic, options: AnthropicAdapterOptions = {}): AnthropicAdapter {
+export function wrapAgent(
+  client: Anthropic,
+  options: AnthropicAdapterOptions = {}
+): AnthropicAdapter {
   return new AnthropicAdapter(client, options);
 }
 
@@ -266,7 +269,7 @@ export interface WrapAndServeOptions extends AnthropicAdapterOptions, ServeOptio
 /**
  * Wrap an Anthropic client and serve it immediately.
  *
- * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ * This is a convenience function that combines `wrapAgent` and `serve` for single-agent setups.
  *
  * @param client - An Anthropic client.
  * @param options - Combined adapter and server options.
@@ -274,14 +277,14 @@ export interface WrapAndServeOptions extends AnthropicAdapterOptions, ServeOptio
  * @example
  * ```typescript
  * import Anthropic from '@anthropic-ai/sdk';
- * import { wrapAndServe } from '@reminix/anthropic';
+ * import { serveAgent } from '@reminix/anthropic';
  *
  * const client = new Anthropic();
- * wrapAndServe(client, { name: 'my-agent', model: 'claude-sonnet-4-20250514', port: 8080 });
+ * serveAgent(client, { name: 'my-agent', model: 'claude-sonnet-4-20250514', port: 8080 });
  * ```
  */
-export function wrapAndServe(client: Anthropic, options: WrapAndServeOptions = {}): void {
+export function serveAgent(client: Anthropic, options: WrapAndServeOptions = {}): void {
   const { port, hostname, ...adapterOptions } = options;
-  const agent = wrap(client, adapterOptions);
-  serve([agent], { port, hostname });
+  const agent = wrapAgent(client, adapterOptions);
+  serve({ agents: [agent], port, hostname });
 }

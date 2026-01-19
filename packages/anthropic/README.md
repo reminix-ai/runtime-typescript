@@ -16,22 +16,22 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
-import { wrapAndServe } from '@reminix/anthropic';
+import { serveAgent } from '@reminix/anthropic';
 
 const client = new Anthropic();
-wrapAndServe(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514', port: 8080 });
+serveAgent(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514', port: 8080 });
 ```
 
-For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
-import { wrap } from '@reminix/anthropic';
+import { wrapAgent } from '@reminix/anthropic';
 import { serve } from '@reminix/runtime';
 
 const client = new Anthropic();
-const agent = wrap(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
-serve([agent], { port: 8080 });
+const agent = wrapAgent(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
+serve({ agents: [agent], port: 8080 });
 ```
 
 Your agent is now available at:
@@ -40,9 +40,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `wrapAndServe(client, options)`
+### `serveAgent(client, options)`
 
-Wrap an Anthropic client and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+Wrap an Anthropic client and serve it immediately. Combines `wrapAgent` and `serve` for single-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -53,7 +53,7 @@ Wrap an Anthropic client and serve it immediately. Combines `wrap` and `serve` f
 | `options.port` | `number` | `8080` | Port to serve on |
 | `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
 
-### `wrap(client, options)`
+### `wrapAgent(client, options)`
 
 Wrap an Anthropic client for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
 

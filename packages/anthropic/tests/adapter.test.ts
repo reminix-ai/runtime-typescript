@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
-import { wrap, wrapAndServe, AnthropicAdapter } from '../src/adapter.js';
+import { wrapAgent, serveAgent, AnthropicAdapter } from '../src/adapter.js';
 
 // Mock @reminix/runtime serve function
 vi.mock('@reminix/runtime', async (importOriginal) => {
@@ -21,14 +21,17 @@ import { serve } from '@reminix/runtime';
 describe('wrap', () => {
   it('should return an AnthropicAdapter', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const adapter = wrap(mockClient as any);
+    const adapter = wrapAgent(mockClient as any);
 
     expect(adapter).toBeInstanceOf(AnthropicAdapter);
   });
 
   it('should accept custom options', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const adapter = wrap(mockClient as any, { name: 'my-agent', model: 'claude-opus-4-20250514' });
+    const adapter = wrapAgent(mockClient as any, {
+      name: 'my-agent',
+      model: 'claude-opus-4-20250514',
+    });
 
     expect(adapter.name).toBe('my-agent');
     expect(adapter.model).toBe('claude-opus-4-20250514');
@@ -36,7 +39,7 @@ describe('wrap', () => {
 
   it('should use default values if not provided', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const adapter = wrap(mockClient as any);
+    const adapter = wrapAgent(mockClient as any);
 
     expect(adapter.name).toBe('anthropic-agent');
     expect(adapter.model).toBe('claude-sonnet-4-20250514');
@@ -53,7 +56,7 @@ describe('AnthropicAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrap(mockClient as any);
+    const adapter = wrapAgent(mockClient as any);
     const request: InvokeRequest = { input: { prompt: 'Hi' } };
 
     await adapter.invoke(request);
@@ -70,7 +73,7 @@ describe('AnthropicAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrap(mockClient as any);
+    const adapter = wrapAgent(mockClient as any);
     const request: InvokeRequest = { input: { prompt: 'Hi' } };
 
     const response = await adapter.invoke(request);
@@ -87,7 +90,7 @@ describe('AnthropicAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrap(mockClient as any);
+    const adapter = wrapAgent(mockClient as any);
     const request: InvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
@@ -108,7 +111,7 @@ describe('AnthropicAdapter.chat', () => {
       },
     };
 
-    const adapter = wrap(mockClient as any);
+    const adapter = wrapAgent(mockClient as any);
     const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
 
     await adapter.chat(request);
@@ -125,7 +128,7 @@ describe('AnthropicAdapter.chat', () => {
       },
     };
 
-    const adapter = wrap(mockClient as any);
+    const adapter = wrapAgent(mockClient as any);
     const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
 
     const response = await adapter.chat(request);
@@ -145,7 +148,7 @@ describe('AnthropicAdapter.chat', () => {
       },
     };
 
-    const adapter = wrap(mockClient as any);
+    const adapter = wrapAgent(mockClient as any);
     const request: ChatRequest = {
       messages: [
         { role: 'system', content: 'You are helpful' },
@@ -161,33 +164,34 @@ describe('AnthropicAdapter.chat', () => {
   });
 });
 
-describe('wrapAndServe', () => {
+describe('serveAgent', () => {
   beforeEach(() => {
     vi.mocked(serve).mockClear();
   });
 
   it('should be callable', () => {
-    expect(typeof wrapAndServe).toBe('function');
+    expect(typeof serveAgent).toBe('function');
   });
 
   it('should call serve with wrapped adapter', () => {
     const mockClient = { messages: { create: vi.fn() } };
 
-    wrapAndServe(mockClient as any, { name: 'test-agent' });
+    serveAgent(mockClient as any, { name: 'test-agent' });
 
     expect(serve).toHaveBeenCalledTimes(1);
-    const serveCall = vi.mocked(serve).mock.calls[0];
-    expect(serveCall[0]).toHaveLength(1);
-    expect(serveCall[0][0]).toBeInstanceOf(AnthropicAdapter);
-    expect(serveCall[0][0].name).toBe('test-agent');
+    const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
+    expect(serveCall.agents).toHaveLength(1);
+    expect(serveCall.agents[0]).toBeInstanceOf(AnthropicAdapter);
+    expect(serveCall.agents[0].name).toBe('test-agent');
   });
 
   it('should pass serve options', () => {
     const mockClient = { messages: { create: vi.fn() } };
 
-    wrapAndServe(mockClient as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
+    serveAgent(mockClient as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
 
-    const serveCall = vi.mocked(serve).mock.calls[0];
-    expect(serveCall[1]).toEqual({ port: 3000, hostname: 'localhost' });
+    const serveCall = vi.mocked(serve).mock.calls[0][0] as { port?: number; hostname?: string };
+    expect(serveCall.port).toBe(3000);
+    expect(serveCall.hostname).toBe('localhost');
   });
 });

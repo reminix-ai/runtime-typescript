@@ -115,4 +115,4 @@ console.log('  POST /agents/echo/invoke');
 console.log('  POST /agents/echo/chat');
 console.log();
 
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });

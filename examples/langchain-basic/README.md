@@ -65,11 +65,11 @@ curl -X POST http://localhost:8080/agents/langchain-basic/chat \
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
-import { wrap } from '@reminix/langchain';
+import { wrapAgent } from '@reminix/langchain';
 import { serve } from '@reminix/runtime';
 
 const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
-const agent = wrap(model, 'langchain-basic');
+const agent = wrapAgent(model, 'langchain-basic');
 
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });
 ```

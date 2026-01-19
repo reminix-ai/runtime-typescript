@@ -65,11 +65,11 @@ curl -X POST http://localhost:8080/agents/anthropic-basic/chat \
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
-import { wrap } from '@reminix/anthropic';
+import { wrapAgent } from '@reminix/anthropic';
 import { serve } from '@reminix/runtime';
 
 const client = new Anthropic();
-const agent = wrap(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
+const agent = wrapAgent(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
 
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });
 ```

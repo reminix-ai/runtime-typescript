@@ -39,17 +39,17 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 config({ path: resolve(__dirname, '../../../.env') });
 
 import Anthropic from '@anthropic-ai/sdk';
-import { wrap } from '@reminix/anthropic';
+import { wrapAgent } from '@reminix/anthropic';
 import { serve } from '@reminix/runtime';
 
 // Create an Anthropic client
 const client = new Anthropic();
 
 // Wrap the client with the Reminix adapter
-const agent = wrap(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
+const agent = wrapAgent(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
 
 // Serve the agent
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });
 
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');

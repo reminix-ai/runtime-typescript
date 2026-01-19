@@ -1,2 +1,2 @@
-export { LangChainAdapter, wrap, wrapAndServe } from './adapter.js';
+export { LangChainAdapter, wrapAgent, serveAgent } from './adapter.js';
 export type { WrapAndServeOptions } from './adapter.js';

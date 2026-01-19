@@ -5,8 +5,9 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
-import type { AgentBase } from './adapters/base.js';
-import type { InvokeRequest, ChatRequest } from './types.js';
+import type { AgentBase } from './agent.js';
+import type { ToolBase } from './tool.js';
+import type { InvokeRequest, ChatRequest, ToolExecuteRequest } from './types.js';
 import { VERSION } from './version.js';
 
 export interface ServeOptions {
@@ -14,22 +15,35 @@ export interface ServeOptions {
   hostname?: string;
 }
 
+export interface CreateAppOptions {
+  agents?: AgentBase[];
+  tools?: ToolBase[];
+}
+
 /**
- * Create a Hono application with agent endpoints.
+ * Create a Hono application with agent and tool endpoints.
  *
- * @param agents - List of agents.
+ * @param options - Options containing agents and/or tools.
  * @returns A Hono application instance.
- * @throws Error if no agents are provided.
+ * @throws Error if no agents or tools are provided.
  */
-export function createApp(agents: AgentBase[]): Hono {
-  if (agents.length === 0) {
-    throw new Error('At least one agent is required');
+export function createApp(options: CreateAppOptions): Hono {
+  const agents = options.agents ?? [];
+  const tools = options.tools ?? [];
+
+  if (agents.length === 0 && tools.length === 0) {
+    throw new Error('At least one agent or tool is required');
   }
 
-  // Build a lookup map for agents by name
+  // Build lookup maps by name
   const agentMap = new Map<string, AgentBase>();
   for (const agent of agents) {
     agentMap.set(agent.name, agent);
+  }
+
+  const toolMap = new Map<string, ToolBase>();
+  for (const tool of tools) {
+    toolMap.set(tool.name, tool);
   }
 
   const app = new Hono();
@@ -53,6 +67,10 @@ export function createApp(agents: AgentBase[]): Hono {
         ...agent.metadata,
         invoke: { streaming: agent.invokeStreaming },
         chat: { streaming: agent.chatStreaming },
+      })),
+      tools: tools.map((tool) => ({
+        name: tool.name,
+        ...tool.metadata,
       })),
     });
   });
@@ -127,23 +145,39 @@ export function createApp(agents: AgentBase[]): Hono {
     return c.json(response);
   });
 
+  // Tool execute endpoint
+  app.post('/tools/:toolName/execute', async (c) => {
+    const toolName = c.req.param('toolName');
+    const tool = toolMap.get(toolName);
+
+    if (!tool) {
+      return c.json({ error: `Tool '${toolName}' not found` }, 404);
+    }
+
+    const body = await c.req.json<ToolExecuteRequest>();
+
+    const response = await tool.execute(body);
+    return c.json(response);
+  });
+
   return app;
 }
 
+export interface FullServeOptions extends ServeOptions, CreateAppOptions {}
+
 /**
- * Serve agents via REST API.
+ * Serve agents and tools via REST API.
  *
- * @param agents - List of agents.
- * @param options - Server options.
+ * @param options - Options containing agents, tools, and server settings.
  */
-export function serve(agents: AgentBase[], options: ServeOptions = {}): void {
+export function serve(options: FullServeOptions = {}): void {
   // Default to 0.0.0.0 for Fly's load balancer compatibility
   // Can be overridden via HOST env var or options.hostname
   const defaultHostname = process.env.HOST || '0.0.0.0';
   const defaultPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
-  const { port = defaultPort, hostname = defaultHostname } = options;
+  const { port = defaultPort, hostname = defaultHostname, agents, tools } = options;
 
-  const app = createApp(agents);
+  const app = createApp({ agents, tools });
 
   honoServe({
     fetch: app.fetch,

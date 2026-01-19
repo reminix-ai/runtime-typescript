@@ -5,7 +5,7 @@
 import type OpenAI from 'openai';
 
 import {
-  BaseAdapter,
+  AdapterBase,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -26,7 +26,7 @@ export interface OpenAIAdapterOptions {
 /**
  * Adapter for OpenAI chat completions.
  */
-export class OpenAIAdapter extends BaseAdapter {
+export class OpenAIAdapter extends AdapterBase {
   static adapterName = 'openai';
 
   private client: OpenAI;
@@ -203,11 +203,11 @@ export class OpenAIAdapter extends BaseAdapter {
  * import { serve } from '@reminix/runtime';
  *
  * const client = new OpenAI();
- * const agent = wrap(client, { name: 'my-agent', model: 'gpt-4o' });
- * serve([agent], { port: 8080 });
+ * const agent = wrapAgent(client, { name: 'my-agent', model: 'gpt-4o' });
+ * serve({ agents: [agent], port: 8080 });
  * ```
  */
-export function wrap(client: OpenAI, options: OpenAIAdapterOptions = {}): OpenAIAdapter {
+export function wrapAgent(client: OpenAI, options: OpenAIAdapterOptions = {}): OpenAIAdapter {
   return new OpenAIAdapter(client, options);
 }
 
@@ -219,7 +219,7 @@ export interface WrapAndServeOptions extends OpenAIAdapterOptions, ServeOptions 
 /**
  * Wrap an OpenAI client and serve it immediately.
  *
- * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ * This is a convenience function that combines `wrapAgent` and `serve` for single-agent setups.
  *
  * @param client - An OpenAI client.
  * @param options - Combined adapter and server options.
@@ -227,14 +227,14 @@ export interface WrapAndServeOptions extends OpenAIAdapterOptions, ServeOptions 
  * @example
  * ```typescript
  * import OpenAI from 'openai';
- * import { wrapAndServe } from '@reminix/openai';
+ * import { serveAgent } from '@reminix/openai';
  *
  * const client = new OpenAI();
- * wrapAndServe(client, { name: 'my-agent', model: 'gpt-4o', port: 8080 });
+ * serveAgent(client, { name: 'my-agent', model: 'gpt-4o', port: 8080 });
  * ```
  */
-export function wrapAndServe(client: OpenAI, options: WrapAndServeOptions = {}): void {
+export function serveAgent(client: OpenAI, options: WrapAndServeOptions = {}): void {
   const { port, hostname, ...adapterOptions } = options;
-  const agent = wrap(client, adapterOptions);
-  serve([agent], { port, hostname });
+  const agent = wrapAgent(client, adapterOptions);
+  serve({ agents: [agent], port, hostname });
 }

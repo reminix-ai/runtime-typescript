@@ -41,7 +41,7 @@ config({ path: resolve(__dirname, '../../../.env') });
 import { openai } from '@ai-sdk/openai';
 import { ToolLoopAgent, tool } from 'ai';
 import { z } from 'zod';
-import { wrap } from '@reminix/vercel-ai';
+import { wrapAgent } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
 // Define a tool for the agent to use
@@ -66,10 +66,10 @@ const toolAgent = new ToolLoopAgent({
 });
 
 // Wrap the agent with the Reminix adapter
-const agent = wrap(toolAgent, { name: 'vercel-ai-agent' });
+const agent = wrapAgent(toolAgent, { name: 'vercel-ai-agent' });
 
 // Serve the agent
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });
 
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');

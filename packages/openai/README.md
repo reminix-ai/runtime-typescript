@@ -16,22 +16,22 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import OpenAI from 'openai';
-import { wrapAndServe } from '@reminix/openai';
+import { serveAgent } from '@reminix/openai';
 
 const client = new OpenAI();
-wrapAndServe(client, { name: 'my-chatbot', model: 'gpt-4o', port: 8080 });
+serveAgent(client, { name: 'my-chatbot', model: 'gpt-4o', port: 8080 });
 ```
 
-For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
 
 ```typescript
 import OpenAI from 'openai';
-import { wrap } from '@reminix/openai';
+import { wrapAgent } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
 const client = new OpenAI();
-const agent = wrap(client, { name: 'my-chatbot', model: 'gpt-4o' });
-serve([agent], { port: 8080 });
+const agent = wrapAgent(client, { name: 'my-chatbot', model: 'gpt-4o' });
+serve({ agents: [agent], port: 8080 });
 ```
 
 Your agent is now available at:
@@ -40,9 +40,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `wrapAndServe(client, options)`
+### `serveAgent(client, options)`
 
-Wrap an OpenAI client and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+Wrap an OpenAI client and serve it immediately. Combines `wrapAgent` and `serve` for single-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -52,7 +52,7 @@ Wrap an OpenAI client and serve it immediately. Combines `wrap` and `serve` for 
 | `options.port` | `number` | `8080` | Port to serve on |
 | `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
 
-### `wrap(client, options)`
+### `wrapAgent(client, options)`
 
 Wrap an OpenAI client for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
 
@@ -68,7 +68,7 @@ Wrap an OpenAI client for use with Reminix Runtime. Use this with `serve` from `
 
 ```typescript
 import OpenAI from 'openai';
-import { wrap } from '@reminix/openai';
+import { wrapAgent } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
 const client = new OpenAI({
@@ -76,12 +76,12 @@ const client = new OpenAI({
   baseURL: 'https://your-proxy.com/v1', // Optional: custom endpoint
 });
 
-const agent = wrap(client, {
+const agent = wrapAgent(client, {
   name: 'gpt4-agent',
   model: 'gpt-4o',
 });
 
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });
 ```
 
 ## Endpoint Input/Output Formats

@@ -42,3 +42,21 @@ export interface ChatResponse {
   output: string;
   messages: Message[];
 }
+
+// Tool types
+
+export interface ToolSchema {
+  type: 'object';
+  properties: Record<string, unknown>;
+  required?: string[];
+}
+
+export interface ToolExecuteRequest {
+  input: Record<string, unknown>;
+  context?: Record<string, unknown>;
+}
+
+export interface ToolExecuteResponse {
+  output: unknown;
+  error?: string | null;
+}

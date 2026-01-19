@@ -1,6 +1,6 @@
 # @reminix/runtime
 
-Core runtime package for serving AI agents via REST APIs. Provides the `serve()` function, `Agent` class, and `BaseAdapter` for building framework integrations.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `serve()` function, `Agent` class, `tool()` factory, and `BaseAdapter` for building framework integrations.
 
 Built on [Hono](https://hono.dev) for portability across Node.js, Deno, Bun, and edge runtimes.
 
@@ -38,7 +38,7 @@ agent.onChat(async (request) => {
 });
 
 // Serve the agent
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });
 ```
 
 ## How It Works
@@ -48,9 +48,10 @@ The runtime creates a REST server (powered by [Hono](https://hono.dev)) with the
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/info` | GET | Runtime discovery (version, agents, endpoints) |
+| `/info` | GET | Runtime discovery (version, agents, tools) |
 | `/agents/{name}/invoke` | POST | Stateless invocation |
 | `/agents/{name}/chat` | POST | Conversational chat |
+| `/tools/{name}/execute` | POST | Execute a tool |
 
 ### Health Endpoint
 
@@ -139,6 +140,98 @@ curl -X POST http://localhost:8080/agents/my-agent/chat \
 
 The `output` field contains the assistant's response, while `messages` includes the full conversation history.
 
+### Tool Execute Endpoint
+
+`POST /tools/{name}/execute` - Execute a standalone tool.
+
+```bash
+curl -X POST http://localhost:8080/tools/get_weather/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": {
+      "location": "San Francisco"
+    }
+  }'
+```
+
+**Response:**
+```json
+{
+  "output": { "temp": 72, "condition": "sunny" }
+}
+```
+
+## Tools
+
+Tools are standalone functions that can be served via the runtime. They're useful for exposing utility functions, external API integrations, or any reusable logic.
+
+### Creating Tools
+
+Use the `tool()` factory function to create tools:
+
+```typescript
+import { tool, serve } from '@reminix/runtime';
+
+const getWeather = tool('get_weather', {
+  description: 'Get current weather for a location',
+  parameters: {
+    type: 'object',
+    properties: {
+      location: { type: 'string', description: 'City name' },
+      units: { type: 'string', enum: ['celsius', 'fahrenheit'], default: 'celsius' },
+    },
+    required: ['location'],
+  },
+  // Optional: define output schema for documentation and type inference
+  output: {
+    type: 'object',
+    properties: {
+      temp: { type: 'number' },
+      condition: { type: 'string' },
+      location: { type: 'string' },
+    },
+  },
+  execute: async (input) => {
+    const location = input.location as string;
+    // Call weather API...
+    return { temp: 72, condition: 'sunny', location };
+  },
+});
+
+// Serve tools (with or without agents)
+serve({ tools: [getWeather], port: 8080 });
+```
+
+The optional `output` property defines the JSON Schema for the tool's return value. This is included in the `/info` endpoint for documentation and enables better type inference for clients.
+
+### Serving Agents and Tools Together
+
+You can serve both agents and tools from the same runtime:
+
+```typescript
+import { Agent, tool, serve } from '@reminix/runtime';
+
+const agent = new Agent('my-agent');
+agent.onInvoke(async (req) => ({ output: 'Hello!' }));
+
+const calculator = tool('calculate', {
+  description: 'Perform basic math operations',
+  parameters: {
+    type: 'object',
+    properties: {
+      expression: { type: 'string', description: 'Math expression to evaluate' },
+    },
+    required: ['expression'],
+  },
+  execute: async (input) => {
+    const expr = input.expression as string;
+    return { result: eval(expr) }; // Note: use a safe evaluator in production
+  },
+});
+
+serve({ agents: [agent], tools: [calculator], port: 8080 });
+```
+
 ## Framework Adapters
 
 Instead of creating custom agents, use our pre-built adapters for popular frameworks:
@@ -153,25 +246,57 @@ Instead of creating custom agents, use our pre-built adapters for popular framew
 
 ## API Reference
 
-### `serve(agents, options)`
+### `serve(options)`
 
 Start the runtime server.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `agents` | `Agent[]` | required | List of agents |
+| `options.agents` | `Agent[]` | `[]` | List of agents to serve |
+| `options.tools` | `Tool[]` | `[]` | List of tools to serve |
 | `options.port` | `number` | `8080` | Port to listen on. Falls back to `PORT` environment variable if not provided. |
 | `options.hostname` | `string` | `"0.0.0.0"` | Host to bind to (all interfaces). Can be overridden via `HOST` env var. |
 
-### `createApp(agents)`
+At least one agent or tool is required.
+
+### `createApp(options)`
 
 Create a Hono app without starting the server. Useful for testing or custom deployment.
 
 ```typescript
 import { createApp } from '@reminix/runtime';
 
-const app = createApp([new MyAgent()]);
+const app = createApp({ agents: [myAgent], tools: [myTool] });
 // Use with any runtime: Node.js, Deno, Bun, Cloudflare Workers, etc.
+```
+
+### `tool(name, options)`
+
+Factory function to create a tool.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `string` | Unique identifier for the tool |
+| `options.description` | `string` | Human-readable description |
+| `options.parameters` | `object` | JSON Schema for input parameters |
+| `options.execute` | `function` | Async function to execute when called |
+
+```typescript
+import { tool } from '@reminix/runtime';
+
+const myTool = tool('my_tool', {
+  description: 'Does something useful',
+  parameters: {
+    type: 'object',
+    properties: {
+      input: { type: 'string' },
+    },
+    required: ['input'],
+  },
+  execute: async (input) => {
+    return { result: input.input };
+  },
+});
 ```
 
 ### `Agent`

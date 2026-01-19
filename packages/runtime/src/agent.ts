@@ -1,9 +1,9 @@
 /**
- * Base agent and adapter interface.
+ * Agent classes for Reminix Runtime.
  */
 
-import type { InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '../types.js';
-import { VERSION } from '../version.js';
+import type { InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from './types.js';
+import { VERSION } from './version.js';
 
 /**
  * Web-standard fetch handler type.
@@ -87,14 +87,16 @@ export abstract class AgentBase {
   /**
    * Handle a streaming invoke request.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
+  // eslint-disable-next-line require-yield
+  async *invokeStream(_request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this agent');
   }
 
   /**
    * Handle a streaming chat request.
    */
-  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
+  // eslint-disable-next-line require-yield
+  async *chatStream(_request: ChatRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this agent');
   }
 
@@ -116,8 +118,6 @@ export abstract class AgentBase {
    * ```
    */
   toHandler(): FetchHandler {
-    const agent = this;
-
     return async (request: Request): Promise<Response> => {
       const url = new URL(request.url);
       const path = url.pathname;
@@ -153,10 +153,10 @@ export abstract class AgentBase {
               },
               agents: [
                 {
-                  name: agent.name,
-                  ...agent.metadata,
-                  invoke: { streaming: agent.invokeStreaming },
-                  chat: { streaming: agent.chatStreaming },
+                  name: this.name,
+                  ...this.metadata,
+                  invoke: { streaming: this.invokeStreaming },
+                  chat: { streaming: this.chatStreaming },
                 },
               ],
             },
@@ -168,7 +168,7 @@ export abstract class AgentBase {
         const invokeMatch = path.match(/^\/agents\/([^/]+)\/invoke$/);
         if (method === 'POST' && invokeMatch) {
           const agentName = invokeMatch[1];
-          if (agentName !== agent.name) {
+          if (agentName !== this.name) {
             return Response.json(
               { error: `Agent '${agentName}' not found` },
               { status: 404, headers: corsHeaders }
@@ -187,10 +187,10 @@ export abstract class AgentBase {
           // Handle streaming
           if (body.stream) {
             const stream = new ReadableStream({
-              async start(controller) {
+              start: async (controller) => {
                 const encoder = new TextEncoder();
                 try {
-                  for await (const chunk of agent.invokeStream(body)) {
+                  for await (const chunk of this.invokeStream(body)) {
                     controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
                   }
                   controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -214,7 +214,7 @@ export abstract class AgentBase {
             });
           }
 
-          const response = await agent.invoke(body);
+          const response = await this.invoke(body);
           return Response.json(response, { headers: corsHeaders });
         }
 
@@ -222,7 +222,7 @@ export abstract class AgentBase {
         const chatMatch = path.match(/^\/agents\/([^/]+)\/chat$/);
         if (method === 'POST' && chatMatch) {
           const agentName = chatMatch[1];
-          if (agentName !== agent.name) {
+          if (agentName !== this.name) {
             return Response.json(
               { error: `Agent '${agentName}' not found` },
               { status: 404, headers: corsHeaders }
@@ -241,10 +241,10 @@ export abstract class AgentBase {
           // Handle streaming
           if (body.stream) {
             const stream = new ReadableStream({
-              async start(controller) {
+              start: async (controller) => {
                 const encoder = new TextEncoder();
                 try {
-                  for await (const chunk of agent.chatStream(body)) {
+                  for await (const chunk of this.chatStream(body)) {
                     controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
                   }
                   controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -268,7 +268,7 @@ export abstract class AgentBase {
             });
           }
 
-          const response = await agent.chat(body);
+          const response = await this.chat(body);
           return Response.json(response, { headers: corsHeaders });
         }
 
@@ -298,7 +298,7 @@ export abstract class AgentBase {
  *   return { output: 'Hi!', messages: [...] };
  * });
  *
- * serve([agent], { port: 8080 });
+ * serve({ agents: [agent], port: 8080 });
  * ```
  */
 export class Agent extends AgentBase {
@@ -441,53 +441,5 @@ export class Agent extends AgentBase {
       throw new Error(`No streaming chat handler registered for agent '${this._name}'`);
     }
     yield* this._chatStreamHandler(request);
-  }
-}
-
-/**
- * Base class for framework adapters.
- *
- * Extend this class when wrapping an existing AI framework
- * (e.g., LangChain, OpenAI, Anthropic).
- */
-export abstract class BaseAdapter extends AgentBase {
-  /**
-   * The adapter name. Subclasses should override this.
-   */
-  static adapterName: string = 'unknown';
-
-  /**
-   * All built-in adapters support streaming.
-   */
-  override get invokeStreaming(): boolean {
-    return true;
-  }
-
-  override get chatStreaming(): boolean {
-    return true;
-  }
-
-  /**
-   * Return adapter metadata for discovery.
-   */
-  get metadata(): AgentMetadata {
-    return {
-      type: 'adapter',
-      adapter: (this.constructor as typeof BaseAdapter).adapterName,
-    };
-  }
-
-  /**
-   * Handle a streaming invoke request.
-   */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
-    throw new Error('Streaming not implemented for this adapter');
-  }
-
-  /**
-   * Handle a streaming chat request.
-   */
-  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
-    throw new Error('Streaming not implemented for this adapter');
   }
 }

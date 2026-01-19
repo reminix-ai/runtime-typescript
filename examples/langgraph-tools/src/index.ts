@@ -42,7 +42,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
-import { wrap } from '@reminix/langgraph';
+import { wrapAgent } from '@reminix/langgraph';
 import { serve } from '@reminix/runtime';
 
 // Define a tool for the agent to use
@@ -68,10 +68,10 @@ const llm = new ChatOpenAI({ model: 'gpt-4o-mini' });
 const graph = createReactAgent({ llm, tools: [getWeather] });
 
 // Wrap the graph with the Reminix adapter
-const agent = wrap(graph, 'langgraph-tools');
+const agent = wrapAgent(graph, 'langgraph-tools');
 
 // Serve the agent
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });
 
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');

@@ -36,7 +36,7 @@ import { serve } from '@reminix/runtime';
 
 const agent = new ChatOpenAI({ model: 'gpt-4o' });
 
-serve([wrap(agent, { name: 'my-agent' })], { port: 8080 });
+serve({ agents: [wrap(agent, { name: 'my-agent' })], port: 8080 });
 ```
 
 ### With Handlers (No Framework)
@@ -56,7 +56,7 @@ const agent = new Agent('my-agent')
     };
   });
 
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });
 ```
 
 Your agent is now available at:

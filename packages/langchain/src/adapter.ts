@@ -12,7 +12,7 @@ import {
 import type { Runnable } from '@langchain/core/runnables';
 
 import {
-  BaseAdapter,
+  AdapterBase,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -25,7 +25,7 @@ import {
 /**
  * Adapter for LangChain agents and runnables.
  */
-export class LangChainAdapter extends BaseAdapter {
+export class LangChainAdapter extends AdapterBase {
   static adapterName = 'langchain';
 
   private agent: Runnable;
@@ -211,11 +211,11 @@ export class LangChainAdapter extends BaseAdapter {
  * import { serve } from '@reminix/runtime';
  *
  * const llm = new ChatOpenAI({ model: 'gpt-4' });
- * const agent = wrap(llm, 'my-agent');
- * serve([agent], { port: 8080 });
+ * const agent = wrapAgent(llm, 'my-agent');
+ * serve({ agents: [agent], port: 8080 });
  * ```
  */
-export function wrap(agent: Runnable, name: string = 'langchain-agent'): LangChainAdapter {
+export function wrapAgent(agent: Runnable, name: string = 'langchain-agent'): LangChainAdapter {
   return new LangChainAdapter(agent, name);
 }
 
@@ -229,7 +229,7 @@ export interface WrapAndServeOptions extends ServeOptions {
 /**
  * Wrap a LangChain runnable and serve it immediately.
  *
- * This is a convenience function that combines `wrap` and `serve` for single-agent setups.
+ * This is a convenience function that combines `wrapAgent` and `serve` for single-agent setups.
  *
  * @param agent - A LangChain runnable (e.g., ChatModel, chain, agent).
  * @param options - Combined adapter and server options.
@@ -237,14 +237,14 @@ export interface WrapAndServeOptions extends ServeOptions {
  * @example
  * ```typescript
  * import { ChatOpenAI } from '@langchain/openai';
- * import { wrapAndServe } from '@reminix/langchain';
+ * import { serveAgent } from '@reminix/langchain';
  *
  * const llm = new ChatOpenAI({ model: 'gpt-4' });
- * wrapAndServe(llm, { name: 'my-agent', port: 8080 });
+ * serveAgent(llm, { name: 'my-agent', port: 8080 });
  * ```
  */
-export function wrapAndServe(agent: Runnable, options: WrapAndServeOptions = {}): void {
+export function serveAgent(agent: Runnable, options: WrapAndServeOptions = {}): void {
   const { port, hostname, name } = options;
-  const wrappedAgent = wrap(agent, name);
-  serve([wrappedAgent], { port, hostname });
+  const wrappedAgent = wrapAgent(agent, name);
+  serve({ agents: [wrappedAgent], port, hostname });
 }

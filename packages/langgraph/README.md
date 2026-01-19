@@ -17,25 +17,25 @@ This will also install `@reminix/runtime` as a dependency.
 ```typescript
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatOpenAI } from '@langchain/openai';
-import { wrapAndServe } from '@reminix/langgraph';
+import { serveAgent } from '@reminix/langgraph';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const graph = createReactAgent({ llm, tools: [] });
-wrapAndServe(graph, { name: 'my-agent', port: 8080 });
+serveAgent(graph, { name: 'my-agent', port: 8080 });
 ```
 
-For more flexibility (e.g., serving multiple agents), use `wrap` and `serve` separately:
+For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
 
 ```typescript
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatOpenAI } from '@langchain/openai';
-import { wrap } from '@reminix/langgraph';
+import { wrapAgent } from '@reminix/langgraph';
 import { serve } from '@reminix/runtime';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const graph = createReactAgent({ llm, tools: [] });
-const agent = wrap(graph, 'my-agent');
-serve([agent], { port: 8080 });
+const agent = wrapAgent(graph, 'my-agent');
+serve({ agents: [agent], port: 8080 });
 ```
 
 Your agent is now available at:
@@ -44,9 +44,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `wrapAndServe(graph, options)`
+### `serveAgent(graph, options)`
 
-Wrap a LangGraph graph and serve it immediately. Combines `wrap` and `serve` for single-agent setups.
+Wrap a LangGraph graph and serve it immediately. Combines `wrapAgent` and `serve` for single-agent setups.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -55,7 +55,7 @@ Wrap a LangGraph graph and serve it immediately. Combines `wrap` and `serve` for
 | `options.port` | `number` | `8080` | Port to serve on |
 | `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
 
-### `wrap(graph, name)`
+### `wrapAgent(graph, name)`
 
 Wrap a LangGraph compiled graph for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
 

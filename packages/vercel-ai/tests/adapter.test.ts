@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
-import { wrap, wrapAndServe, VercelAIAdapter } from '../src/adapter.js';
+import { wrapAgent, serveAgent, VercelAIAdapter } from '../src/adapter.js';
 
 // Mock @reminix/runtime serve function
 vi.mock('@reminix/runtime', async (importOriginal) => {
@@ -21,21 +21,21 @@ import { serve } from '@reminix/runtime';
 describe('wrap', () => {
   it('should return a VercelAIAdapter', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrap(mockModel as any);
+    const adapter = wrapAgent(mockModel as any);
 
     expect(adapter).toBeInstanceOf(VercelAIAdapter);
   });
 
   it('should accept custom options', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrap(mockModel as any, { name: 'my-agent' });
+    const adapter = wrapAgent(mockModel as any, { name: 'my-agent' });
 
     expect(adapter.name).toBe('my-agent');
   });
 
   it('should use default values if not provided', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrap(mockModel as any);
+    const adapter = wrapAgent(mockModel as any);
 
     expect(adapter.name).toBe('vercel-ai-agent');
   });
@@ -44,7 +44,7 @@ describe('wrap', () => {
 describe('VercelAIAdapter.invoke', () => {
   it('should call generateText with prompt input', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrap(mockModel as any);
+    const adapter = wrapAgent(mockModel as any);
 
     // Mock the internal generateText function
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello!' });
@@ -61,7 +61,7 @@ describe('VercelAIAdapter.invoke', () => {
 
   it('should return output', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrap(mockModel as any);
+    const adapter = wrapAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello from Vercel AI!' });
     (adapter as any)._generateText = mockGenerateText;
@@ -74,7 +74,7 @@ describe('VercelAIAdapter.invoke', () => {
 
   it('should handle messages input by converting to prompt', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrap(mockModel as any);
+    const adapter = wrapAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
     (adapter as any)._generateText = mockGenerateText;
@@ -95,7 +95,7 @@ describe('VercelAIAdapter.invoke', () => {
 describe('VercelAIAdapter.chat', () => {
   it('should call generateText with converted messages', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrap(mockModel as any);
+    const adapter = wrapAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello!' });
     (adapter as any)._generateText = mockGenerateText;
@@ -111,7 +111,7 @@ describe('VercelAIAdapter.chat', () => {
 
   it('should return output and messages', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrap(mockModel as any);
+    const adapter = wrapAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Chat response' });
     (adapter as any)._generateText = mockGenerateText;
@@ -127,7 +127,7 @@ describe('VercelAIAdapter.chat', () => {
 
   it('should preserve system messages', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrap(mockModel as any);
+    const adapter = wrapAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
     (adapter as any)._generateText = mockGenerateText;
@@ -146,33 +146,34 @@ describe('VercelAIAdapter.chat', () => {
   });
 });
 
-describe('wrapAndServe', () => {
+describe('serveAgent', () => {
   beforeEach(() => {
     vi.mocked(serve).mockClear();
   });
 
   it('should be callable', () => {
-    expect(typeof wrapAndServe).toBe('function');
+    expect(typeof serveAgent).toBe('function');
   });
 
   it('should call serve with wrapped adapter', () => {
     const mockModel = { modelId: 'gpt-4o' };
 
-    wrapAndServe(mockModel as any, { name: 'test-agent' });
+    serveAgent(mockModel as any, { name: 'test-agent' });
 
     expect(serve).toHaveBeenCalledTimes(1);
-    const serveCall = vi.mocked(serve).mock.calls[0];
-    expect(serveCall[0]).toHaveLength(1);
-    expect(serveCall[0][0]).toBeInstanceOf(VercelAIAdapter);
-    expect(serveCall[0][0].name).toBe('test-agent');
+    const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
+    expect(serveCall.agents).toHaveLength(1);
+    expect(serveCall.agents[0]).toBeInstanceOf(VercelAIAdapter);
+    expect(serveCall.agents[0].name).toBe('test-agent');
   });
 
   it('should pass serve options', () => {
     const mockModel = { modelId: 'gpt-4o' };
 
-    wrapAndServe(mockModel as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
+    serveAgent(mockModel as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
 
-    const serveCall = vi.mocked(serve).mock.calls[0];
-    expect(serveCall[1]).toEqual({ port: 3000, hostname: 'localhost' });
+    const serveCall = vi.mocked(serve).mock.calls[0][0] as { port?: number; hostname?: string };
+    expect(serveCall.port).toBe(3000);
+    expect(serveCall.hostname).toBe('localhost');
   });
 });

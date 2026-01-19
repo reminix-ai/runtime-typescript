@@ -65,11 +65,11 @@ curl -X POST http://localhost:8080/agents/openai-basic/chat \
 
 ```typescript
 import OpenAI from 'openai';
-import { wrap } from '@reminix/openai';
+import { wrapAgent } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
 const client = new OpenAI();
-const agent = wrap(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
+const agent = wrapAgent(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
 
-serve([agent], { port: 8080 });
+serve({ agents: [agent], port: 8080 });
 ```
