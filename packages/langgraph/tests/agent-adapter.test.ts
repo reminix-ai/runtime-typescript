@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
-import { wrapAgent, serveAgent, LangGraphAdapter } from '../src/adapter.js';
+import { wrapAgent, serveAgent, LangGraphAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
 vi.mock('@reminix/runtime', async (importOriginal) => {
@@ -20,11 +20,11 @@ vi.mock('@reminix/runtime', async (importOriginal) => {
 import { serve } from '@reminix/runtime';
 
 describe('wrap', () => {
-  it('should return a LangGraphAdapter', () => {
+  it('should return a LangGraphAgentAdapter', () => {
     const mockGraph = { invoke: vi.fn() };
     const adapter = wrapAgent(mockGraph as any);
 
-    expect(adapter).toBeInstanceOf(LangGraphAdapter);
+    expect(adapter).toBeInstanceOf(LangGraphAgentAdapter);
   });
 
   it('should accept a custom name', () => {
@@ -42,7 +42,7 @@ describe('wrap', () => {
   });
 });
 
-describe('LangGraphAdapter.invoke', () => {
+describe('LangGraphAgentAdapter.invoke', () => {
   it('should call the graph with the input', async () => {
     const mockGraph = {
       invoke: vi.fn().mockResolvedValue({ messages: [new AIMessage({ content: 'Hello!' })] }),
@@ -85,7 +85,7 @@ describe('LangGraphAdapter.invoke', () => {
   });
 });
 
-describe('LangGraphAdapter.chat', () => {
+describe('LangGraphAgentAdapter.chat', () => {
   it('should call the graph with state dict format', async () => {
     const mockGraph = {
       invoke: vi.fn().mockResolvedValue({ messages: [new AIMessage({ content: 'Hello!' })] }),
@@ -166,7 +166,7 @@ describe('serveAgent', () => {
     expect(serve).toHaveBeenCalledTimes(1);
     const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
     expect(serveCall.agents).toHaveLength(1);
-    expect(serveCall.agents[0]).toBeInstanceOf(LangGraphAdapter);
+    expect(serveCall.agents[0]).toBeInstanceOf(LangGraphAgentAdapter);
     expect(serveCall.agents[0].name).toBe('test-agent');
   });
 

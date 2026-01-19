@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
-import { wrapAgent, serveAgent, LangChainAdapter } from '../src/adapter.js';
+import { wrapAgent, serveAgent, LangChainAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
 vi.mock('@reminix/runtime', async (importOriginal) => {
@@ -20,11 +20,11 @@ vi.mock('@reminix/runtime', async (importOriginal) => {
 import { serve } from '@reminix/runtime';
 
 describe('wrap', () => {
-  it('should return a LangChainAdapter', () => {
+  it('should return a LangChainAgentAdapter', () => {
     const mockRunnable = { invoke: vi.fn() };
     const adapter = wrapAgent(mockRunnable as any);
 
-    expect(adapter).toBeInstanceOf(LangChainAdapter);
+    expect(adapter).toBeInstanceOf(LangChainAgentAdapter);
   });
 
   it('should accept a custom name', () => {
@@ -42,7 +42,7 @@ describe('wrap', () => {
   });
 });
 
-describe('LangChainAdapter.invoke', () => {
+describe('LangChainAgentAdapter.invoke', () => {
   it('should call the runnable with the input', async () => {
     const mockRunnable = {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
@@ -83,7 +83,7 @@ describe('LangChainAdapter.invoke', () => {
   });
 });
 
-describe('LangChainAdapter.chat', () => {
+describe('LangChainAgentAdapter.chat', () => {
   it('should call the runnable with converted messages', async () => {
     const mockRunnable = {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
@@ -159,7 +159,7 @@ describe('serveAgent', () => {
     expect(serve).toHaveBeenCalledTimes(1);
     const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
     expect(serveCall.agents).toHaveLength(1);
-    expect(serveCall.agents[0]).toBeInstanceOf(LangChainAdapter);
+    expect(serveCall.agents[0]).toBeInstanceOf(LangChainAgentAdapter);
     expect(serveCall.agents[0].name).toBe('test-agent');
   });
 

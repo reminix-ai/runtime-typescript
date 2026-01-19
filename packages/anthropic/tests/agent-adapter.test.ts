@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
-import { wrapAgent, serveAgent, AnthropicAdapter } from '../src/adapter.js';
+import { wrapAgent, serveAgent, AnthropicAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
 vi.mock('@reminix/runtime', async (importOriginal) => {
@@ -19,11 +19,11 @@ vi.mock('@reminix/runtime', async (importOriginal) => {
 import { serve } from '@reminix/runtime';
 
 describe('wrap', () => {
-  it('should return an AnthropicAdapter', () => {
+  it('should return an AnthropicAgentAdapter', () => {
     const mockClient = { messages: { create: vi.fn() } };
     const adapter = wrapAgent(mockClient as any);
 
-    expect(adapter).toBeInstanceOf(AnthropicAdapter);
+    expect(adapter).toBeInstanceOf(AnthropicAgentAdapter);
   });
 
   it('should accept custom options', () => {
@@ -46,7 +46,7 @@ describe('wrap', () => {
   });
 });
 
-describe('AnthropicAdapter.invoke', () => {
+describe('AnthropicAgentAdapter.invoke', () => {
   it('should call the client', async () => {
     const mockClient = {
       messages: {
@@ -101,7 +101,7 @@ describe('AnthropicAdapter.invoke', () => {
   });
 });
 
-describe('AnthropicAdapter.chat', () => {
+describe('AnthropicAgentAdapter.chat', () => {
   it('should call the client', async () => {
     const mockClient = {
       messages: {
@@ -181,7 +181,7 @@ describe('serveAgent', () => {
     expect(serve).toHaveBeenCalledTimes(1);
     const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
     expect(serveCall.agents).toHaveLength(1);
-    expect(serveCall.agents[0]).toBeInstanceOf(AnthropicAdapter);
+    expect(serveCall.agents[0]).toBeInstanceOf(AnthropicAgentAdapter);
     expect(serveCall.agents[0].name).toBe('test-agent');
   });
 

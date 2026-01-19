@@ -10,8 +10,8 @@ describe('Test Setup', () => {
   });
 
   it('should import package exports', async () => {
-    const { serve, AdapterBase } = await import('../src/index.js');
+    const { serve, AgentAdapter } = await import('../src/index.js');
     expect(serve).toBeDefined();
-    expect(AdapterBase).toBeDefined();
+    expect(AgentAdapter).toBeDefined();
   });
 });
