@@ -62,7 +62,7 @@ Wrap an OpenAI client for use with Reminix Runtime. Use this with `serve` from `
 | `options.name` | `string` | `"openai-agent"` | Name for the agent (used in URL path) |
 | `options.model` | `string` | `"gpt-4o-mini"` | Model to use for completions |
 
-**Returns:** `OpenAIAdapter` - A Reminix adapter instance
+**Returns:** `OpenAIAgentAdapter` - A Reminix adapter instance
 
 ### Example with Custom Configuration
 

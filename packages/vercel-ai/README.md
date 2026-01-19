@@ -94,7 +94,7 @@ Wrap a Vercel AI SDK ToolLoopAgent or Model for use with Reminix Runtime. Use th
 | `modelOrAgent` | `ToolLoopAgent \| LanguageModel` | required | A ToolLoopAgent or language model |
 | `options.name` | `string` | `"vercel-ai-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `VercelAIAdapter` - A Reminix adapter instance
+**Returns:** `VercelAIAgentAdapter` - A Reminix adapter instance
 
 ## Using Different Providers
 
