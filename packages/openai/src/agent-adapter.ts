@@ -5,7 +5,7 @@
 import type OpenAI from 'openai';
 
 import {
-  AdapterBase,
+  AgentAdapter,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -18,7 +18,7 @@ import {
 /**
  * Options for wrapping an OpenAI client.
  */
-export interface OpenAIAdapterOptions {
+export interface OpenAIAgentAdapterOptions {
   name?: string;
   model?: string;
 }
@@ -26,7 +26,7 @@ export interface OpenAIAdapterOptions {
 /**
  * Adapter for OpenAI chat completions.
  */
-export class OpenAIAdapter extends AdapterBase {
+export class OpenAIAgentAdapter extends AgentAdapter {
   static adapterName = 'openai';
 
   private client: OpenAI;
@@ -39,7 +39,7 @@ export class OpenAIAdapter extends AdapterBase {
    * @param client - An OpenAI client.
    * @param options - Adapter options.
    */
-  constructor(client: OpenAI, options: OpenAIAdapterOptions = {}) {
+  constructor(client: OpenAI, options: OpenAIAgentAdapterOptions = {}) {
     super();
     this.client = client;
     this._name = options.name ?? 'openai-agent';
@@ -194,7 +194,7 @@ export class OpenAIAdapter extends AdapterBase {
  *
  * @param client - An OpenAI client.
  * @param options - Adapter options.
- * @returns An OpenAIAdapter instance.
+ * @returns An OpenAIAgentAdapter instance.
  *
  * @example
  * ```typescript
@@ -207,14 +207,17 @@ export class OpenAIAdapter extends AdapterBase {
  * serve({ agents: [agent], port: 8080 });
  * ```
  */
-export function wrapAgent(client: OpenAI, options: OpenAIAdapterOptions = {}): OpenAIAdapter {
-  return new OpenAIAdapter(client, options);
+export function wrapAgent(
+  client: OpenAI,
+  options: OpenAIAgentAdapterOptions = {}
+): OpenAIAgentAdapter {
+  return new OpenAIAgentAdapter(client, options);
 }
 
 /**
  * Options for wrapping and serving an OpenAI client.
  */
-export interface WrapAndServeOptions extends OpenAIAdapterOptions, ServeOptions {}
+export interface WrapAndServeOptions extends OpenAIAgentAdapterOptions, ServeOptions {}
 
 /**
  * Wrap an OpenAI client and serve it immediately.

@@ -8,7 +8,7 @@ import type { ToolLoopAgent } from 'ai';
 import { generateText, streamText, type LanguageModel, type ModelMessage } from 'ai';
 
 import {
-  AdapterBase,
+  AgentAdapter,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -21,7 +21,7 @@ import {
 /**
  * Options for wrapping a Vercel AI model or agent.
  */
-export interface VercelAIAdapterOptions {
+export interface VercelAIAgentAdapterOptions {
   name?: string;
 }
 
@@ -47,7 +47,7 @@ function isToolLoopAgent(input: unknown): input is AnyToolLoopAgent {
  * - ToolLoopAgent: Full agent with tools and automatic tool loop handling
  * - LanguageModel: Simple model for text generation without tools
  */
-export class VercelAIAdapter extends AdapterBase {
+export class VercelAIAgentAdapter extends AgentAdapter {
   static adapterName = 'vercel-ai';
 
   private modelOrAgent: LanguageModel | AnyToolLoopAgent;
@@ -72,7 +72,7 @@ export class VercelAIAdapter extends AdapterBase {
    */
   constructor(
     modelOrAgent: LanguageModel | AnyToolLoopAgent,
-    options: VercelAIAdapterOptions = {}
+    options: VercelAIAgentAdapterOptions = {}
   ) {
     super();
     this.modelOrAgent = modelOrAgent;
@@ -251,7 +251,7 @@ export class VercelAIAdapter extends AdapterBase {
  *
  * @param modelOrAgent - A Vercel AI SDK ToolLoopAgent or LanguageModel.
  * @param options - Adapter options.
- * @returns A VercelAIAdapter instance.
+ * @returns A VercelAIAgentAdapter instance.
  *
  * @example
  * ```typescript
@@ -285,15 +285,15 @@ export class VercelAIAdapter extends AdapterBase {
  */
 export function wrapAgent(
   modelOrAgent: LanguageModel | AnyToolLoopAgent,
-  options: VercelAIAdapterOptions = {}
-): VercelAIAdapter {
-  return new VercelAIAdapter(modelOrAgent, options);
+  options: VercelAIAgentAdapterOptions = {}
+): VercelAIAgentAdapter {
+  return new VercelAIAgentAdapter(modelOrAgent, options);
 }
 
 /**
  * Options for wrapping and serving a Vercel AI model or agent.
  */
-export interface WrapAndServeOptions extends VercelAIAdapterOptions, ServeOptions {}
+export interface WrapAndServeOptions extends VercelAIAgentAdapterOptions, ServeOptions {}
 
 /**
  * Wrap a Vercel AI model or agent and serve it immediately.

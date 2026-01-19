@@ -11,7 +11,7 @@ import {
 } from '@langchain/core/messages';
 
 import {
-  AdapterBase,
+  AgentAdapter,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -40,7 +40,7 @@ interface LangGraphRunnable {
 /**
  * Adapter for LangGraph compiled graphs.
  */
-export class LangGraphAdapter extends AdapterBase {
+export class LangGraphAgentAdapter extends AgentAdapter {
   static adapterName = 'langgraph';
 
   private graph: LangGraphRunnable;
@@ -281,7 +281,7 @@ export class LangGraphAdapter extends AdapterBase {
  *
  * @param graph - A LangGraph compiled graph.
  * @param name - Name for the agent.
- * @returns A LangGraphAdapter instance.
+ * @returns A LangGraphAgentAdapter instance.
  *
  * @example
  * ```typescript
@@ -299,8 +299,8 @@ export class LangGraphAdapter extends AdapterBase {
 export function wrapAgent(
   graph: LangGraphRunnable,
   name: string = 'langgraph-agent'
-): LangGraphAdapter {
-  return new LangGraphAdapter(graph, name);
+): LangGraphAgentAdapter {
+  return new LangGraphAgentAdapter(graph, name);
 }
 
 /**

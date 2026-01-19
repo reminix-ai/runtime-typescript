@@ -5,7 +5,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
 import {
-  AdapterBase,
+  AgentAdapter,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -18,7 +18,7 @@ import {
 /**
  * Options for wrapping an Anthropic client.
  */
-export interface AnthropicAdapterOptions {
+export interface AnthropicAgentAdapterOptions {
   name?: string;
   model?: string;
   maxTokens?: number;
@@ -35,7 +35,7 @@ interface AnthropicMessage {
 /**
  * Adapter for Anthropic messages API.
  */
-export class AnthropicAdapter extends AdapterBase {
+export class AnthropicAgentAdapter extends AgentAdapter {
   static adapterName = 'anthropic';
 
   private client: Anthropic;
@@ -49,7 +49,7 @@ export class AnthropicAdapter extends AdapterBase {
    * @param client - An Anthropic client.
    * @param options - Adapter options.
    */
-  constructor(client: Anthropic, options: AnthropicAdapterOptions = {}) {
+  constructor(client: Anthropic, options: AnthropicAgentAdapterOptions = {}) {
     super();
     this.client = client;
     this._name = options.name ?? 'anthropic-agent';
@@ -241,7 +241,7 @@ export class AnthropicAdapter extends AdapterBase {
  *
  * @param client - An Anthropic client.
  * @param options - Adapter options.
- * @returns An AnthropicAdapter instance.
+ * @returns An AnthropicAgentAdapter instance.
  *
  * @example
  * ```typescript
@@ -256,15 +256,15 @@ export class AnthropicAdapter extends AdapterBase {
  */
 export function wrapAgent(
   client: Anthropic,
-  options: AnthropicAdapterOptions = {}
-): AnthropicAdapter {
-  return new AnthropicAdapter(client, options);
+  options: AnthropicAgentAdapterOptions = {}
+): AnthropicAgentAdapter {
+  return new AnthropicAgentAdapter(client, options);
 }
 
 /**
  * Options for wrapping and serving an Anthropic client.
  */
-export interface WrapAndServeOptions extends AnthropicAdapterOptions, ServeOptions {}
+export interface WrapAndServeOptions extends AnthropicAgentAdapterOptions, ServeOptions {}
 
 /**
  * Wrap an Anthropic client and serve it immediately.

@@ -1,10 +1,10 @@
 /**
- * Tests for AdapterBase.
+ * Tests for AgentAdapter.
  */
 
 import { describe, it, expect } from 'vitest';
 import {
-  AdapterBase,
+  AgentAdapter,
   type InvokeRequest,
   type InvokeResponse,
   type ChatRequest,
@@ -14,7 +14,7 @@ import {
 /**
  * Create a minimal concrete adapter for testing.
  */
-class TestAdapter extends AdapterBase {
+class TestAdapter extends AgentAdapter {
   get name(): string {
     return 'test-agent';
   }
@@ -35,16 +35,16 @@ class TestAdapter extends AdapterBase {
   }
 }
 
-describe('AdapterBase Contract', () => {
+describe('AgentAdapter Contract', () => {
   it('should be an abstract class', () => {
     // TypeScript enforces this at compile time
     // We can verify the class exists and is abstract
-    expect(AdapterBase).toBeDefined();
+    expect(AgentAdapter).toBeDefined();
   });
 
   it('should allow concrete implementations', () => {
     const adapter = new TestAdapter();
-    expect(adapter).toBeInstanceOf(AdapterBase);
+    expect(adapter).toBeInstanceOf(AgentAdapter);
   });
 });
 

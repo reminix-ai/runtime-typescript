@@ -12,7 +12,7 @@ import {
 import type { Runnable } from '@langchain/core/runnables';
 
 import {
-  AdapterBase,
+  AgentAdapter,
   serve,
   type ServeOptions,
   type InvokeRequest,
@@ -25,7 +25,7 @@ import {
 /**
  * Adapter for LangChain agents and runnables.
  */
-export class LangChainAdapter extends AdapterBase {
+export class LangChainAgentAdapter extends AgentAdapter {
   static adapterName = 'langchain';
 
   private agent: Runnable;
@@ -202,7 +202,7 @@ export class LangChainAdapter extends AdapterBase {
  *
  * @param agent - A LangChain runnable (e.g., ChatModel, chain, agent).
  * @param name - Name for the agent.
- * @returns A LangChainAdapter instance.
+ * @returns A LangChainAgentAdapter instance.
  *
  * @example
  * ```typescript
@@ -215,8 +215,11 @@ export class LangChainAdapter extends AdapterBase {
  * serve({ agents: [agent], port: 8080 });
  * ```
  */
-export function wrapAgent(agent: Runnable, name: string = 'langchain-agent'): LangChainAdapter {
-  return new LangChainAdapter(agent, name);
+export function wrapAgent(
+  agent: Runnable,
+  name: string = 'langchain-agent'
+): LangChainAgentAdapter {
+  return new LangChainAgentAdapter(agent, name);
 }
 
 /**

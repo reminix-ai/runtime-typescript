@@ -1,2 +1,2 @@
-export { OpenAIAdapter, wrapAgent, serveAgent } from './adapter.js';
-export type { OpenAIAdapterOptions, WrapAndServeOptions } from './adapter.js';
+export { OpenAIAgentAdapter, wrapAgent, serveAgent } from './agent-adapter.js';
+export type { OpenAIAgentAdapterOptions, WrapAndServeOptions } from './agent-adapter.js';

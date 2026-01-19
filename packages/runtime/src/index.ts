@@ -24,7 +24,7 @@ export type {
   FetchHandler,
 } from './agent.js';
 // Adapter exports
-export { AdapterBase } from './adapter.js';
+export { AgentAdapter } from './agent-adapter.js';
 // Tool exports
 export { ToolBase, Tool, tool } from './tool.js';
 export type { ToolMetadata, ToolOptions, ExecuteHandler } from './tool.js';

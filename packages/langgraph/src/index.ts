@@ -1,2 +1,2 @@
-export { LangGraphAdapter, wrapAgent, serveAgent } from './adapter.js';
-export type { WrapAndServeOptions } from './adapter.js';
+export { LangGraphAgentAdapter, wrapAgent, serveAgent } from './agent-adapter.js';
+export type { WrapAndServeOptions } from './agent-adapter.js';

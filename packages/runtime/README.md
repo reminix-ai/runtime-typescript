@@ -1,6 +1,6 @@
 # @reminix/runtime
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `serve()` function, `Agent` class, `tool()` factory, and `BaseAdapter` for building framework integrations.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `serve()` function, `Agent` class, `tool()` factory, and `AgentAdapter` for building framework integrations.
 
 Built on [Hono](https://hono.dev) for portability across Node.js, Deno, Bun, and edge runtimes.
 
@@ -359,18 +359,18 @@ Deno.serve(agent.toHandler());
 Bun.serve({ fetch: agent.toHandler() });
 ```
 
-### `BaseAdapter`
+### `AgentAdapter`
 
 Abstract base class for framework adapters. Use this when wrapping an existing AI framework.
 
 ```typescript
-import { BaseAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '@reminix/runtime';
+import { AgentAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '@reminix/runtime';
 
-class MyFrameworkAdapter extends BaseAdapter {
+class MyFrameworkAdapter extends AgentAdapter {
   // Adapter name shown in /info endpoint
   static adapterName = 'my-framework';
   
-  // BaseAdapter defaults both to true; override if your adapter doesn't support streaming
+  // AgentAdapter defaults both to true; override if your adapter doesn't support streaming
   // override readonly invokeStreaming = false;
   // override readonly chatStreaming = false;
 

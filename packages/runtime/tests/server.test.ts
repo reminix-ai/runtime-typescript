@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  AdapterBase,
+  AgentAdapter,
   VERSION,
   tool,
   type InvokeRequest,
@@ -17,7 +17,7 @@ import { createApp } from '../src/server.js';
 /**
  * A mock adapter for testing.
  */
-class MockAdapter extends AdapterBase {
+class MockAdapter extends AgentAdapter {
   static adapterName = 'mock';
 
   private _name: string;

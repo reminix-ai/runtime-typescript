@@ -1,17 +1,17 @@
 /**
- * Base adapter class for framework integrations.
+ * Base agent adapter class for framework integrations.
  */
 
 import type { InvokeRequest, ChatRequest } from './types.js';
 import { AgentBase, type AgentMetadata } from './agent.js';
 
 /**
- * Base class for framework adapters.
+ * Base class for framework agent adapters.
  *
- * Extend this class when wrapping an existing AI framework
+ * Extend this class when wrapping an existing AI framework's agent
  * (e.g., LangChain, OpenAI, Anthropic).
  */
-export abstract class AdapterBase extends AgentBase {
+export abstract class AgentAdapter extends AgentBase {
   /**
    * The adapter name. Subclasses should override this.
    */
@@ -34,7 +34,7 @@ export abstract class AdapterBase extends AgentBase {
   get metadata(): AgentMetadata {
     return {
       type: 'adapter',
-      adapter: (this.constructor as typeof AdapterBase).adapterName,
+      adapter: (this.constructor as typeof AgentAdapter).adapterName,
     };
   }
 
