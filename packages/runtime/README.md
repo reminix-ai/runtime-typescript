@@ -69,7 +69,7 @@ Returns runtime information, available agents, and tools:
 {
   "runtime": {
     "name": "reminix-runtime",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "language": "typescript",
     "framework": "hono"
   },
