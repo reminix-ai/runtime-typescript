@@ -31,7 +31,7 @@ describe('Agent Creation', () => {
     const agent = new Agent('my-agent');
     expect(agent.metadata.type).toBe('agent');
     expect(agent.metadata.requestKeys).toEqual(['prompt']);
-    expect(agent.metadata.responseKeys).toEqual(['output']);
+    expect(agent.metadata.responseKeys).toEqual(['content']);
     expect(agent.metadata.parameters).toEqual({
       type: 'object',
       properties: {
@@ -47,19 +47,19 @@ describe('Agent Handler Registration', () => {
     const agent = new Agent('test-agent');
 
     agent.onExecute(async (request) => {
-      return { output: 'test' };
+      return { content: 'test' };
     });
 
     // Handler should be registered (we can test this by calling execute)
     await expect(agent.execute({ input: { task: 'test' } })).resolves.toEqual({
-      output: 'test',
+      content: 'test',
     });
   });
 
   it('should return this for method chaining', () => {
     const agent = new Agent('test-agent');
 
-    const result = agent.onExecute(async () => ({ output: 'execute' }));
+    const result = agent.onExecute(async () => ({ content: 'execute' }));
 
     expect(result).toBe(agent);
   });
@@ -88,11 +88,11 @@ describe('Agent Execute', () => {
 
     agent.onExecute(async (request) => {
       const task = (request.input as Record<string, string>).task || 'unknown';
-      return { output: `Completed: ${task}` };
+      return { content: `Completed: ${task}` };
     });
 
     const response = await agent.execute({ input: { task: 'summarize' } });
-    expect(response.output).toBe('Completed: summarize');
+    expect(response.content).toBe('Completed: summarize');
   });
 
   it('should throw when no execute handler registered', async () => {
@@ -138,7 +138,7 @@ describe('Agent With Context', () => {
 
     agent.onExecute(async (request) => {
       receivedContext = request.context;
-      return { output: 'done' };
+      return { content: 'done' };
     });
 
     await agent.execute({
@@ -189,7 +189,7 @@ describe('Agent toHandler', () => {
   it('should handle /agents/{name}/execute endpoint with default prompt key', async () => {
     const testAgent = new Agent('test-agent');
     testAgent.onExecute(async (req) => ({
-      output: `Received: ${(req.input as Record<string, string>).prompt}`,
+      content: `Received: ${(req.input as Record<string, string>).prompt}`,
     }));
     const handler = testAgent.toHandler();
 
@@ -203,7 +203,7 @@ describe('Agent toHandler', () => {
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.output).toBe('Received: hello');
+    expect(body.content).toBe('Received: hello');
   });
 
   it('should handle /agents/{name}/execute with custom requestKeys', async () => {
@@ -211,12 +211,12 @@ describe('Agent toHandler', () => {
     const testAgent = new Agent('test-agent', {
       metadata: {
         requestKeys: ['messages'],
-        responseKeys: ['output'],
+        responseKeys: ['content'],
       },
     });
     testAgent.onExecute(async (req) => {
       const messages = (req.input as { messages: Message[] }).messages;
-      return { output: `Reply to: ${messages[0].content}` };
+      return { content: `Reply to: ${messages[0].content}` };
     });
     const handler = testAgent.toHandler();
 
@@ -230,12 +230,12 @@ describe('Agent toHandler', () => {
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.output).toBe('Reply to: hello');
+    expect(body.content).toBe('Reply to: hello');
   });
 
   it('should return 404 for wrong agent name', async () => {
     const testAgent = new Agent('test-agent');
-    testAgent.onExecute(async () => ({ output: 'ok' }));
+    testAgent.onExecute(async () => ({ content: 'ok' }));
     const handler = testAgent.toHandler();
 
     const request = new Request('http://localhost/agents/wrong-agent/execute', {
@@ -344,8 +344,8 @@ describe('agent() Factory', () => {
 
     expect(calculator.metadata.output).toEqual({
       type: 'object',
-      properties: { output: { type: 'number' } },
-      required: ['output'],
+      properties: { content: { type: 'number' } },
+      required: ['content'],
     });
   });
 
@@ -373,7 +373,7 @@ describe('agent() Factory', () => {
     });
 
     expect(calculator.metadata.requestKeys).toEqual(['a', 'b']);
-    expect(calculator.metadata.responseKeys).toEqual(['output']);
+    expect(calculator.metadata.responseKeys).toEqual(['content']);
   });
 
   it('should handle execute requests', async () => {
@@ -388,7 +388,7 @@ describe('agent() Factory', () => {
 
     // input contains the extracted keys from request body
     const response = await calculator.execute({ input: { a: 3, b: 4 } });
-    expect(response.output).toBe(7);
+    expect(response.content).toBe(7);
   });
 
   it('should pass context to execute handler', async () => {
@@ -455,7 +455,7 @@ describe('agent() Factory', () => {
     });
 
     const response = await streamer.execute({ input: { text: 'hello world' } });
-    expect(response.output).toBe('hello world ');
+    expect(response.content).toBe('hello world ');
   });
 });
 

@@ -76,7 +76,7 @@ export abstract class AgentBase {
       type: 'agent',
       parameters: DEFAULT_AGENT_PARAMETERS,
       requestKeys: ['prompt'],
-      responseKeys: ['output'],
+      responseKeys: ['content'],
     };
   }
 
@@ -280,7 +280,7 @@ export class Agent extends AgentBase {
       type: 'agent',
       parameters: DEFAULT_AGENT_PARAMETERS,
       requestKeys: ['prompt'],
-      responseKeys: ['output'],
+      responseKeys: ['content'],
       ...this._metadata,
     };
   }
@@ -506,7 +506,7 @@ export function agent(name: string, options: AgentOptions): Agent {
   const requestKeys = Object.keys(parameters.properties);
 
   // Default responseKeys (can be overridden via metadata)
-  const responseKeys = ['output'];
+  const responseKeys = ['content'];
 
   // Wrap output schema to match responseKeys structure
   const wrappedOutput = wrapOutputSchemaForResponseKeys(options.output, responseKeys);
@@ -542,10 +542,10 @@ export function agent(name: string, options: AgentOptions): Agent {
   // Detect if execute is an async generator function
   const isStreaming = isAsyncGeneratorFunction(options.execute);
 
-  // Get the response key from the agent's metadata (allows custom override)
-  const getResponseKey = () => {
+  // Get the response keys from the agent's metadata (allows custom override)
+  const getResponseKeys = () => {
     const keys = agentInstance.metadata.responseKeys as string[] | undefined;
-    return keys?.[0] ?? 'output';
+    return keys && keys.length > 0 ? keys : ['content'];
   };
 
   if (isStreaming) {
@@ -565,7 +565,13 @@ export function agent(name: string, options: AgentOptions): Agent {
       for await (const chunk of streamExecute(request.input, request.context)) {
         chunks.push(chunk);
       }
-      return { [getResponseKey()]: chunks.join('') };
+      const result = chunks.join('');
+      // If result is dict, use as-is; otherwise wrap in first responseKey
+      if (typeof result === 'object' && result !== null && !Array.isArray(result)) {
+        return result as ExecuteResponse;
+      }
+      const responseKeys = getResponseKeys();
+      return { [responseKeys[0]]: result };
     });
   } else {
     const regularExecute = options.execute as (
@@ -575,7 +581,17 @@ export function agent(name: string, options: AgentOptions): Agent {
 
     agentInstance.onExecute(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
       const result = await regularExecute(request.input, request.context);
-      return { [getResponseKey()]: result };
+      // If result is dict with all responseKeys, use as-is; otherwise wrap in first responseKey
+      const responseKeys = getResponseKeys();
+      if (
+        typeof result === 'object' &&
+        result !== null &&
+        !Array.isArray(result) &&
+        responseKeys.every((key) => key in result)
+      ) {
+        return result as ExecuteResponse;
+      }
+      return { [responseKeys[0]]: result };
     });
   }
 
@@ -683,10 +699,10 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
   // Detect if execute is an async generator function
   const isStreaming = isAsyncGeneratorFunction(options.execute);
 
-  // Get the response key from the agent's metadata (allows custom override)
-  const getResponseKey = () => {
+  // Get the response keys from the agent's metadata (allows custom override)
+  const getResponseKeys = () => {
     const keys = agentInstance.metadata.responseKeys as string[] | undefined;
-    return keys?.[0] ?? 'message';
+    return keys && keys.length > 0 ? keys : ['message'];
   };
 
   if (isStreaming) {
@@ -708,7 +724,10 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
       for await (const chunk of streamExecute(rawMessages, request.context)) {
         chunks.push(chunk);
       }
-      return { [getResponseKey()]: { role: 'assistant', content: chunks.join('') } };
+      const result = { role: 'assistant', content: chunks.join('') };
+      // For chat agents, always wrap in first responseKey (typically "message")
+      const responseKeys = getResponseKeys();
+      return { [responseKeys[0]]: result };
     });
   } else {
     const regularExecute = options.execute as (
@@ -718,8 +737,28 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
 
     agentInstance.onExecute(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
       const rawMessages = (request.input.messages ?? []) as Message[];
-      const message = await regularExecute(rawMessages, request.context);
-      return { [getResponseKey()]: message };
+      const result = await regularExecute(rawMessages, request.context);
+      const responseKeys = getResponseKeys();
+
+      // Check if result is already a full response dict with all responseKeys
+      // (This handles cases where responseKeys are overridden and function returns a dict)
+      if (
+        typeof result === 'object' &&
+        result !== null &&
+        !Array.isArray(result) &&
+        'role' in result === false && // Not a Message (Message has 'role' property)
+        responseKeys.every((key) => key in (result as Record<string, unknown>))
+      ) {
+        return result as Record<string, unknown>;
+      }
+
+      // Convert Message to dict if needed, then wrap in first responseKey
+      const messageDict =
+        typeof result === 'object' && result !== null && 'role' in result && 'content' in result
+          ? { role: (result as Message).role, content: (result as Message).content }
+          : result;
+
+      return { [responseKeys[0]]: messageDict };
     });
   }
 
