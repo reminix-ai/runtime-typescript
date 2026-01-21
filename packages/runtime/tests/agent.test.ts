@@ -521,6 +521,25 @@ describe('chatAgent() Factory', () => {
     expect(bot.metadata.description).toBe('A helpful assistant');
   });
 
+  it('should set standard parameters schema in metadata', () => {
+    const bot = chatAgent('bot', {
+      execute: async () => 'Hello!',
+    });
+
+    const params = bot.metadata.parameters as Record<string, unknown>;
+    expect(params.type).toBe('object');
+    expect(params.properties).toHaveProperty('messages');
+    expect(params.required).toContain('messages');
+  });
+
+  it('should set standard output schema in metadata', () => {
+    const bot = chatAgent('bot', {
+      execute: async () => 'Hello!',
+    });
+
+    expect(bot.metadata.output).toEqual({ type: 'string' });
+  });
+
   it('should handle chat requests', async () => {
     const echoBot = chatAgent('echo-bot', {
       execute: async (messages) => {

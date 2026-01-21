@@ -614,9 +614,31 @@ export function agent(name: string, options: AgentOptions): Agent {
  * ```
  */
 export function chatAgent(name: string, options: ChatAgentOptions): Agent {
+  // Define standard chat agent schemas
+  const parametersSchema = {
+    type: 'object',
+    properties: {
+      messages: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            role: { type: 'string' },
+            content: { type: 'string' },
+          },
+          required: ['role', 'content'],
+        },
+      },
+    },
+    required: ['messages'],
+  };
+  const outputSchema = { type: 'string' };
+
   const agentInstance = new Agent(name, {
     metadata: {
       description: options.description,
+      parameters: parametersSchema,
+      output: outputSchema,
       ...options.metadata,
     },
   });
