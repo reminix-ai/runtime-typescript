@@ -14,7 +14,7 @@ export type {
   ToolExecuteResponse,
 } from './types.js';
 // Agent exports
-export { AgentBase, Agent } from './agent.js';
+export { AgentBase, Agent, agent, chatAgent } from './agent.js';
 export type {
   AgentMetadata,
   InvokeHandler,
@@ -22,6 +22,8 @@ export type {
   InvokeStreamHandler,
   ChatStreamHandler,
   FetchHandler,
+  AgentOptions,
+  ChatAgentOptions,
 } from './agent.js';
 // Adapter exports
 export { AgentAdapter } from './agent-adapter.js';

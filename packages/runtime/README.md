@@ -1,6 +1,6 @@
 # @reminix/runtime
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `serve()` function, `Agent` class, `tool()` factory, and `AgentAdapter` for building framework integrations.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `agent()`, `chatAgent()`, and `tool()` factory functions for building and serving AI agents.
 
 Built on [Hono](https://hono.dev) for portability across Node.js, Deno, Bun, and edge runtimes.
 
@@ -15,30 +15,27 @@ npm install @reminix/runtime
 ## Quick Start
 
 ```typescript
-import { serve, Agent } from '@reminix/runtime';
+import { agent, chatAgent, serve } from '@reminix/runtime';
 
-// Create an agent with callbacks
-const agent = new Agent('my-agent');
-
-agent.onInvoke(async (request) => {
-  const task = (request.input as Record<string, string>).task || 'unknown';
-  return { output: `Completed: ${task}` };
+// Create an invoke agent
+const calculator = agent('calculator', {
+  description: 'Add two numbers',
+  parameters: {
+    type: 'object',
+    properties: { a: { type: 'number' }, b: { type: 'number' } },
+    required: ['a', 'b'],
+  },
+  execute: async ({ a, b }) => (a as number) + (b as number),
 });
 
-agent.onChat(async (request) => {
-  const userMsg = request.messages[request.messages.length - 1].content;
-  const response = `You said: ${userMsg}`;
-  return {
-    output: response,
-    messages: [
-      ...request.messages,
-      { role: 'assistant', content: response },
-    ],
-  };
+// Create a chat agent
+const assistant = chatAgent('assistant', {
+  description: 'A helpful assistant',
+  execute: async (messages) => `You said: ${messages.at(-1)?.content}`,
 });
 
-// Serve the agent
-serve({ agents: [agent], port: 8080 });
+// Serve the agents
+serve({ agents: [calculator, assistant], port: 8080 });
 ```
 
 ## How It Works
@@ -79,8 +76,33 @@ Returns runtime information, available agents, and tools:
   },
   "agents": [
     {
-      "name": "my-agent",
+      "name": "calculator",
       "type": "agent",
+      "description": "Add two numbers",
+      "parameters": {
+        "type": "object",
+        "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
+        "required": ["a", "b"]
+      },
+      "output": { "type": "number" },
+      "invoke": { "streaming": false },
+      "chat": { "streaming": false }
+    },
+    {
+      "name": "assistant",
+      "type": "agent",
+      "description": "A helpful assistant",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": { "type": "object", "properties": { "role": { "type": "string" }, "content": { "type": "string" } }, "required": ["role", "content"] }
+          }
+        },
+        "required": ["messages"]
+      },
+      "output": { "type": "string" },
       "invoke": { "streaming": false },
       "chat": { "streaming": false }
     }
@@ -102,20 +124,15 @@ Returns runtime information, available agents, and tools:
 `POST /agents/{name}/invoke` - For stateless operations.
 
 ```bash
-curl -X POST http://localhost:8080/agents/my-agent/invoke \
+curl -X POST http://localhost:8080/agents/calculator/invoke \
   -H "Content-Type: application/json" \
-  -d '{
-    "input": {
-      "task": "summarize",
-      "text": "Lorem ipsum..."
-    }
-  }'
+  -d '{"input": {"a": 5, "b": 3}}'
 ```
 
 **Response:**
 ```json
 {
-  "output": "Summary: ..."
+  "output": 8
 }
 ```
 
@@ -124,12 +141,11 @@ curl -X POST http://localhost:8080/agents/my-agent/invoke \
 `POST /agents/{name}/chat` - For conversational interactions.
 
 ```bash
-curl -X POST http://localhost:8080/agents/my-agent/chat \
+curl -X POST http://localhost:8080/agents/assistant/chat \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [
-      {"role": "system", "content": "You are helpful"},
-      {"role": "user", "content": "What is the weather?"}
+      {"role": "user", "content": "Hello!"}
     ]
   }'
 ```
@@ -137,16 +153,13 @@ curl -X POST http://localhost:8080/agents/my-agent/chat \
 **Response:**
 ```json
 {
-  "output": "The weather is 72°F and sunny!",
+  "output": "You said: Hello!",
   "messages": [
-    {"role": "system", "content": "You are helpful"},
-    {"role": "user", "content": "What is the weather?"},
-    {"role": "assistant", "content": "The weather is 72°F and sunny!"}
+    {"role": "user", "content": "Hello!"},
+    {"role": "assistant", "content": "You said: Hello!"}
   ]
 }
 ```
-
-The `output` field contains the assistant's response, while `messages` includes the full conversation history.
 
 ### Tool Execute Endpoint
 
@@ -155,11 +168,7 @@ The `output` field contains the assistant's response, while `messages` includes 
 ```bash
 curl -X POST http://localhost:8080/tools/get_weather/execute \
   -H "Content-Type: application/json" \
-  -d '{
-    "input": {
-      "location": "San Francisco"
-    }
-  }'
+  -d '{"input": {"location": "San Francisco"}}'
 ```
 
 **Response:**
@@ -169,9 +178,119 @@ curl -X POST http://localhost:8080/tools/get_weather/execute \
 }
 ```
 
+## Agents
+
+Agents handle requests via the `/agents/{name}/invoke` or `/agents/{name}/chat` endpoints.
+
+### Invoke Agent
+
+Use `agent()` for task-oriented agents that take input and return output:
+
+```typescript
+import { agent, serve } from '@reminix/runtime';
+
+const calculator = agent('calculator', {
+  description: 'Add two numbers',
+  parameters: {
+    type: 'object',
+    properties: {
+      a: { type: 'number' },
+      b: { type: 'number' },
+    },
+    required: ['a', 'b'],
+  },
+  execute: async ({ a, b }) => (a as number) + (b as number),
+});
+
+const textProcessor = agent('text-processor', {
+  description: 'Process text in various ways',
+  parameters: {
+    type: 'object',
+    properties: {
+      text: { type: 'string' },
+      operation: { type: 'string', enum: ['uppercase', 'lowercase'] },
+    },
+    required: ['text'],
+  },
+  execute: async ({ text, operation }) => {
+    const t = text as string;
+    return operation === 'uppercase' ? t.toUpperCase() : t.toLowerCase();
+  },
+});
+
+serve({ agents: [calculator, textProcessor], port: 8080 });
+```
+
+### Chat Agent
+
+Use `chatAgent()` for conversational agents that handle message history:
+
+```typescript
+import { chatAgent, serve } from '@reminix/runtime';
+
+const assistant = chatAgent('assistant', {
+  description: 'A helpful assistant',
+  execute: async (messages) => {
+    const lastMsg = messages.at(-1)?.content ?? '';
+    return `You said: ${lastMsg}`;
+  },
+});
+
+// With context support
+const contextualBot = chatAgent('contextual-bot', {
+  description: 'Bot with context awareness',
+  execute: async (messages, context) => {
+    const userId = context?.user_id ?? 'unknown';
+    return `Hello user ${userId}!`;
+  },
+});
+
+serve({ agents: [assistant, contextualBot], port: 8080 });
+```
+
+### Streaming
+
+Both factories support streaming via async generators. When you use an async generator function, the agent automatically supports streaming:
+
+```typescript
+import { agent, chatAgent, serve } from '@reminix/runtime';
+
+// Streaming invoke agent
+const streamer = agent('streamer', {
+  description: 'Stream text word by word',
+  parameters: {
+    type: 'object',
+    properties: { text: { type: 'string' } },
+    required: ['text'],
+  },
+  execute: async function* ({ text }) {
+    for (const word of (text as string).split(' ')) {
+      yield word + ' ';
+    }
+  },
+});
+
+// Streaming chat agent
+const streamingAssistant = chatAgent('streaming-assistant', {
+  description: 'Stream responses token by token',
+  execute: async function* (messages) {
+    const response = `You said: ${messages.at(-1)?.content}`;
+    for (const char of response) {
+      yield char;
+    }
+  },
+});
+
+serve({ agents: [streamer, streamingAssistant], port: 8080 });
+```
+
+For streaming agents:
+- `stream: true` in the request → chunks are sent via SSE
+- `stream: false` in the request → chunks are collected and returned as a single response
+
 ## Tools
 
-Tools are standalone functions that can be served via the runtime. They're useful for exposing utility functions, external API integrations, or any reusable logic.
+Tools are standalone functions served via `/tools/{name}/execute`. They're useful for exposing utility functions, external API integrations, or any reusable logic.
 
 ### Creating Tools
 
@@ -190,54 +309,50 @@ const getWeather = tool('get_weather', {
     },
     required: ['location'],
   },
-  // Optional: define output schema for documentation and type inference
   output: {
     type: 'object',
     properties: {
       temp: { type: 'number' },
       condition: { type: 'string' },
-      location: { type: 'string' },
     },
   },
   execute: async (input) => {
     const location = input.location as string;
-    // Call weather API...
     return { temp: 72, condition: 'sunny', location };
   },
 });
 
-// Serve tools (with or without agents)
 serve({ tools: [getWeather], port: 8080 });
 ```
-
-The optional `output` property defines the JSON Schema for the tool's return value. This is included in the `/info` endpoint for documentation and enables better type inference for clients.
 
 ### Serving Agents and Tools Together
 
 You can serve both agents and tools from the same runtime:
 
 ```typescript
-import { Agent, tool, serve } from '@reminix/runtime';
+import { agent, tool, serve } from '@reminix/runtime';
 
-const agent = new Agent('my-agent');
-agent.onInvoke(async (req) => ({ output: 'Hello!' }));
+const summarizer = agent('summarizer', {
+  description: 'Summarize text',
+  parameters: {
+    type: 'object',
+    properties: { text: { type: 'string' } },
+    required: ['text'],
+  },
+  execute: async ({ text }) => (text as string).slice(0, 100) + '...',
+});
 
 const calculator = tool('calculate', {
   description: 'Perform basic math operations',
   parameters: {
     type: 'object',
-    properties: {
-      expression: { type: 'string', description: 'Math expression to evaluate' },
-    },
+    properties: { expression: { type: 'string' } },
     required: ['expression'],
   },
-  execute: async (input) => {
-    const expr = input.expression as string;
-    return { result: eval(expr) }; // Note: use a safe evaluator in production
-  },
+  execute: async (input) => ({ result: eval(input.expression as string) }),
 });
 
-serve({ agents: [agent], tools: [calculator], port: 8080 });
+serve({ agents: [summarizer], tools: [calculator], port: 8080 });
 ```
 
 ## Framework Adapters
@@ -278,6 +393,77 @@ const app = createApp({ agents: [myAgent], tools: [myTool] });
 // Use with any runtime: Node.js, Deno, Bun, Cloudflare Workers, etc.
 ```
 
+### `agent(name, options)`
+
+Factory function to create an invoke agent.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `string` | Unique identifier for the agent |
+| `options.description` | `string` | Human-readable description |
+| `options.parameters` | `object` | JSON Schema for input parameters |
+| `options.output` | `object` | Optional JSON Schema for output |
+| `options.execute` | `function` | Async function or async generator to execute |
+
+```typescript
+import { agent } from '@reminix/runtime';
+
+// Regular agent
+const myAgent = agent('my-agent', {
+  description: 'Does something useful',
+  parameters: {
+    type: 'object',
+    properties: { input: { type: 'string' } },
+    required: ['input'],
+  },
+  execute: async ({ input }) => ({ result: input }),
+});
+
+// Streaming agent
+const streamingAgent = agent('streaming-agent', {
+  description: 'Streams output',
+  parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
+  execute: async function* ({ text }) {
+    for (const word of (text as string).split(' ')) {
+      yield word + ' ';
+    }
+  },
+});
+```
+
+### `chatAgent(name, options)`
+
+Factory function to create a chat agent.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | `string` | Unique identifier for the agent |
+| `options.description` | `string` | Human-readable description |
+| `options.execute` | `function` | Async function or async generator receiving messages |
+
+```typescript
+import { chatAgent } from '@reminix/runtime';
+
+// Regular chat agent
+const bot = chatAgent('bot', {
+  description: 'A simple bot',
+  execute: async (messages) => `You said: ${messages.at(-1)?.content}`,
+});
+
+// With context
+const contextBot = chatAgent('context-bot', {
+  execute: async (messages, context) => `Hello ${context?.user_id}!`,
+});
+
+// Streaming chat agent
+const streamingBot = chatAgent('streaming-bot', {
+  execute: async function* (messages) {
+    yield 'Hello';
+    yield ' world!';
+  },
+});
+```
+
 ### `tool(name, options)`
 
 Factory function to create a tool.
@@ -287,6 +473,7 @@ Factory function to create a tool.
 | `name` | `string` | Unique identifier for the tool |
 | `options.description` | `string` | Human-readable description |
 | `options.parameters` | `object` | JSON Schema for input parameters |
+| `options.output` | `object` | Optional JSON Schema for output |
 | `options.execute` | `function` | Async function to execute when called |
 
 ```typescript
@@ -296,125 +483,11 @@ const myTool = tool('my_tool', {
   description: 'Does something useful',
   parameters: {
     type: 'object',
-    properties: {
-      input: { type: 'string' },
-    },
+    properties: { input: { type: 'string' } },
     required: ['input'],
   },
-  execute: async (input) => {
-    return { result: input.input };
-  },
+  execute: async (input) => ({ result: input.input }),
 });
-```
-
-### `Agent`
-
-Concrete class for building agents with callbacks.
-
-```typescript
-import { Agent } from '@reminix/runtime';
-
-const agent = new Agent('my-agent', { metadata: { version: '1.0' } });
-
-agent.onInvoke(async (request) => {
-  return { output: 'Hello!' };
-});
-
-agent.onChat(async (request) => {
-  return { output: 'Hi!', messages: [...] };
-});
-
-// Optional: streaming handlers
-agent.onInvokeStream(async function* (request) {
-  yield '{"chunk": "Hello"}';
-  yield '{"chunk": " world!"}';
-});
-
-agent.onChatStream(async function* (request) {
-  yield '{"chunk": "Hi"}';
-});
-```
-
-| Method | Description |
-|--------|-------------|
-| `onInvoke(fn)` | Register invoke handler, returns `this` for chaining |
-| `onChat(fn)` | Register chat handler, returns `this` for chaining |
-| `onInvokeStream(fn)` | Register streaming invoke handler |
-| `onChatStream(fn)` | Register streaming chat handler |
-| `toHandler()` | Returns a web-standard fetch handler for serverless |
-
-### `agent.toHandler()`
-
-Returns a web-standard `(Request) => Promise<Response>` handler for serverless deployments.
-
-```typescript
-// Vercel Edge Function
-import { Agent } from '@reminix/runtime';
-
-const agent = new Agent('my-agent');
-agent.onInvoke(async (req) => ({ output: 'Hello!' }));
-
-export const POST = agent.toHandler();
-export const GET = agent.toHandler();
-
-// Cloudflare Workers
-export default { fetch: agent.toHandler() };
-
-// Deno Deploy
-Deno.serve(agent.toHandler());
-
-// Bun
-Bun.serve({ fetch: agent.toHandler() });
-```
-
-### `AgentAdapter`
-
-Abstract base class for framework adapters. Use this when wrapping an existing AI framework.
-
-```typescript
-import { AgentAdapter, InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from '@reminix/runtime';
-
-class MyFrameworkAdapter extends AgentAdapter {
-  // Adapter name shown in /info endpoint
-  static adapterName = 'my-framework';
-  
-  // AgentAdapter defaults both to true; override if your adapter doesn't support streaming
-  // override readonly invokeStreaming = false;
-  // override readonly chatStreaming = false;
-
-  private client: MyFrameworkClient;
-  private _name: string;
-
-  constructor(client: MyFrameworkClient, name = 'my-framework') {
-    super();
-    this.client = client;
-    this._name = name;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Pass input to your framework
-    const result = await this.client.run(request.input);
-    return { output: result };
-  }
-
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    // Convert messages and call your framework
-    const result = await this.client.chat(request.messages);
-    return {
-      output: result,
-      messages: [...request.messages, { role: 'assistant', content: result }],
-    };
-  }
-}
-
-// Optional: provide a wrap() factory function
-export function wrap(client: MyFrameworkClient, name = 'my-framework'): MyFrameworkAdapter {
-  return new MyFrameworkAdapter(client, name);
-}
 ```
 
 ### Request/Response Types
@@ -440,6 +513,112 @@ interface ChatResponse {
   output: string;                  // The final answer
   messages: Message[];             // Full execution history
 }
+```
+
+## Advanced
+
+### Agent Class
+
+For more control, you can use the `Agent` class directly. This is useful when you need both invoke and chat handlers on the same agent, or want more programmatic control.
+
+```typescript
+import { Agent, serve } from '@reminix/runtime';
+
+const agent = new Agent('my-agent', { metadata: { version: '1.0' } });
+
+agent.onInvoke(async (request) => {
+  return { output: 'Hello!' };
+});
+
+agent.onChat(async (request) => {
+  return { output: 'Hi!', messages: [...request.messages, { role: 'assistant', content: 'Hi!' }] };
+});
+
+// Optional: separate streaming handlers
+agent.onInvokeStream(async function* (request) {
+  yield '{"chunk": "Hello"}';
+  yield '{"chunk": " world!"}';
+});
+
+serve({ agents: [agent], port: 8080 });
+```
+
+### Tool Class
+
+For programmatic tool creation:
+
+```typescript
+import { Tool, serve } from '@reminix/runtime';
+
+const myTool = new Tool('get_weather', {
+  description: 'Get weather for a location',
+  parameters: {
+    type: 'object',
+    properties: { location: { type: 'string' } },
+    required: ['location'],
+  },
+  execute: async (input) => ({ temp: 72, location: input.location }),
+});
+
+serve({ tools: [myTool], port: 8080 });
+```
+
+### AgentAdapter
+
+For building framework integrations. See the [framework adapter packages](#framework-adapters) for examples.
+
+```typescript
+import { AgentAdapter } from '@reminix/runtime';
+
+class MyFrameworkAdapter extends AgentAdapter {
+  static adapterName = 'my-framework';
+
+  constructor(private client: MyClient, private _name = 'my-framework') {
+    super();
+  }
+
+  get name() {
+    return this._name;
+  }
+
+  async invoke(request) {
+    const result = await this.client.run(request.input);
+    return { output: result };
+  }
+
+  async chat(request) {
+    const result = await this.client.chat(request.messages);
+    return {
+      output: result,
+      messages: [...request.messages, { role: 'assistant', content: result }],
+    };
+  }
+}
+```
+
+### Serverless Deployment
+
+Use `toHandler()` for serverless deployments:
+
+```typescript
+import { agent } from '@reminix/runtime';
+
+const myAgent = agent('my-agent', {
+  execute: async ({ task }) => `Completed: ${task}`,
+});
+
+// Vercel Edge Function
+export const POST = myAgent.toHandler();
+export const GET = myAgent.toHandler();
+
+// Cloudflare Workers
+export default { fetch: myAgent.toHandler() };
+
+// Deno Deploy
+Deno.serve(myAgent.toHandler());
+
+// Bun
+Bun.serve({ fetch: myAgent.toHandler() });
 ```
 
 ## Deployment

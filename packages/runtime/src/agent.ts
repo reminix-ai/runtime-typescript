@@ -2,7 +2,7 @@
  * Agent classes for Reminix Runtime.
  */
 
-import type { InvokeRequest, InvokeResponse, ChatRequest, ChatResponse } from './types.js';
+import type { InvokeRequest, InvokeResponse, ChatRequest, ChatResponse, Message } from './types.js';
 import { VERSION } from './version.js';
 
 /**
@@ -442,4 +442,247 @@ export class Agent extends AgentBase {
     }
     yield* this._chatStreamHandler(request);
   }
+}
+
+// =============================================================================
+// Factory Functions
+// =============================================================================
+
+/**
+ * Options for creating an invoke agent with the agent() factory.
+ */
+export interface AgentOptions {
+  /** Human-readable description of what the agent does */
+  description?: string;
+  /** Optional metadata for discovery */
+  metadata?: Record<string, unknown>;
+  /** JSON Schema for input parameters */
+  parameters?: {
+    type: 'object';
+    properties: Record<string, unknown>;
+    required?: string[];
+  };
+  /** Optional JSON Schema for output (for documentation and type inference) */
+  output?: Record<string, unknown>;
+  /**
+   * Execute handler - can be a regular async function or an async generator for streaming.
+   *
+   * Regular function: Returns output directly
+   * Async generator: Yields string chunks (automatically collected for non-streaming requests)
+   */
+  execute:
+    | ((input: Record<string, unknown>, context?: Record<string, unknown>) => Promise<unknown>)
+    | ((
+        input: Record<string, unknown>,
+        context?: Record<string, unknown>
+      ) => AsyncGenerator<string, void, unknown>);
+}
+
+/**
+ * Options for creating a chat agent with the chatAgent() factory.
+ */
+export interface ChatAgentOptions {
+  /** Human-readable description of what the agent does */
+  description?: string;
+  /** Optional metadata for discovery */
+  metadata?: Record<string, unknown>;
+  /**
+   * Execute handler - can be a regular async function or an async generator for streaming.
+   *
+   * Regular function: Returns output string directly
+   * Async generator: Yields string chunks (automatically collected for non-streaming requests)
+   */
+  execute:
+    | ((messages: Message[], context?: Record<string, unknown>) => Promise<string>)
+    | ((
+        messages: Message[],
+        context?: Record<string, unknown>
+      ) => AsyncGenerator<string, void, unknown>);
+}
+
+/**
+ * Detect if a function is an async generator function.
+ */
+function isAsyncGeneratorFunction(
+  fn: unknown
+): fn is (...args: unknown[]) => AsyncGenerator<unknown, void, unknown> {
+  return fn?.constructor?.name === 'AsyncGeneratorFunction';
+}
+
+/**
+ * Create an invoke agent from a configuration object.
+ *
+ * @example
+ * ```typescript
+ * // Non-streaming agent
+ * const calculator = agent('calculator', {
+ *   description: 'Add two numbers',
+ *   parameters: {
+ *     type: 'object',
+ *     properties: { a: { type: 'number' }, b: { type: 'number' } },
+ *     required: ['a', 'b'],
+ *   },
+ *   execute: async ({ a, b }) => (a as number) + (b as number),
+ * });
+ *
+ * // Streaming agent (async generator)
+ * const streamer = agent('streamer', {
+ *   description: 'Stream text word by word',
+ *   parameters: {
+ *     type: 'object',
+ *     properties: { text: { type: 'string' } },
+ *     required: ['text'],
+ *   },
+ *   execute: async function* ({ text }) {
+ *     for (const word of (text as string).split(' ')) {
+ *       yield word + ' ';
+ *     }
+ *   },
+ * });
+ * ```
+ */
+export function agent(name: string, options: AgentOptions): Agent {
+  const agentInstance = new Agent(name, {
+    metadata: {
+      description: options.description,
+      parameters: options.parameters,
+      ...(options.output !== undefined && { output: options.output }),
+      ...options.metadata,
+    },
+  });
+
+  // Detect if execute is an async generator function
+  const isStreaming = isAsyncGeneratorFunction(options.execute);
+
+  if (isStreaming) {
+    const streamExecute = options.execute as (
+      input: Record<string, unknown>,
+      context?: Record<string, unknown>
+    ) => AsyncGenerator<string, void, unknown>;
+
+    // Register streaming invoke handler
+    agentInstance.onInvokeStream(async function* (request: InvokeRequest) {
+      yield* streamExecute(request.input, request.context);
+    });
+
+    // Also register non-streaming handler that collects chunks
+    agentInstance.onInvoke(async (request: InvokeRequest): Promise<InvokeResponse> => {
+      const chunks: string[] = [];
+      for await (const chunk of streamExecute(request.input, request.context)) {
+        chunks.push(chunk);
+      }
+      return { output: chunks.join('') };
+    });
+  } else {
+    const regularExecute = options.execute as (
+      input: Record<string, unknown>,
+      context?: Record<string, unknown>
+    ) => Promise<unknown>;
+
+    agentInstance.onInvoke(async (request: InvokeRequest): Promise<InvokeResponse> => {
+      const result = await regularExecute(request.input, request.context);
+      return { output: result };
+    });
+  }
+
+  return agentInstance;
+}
+
+/**
+ * Create a chat agent from a configuration object.
+ *
+ * @example
+ * ```typescript
+ * // Non-streaming chat agent
+ * const bot = chatAgent('bot', {
+ *   description: 'A simple chatbot',
+ *   execute: async (messages) => {
+ *     const lastMsg = messages.at(-1)?.content ?? '';
+ *     return `You said: ${lastMsg}`;
+ *   },
+ * });
+ *
+ * // Streaming chat agent (async generator)
+ * const streamingBot = chatAgent('streaming-bot', {
+ *   description: 'A streaming chatbot',
+ *   execute: async function* (messages) {
+ *     yield 'Hello';
+ *     yield ' ';
+ *     yield 'world!';
+ *   },
+ * });
+ * ```
+ */
+export function chatAgent(name: string, options: ChatAgentOptions): Agent {
+  // Define standard chat agent schemas
+  const parametersSchema = {
+    type: 'object',
+    properties: {
+      messages: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            role: { type: 'string' },
+            content: { type: 'string' },
+          },
+          required: ['role', 'content'],
+        },
+      },
+    },
+    required: ['messages'],
+  };
+  const outputSchema = { type: 'string' };
+
+  const agentInstance = new Agent(name, {
+    metadata: {
+      description: options.description,
+      parameters: parametersSchema,
+      output: outputSchema,
+      ...options.metadata,
+    },
+  });
+
+  // Detect if execute is an async generator function
+  const isStreaming = isAsyncGeneratorFunction(options.execute);
+
+  if (isStreaming) {
+    const streamExecute = options.execute as (
+      messages: Message[],
+      context?: Record<string, unknown>
+    ) => AsyncGenerator<string, void, unknown>;
+
+    // Register streaming chat handler
+    agentInstance.onChatStream(async function* (request: ChatRequest) {
+      yield* streamExecute(request.messages, request.context);
+    });
+
+    // Also register non-streaming handler that collects chunks
+    agentInstance.onChat(async (request: ChatRequest): Promise<ChatResponse> => {
+      const chunks: string[] = [];
+      for await (const chunk of streamExecute(request.messages, request.context)) {
+        chunks.push(chunk);
+      }
+      const output = chunks.join('');
+      return {
+        output,
+        messages: [...request.messages, { role: 'assistant', content: output }],
+      };
+    });
+  } else {
+    const regularExecute = options.execute as (
+      messages: Message[],
+      context?: Record<string, unknown>
+    ) => Promise<string>;
+
+    agentInstance.onChat(async (request: ChatRequest): Promise<ChatResponse> => {
+      const output = await regularExecute(request.messages, request.context);
+      return {
+        output,
+        messages: [...request.messages, { role: 'assistant', content: output }],
+      };
+    });
+  }
+
+  return agentInstance;
 }

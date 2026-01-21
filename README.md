@@ -11,7 +11,7 @@ A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framewor
 
 | Package | Description |
 |---------|-------------|
-| [`@reminix/runtime`](./packages/runtime) | Core runtime with `serve()`, invoke/chat handlers, and base adapter |
+| [`@reminix/runtime`](./packages/runtime) | Core runtime with `agent()`, `chatAgent()`, and `tool()` factories |
 | [`@reminix/langchain`](./packages/langchain) | LangChain adapter |
 | [`@reminix/langgraph`](./packages/langgraph) | LangGraph adapter |
 | [`@reminix/openai`](./packages/openai) | OpenAI Agents adapter |
@@ -39,29 +39,34 @@ const agent = new ChatOpenAI({ model: 'gpt-4o' });
 serve({ agents: [wrapAgent(agent, 'my-agent')], port: 8080 });
 ```
 
-### With Handlers (No Framework)
+### With Factory Functions (No Framework)
 
 ```typescript
-import { Agent, serve } from '@reminix/runtime';
+import { agent, chatAgent, serve } from '@reminix/runtime';
 
-const agent = new Agent('my-agent')
-  .onInvoke(async (request) => {
-    return { output: `Received: ${JSON.stringify(request.input)}` };
-  })
-  .onChat(async (request) => {
-    const lastMessage = request.messages.at(-1)?.content ?? '';
-    return {
-      output: `You said: ${lastMessage}`,
-      messages: [...request.messages, { role: 'assistant', content: `You said: ${lastMessage}` }]
-    };
-  });
+const calculator = agent('calculator', {
+  description: 'Add two numbers',
+  parameters: {
+    type: 'object',
+    properties: { a: { type: 'number' }, b: { type: 'number' } },
+    required: ['a', 'b'],
+  },
+  execute: async ({ a, b }) => (a as number) + (b as number),
+});
 
-serve({ agents: [agent], port: 8080 });
+const assistant = chatAgent('assistant', {
+  description: 'A helpful assistant',
+  execute: async (messages) => `You said: ${messages.at(-1)?.content}`,
+});
+
+serve({ agents: [calculator, assistant], port: 8080 });
 ```
 
-Your agent is now available at:
-- `POST /agents/my-agent/invoke` - Stateless invocation
-- `POST /agents/my-agent/chat` - Conversational chat
+Your agents are now available at:
+- `POST /agents/calculator/invoke` - Stateless invocation
+- `POST /agents/assistant/chat` - Conversational chat
+
+See the [runtime package docs](./packages/runtime) for tools, streaming, and advanced usage.
 
 ## Development
 
