@@ -410,6 +410,53 @@ function isAsyncGeneratorFunction(
 }
 
 /**
+ * Wrap output schema to match the full response structure based on responseKeys.
+ *
+ * If responseKeys = ["output"], wraps the schema as { output: <schema> }
+ * If responseKeys = ["message"], wraps the schema as { message: <schema> }
+ * If responseKeys = ["message", "output"], wraps as { message: <schema>, output: <schema> }
+ *
+ * @param outputSchema - The schema for the return value (or undefined)
+ * @param responseKeys - List of top-level response keys
+ * @returns Wrapped schema describing the full response object, or undefined if outputSchema is undefined
+ */
+function wrapOutputSchemaForResponseKeys(
+  outputSchema: Record<string, unknown> | undefined,
+  responseKeys: string[]
+): Record<string, unknown> | undefined {
+  if (outputSchema === undefined || responseKeys.length === 0) {
+    return undefined;
+  }
+
+  // If single response key, wrap the output schema
+  if (responseKeys.length === 1) {
+    return {
+      type: 'object',
+      properties: { [responseKeys[0]]: outputSchema },
+      required: responseKeys,
+    };
+  }
+
+  // Multiple response keys - need to split the output schema
+  // For now, assume the output schema describes the first key's value
+  // and other keys are optional/unknown
+  const properties: Record<string, unknown> = { [responseKeys[0]]: outputSchema };
+  const required = [responseKeys[0]];
+
+  // For additional keys, we don't know their schema, so mark as optional
+  // Users can override via metadata if they need full schema
+  for (const key of responseKeys.slice(1)) {
+    properties[key] = { type: 'object' }; // Placeholder - should be overridden
+  }
+
+  return {
+    type: 'object',
+    properties,
+    required,
+  };
+}
+
+/**
  * Create an agent from a configuration object.
  *
  * By default, agents expect `{ prompt: string }` in the request body and
@@ -457,16 +504,36 @@ export function agent(name: string, options: AgentOptions): Agent {
 
   // Derive requestKeys from parameters.properties
   const requestKeys = Object.keys(parameters.properties);
+  
+  // Default responseKeys (can be overridden via metadata)
   const responseKeys = ['output'];
+
+  // Wrap output schema to match responseKeys structure
+  const wrappedOutput = wrapOutputSchemaForResponseKeys(options.output, responseKeys);
+
+  // Build metadata (allow metadata override to change responseKeys)
+  const baseMetadata: Record<string, unknown> = {
+    type: 'agent',
+    description: options.description,
+    parameters,
+    requestKeys,
+    responseKeys,
+  };
+  
+  // If metadata override includes responseKeys, re-wrap output schema
+  const finalResponseKeys = (options.metadata?.responseKeys as string[] | undefined) ?? responseKeys;
+  const finalWrappedOutput = 
+    (options.metadata?.responseKeys as string[] | undefined) !== undefined
+      ? wrapOutputSchemaForResponseKeys(options.output, finalResponseKeys)
+      : wrappedOutput;
+  
+  if (finalWrappedOutput !== undefined) {
+    baseMetadata.output = finalWrappedOutput;
+  }
 
   const agentInstance = new Agent(name, {
     metadata: {
-      type: 'agent',
-      description: options.description,
-      parameters,
-      ...(options.output !== undefined && { output: options.output }),
-      requestKeys,
-      responseKeys,
+      ...baseMetadata,
       ...options.metadata,
     },
   });
@@ -548,7 +615,7 @@ export function agent(name: string, options: AgentOptions): Agent {
  * ```
  */
 export function chatAgent(name: string, options: ChatAgentOptions): Agent {
-  // Chat agents have fixed request/response keys
+  // Chat agents have default request/response keys (can be overridden via metadata)
   const requestKeys = ['messages'];
   const responseKeys = ['message'];
 
@@ -570,7 +637,9 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     },
     required: ['messages'],
   };
-  const outputSchema = {
+  
+  // Message schema (the value, not the full response)
+  const messageSchema = {
     type: 'object',
     properties: {
       role: { type: 'string' },
@@ -579,14 +648,32 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     required: ['role', 'content'],
   };
 
+  // Wrap message schema to match responseKeys structure
+  const wrappedOutput = wrapOutputSchemaForResponseKeys(messageSchema, responseKeys);
+
+  // Build metadata (allow metadata override to change responseKeys)
+  const baseMetadata: Record<string, unknown> = {
+    type: 'chat_agent',
+    description: options.description,
+    parameters: parametersSchema,
+    requestKeys,
+    responseKeys,
+  };
+  
+  // If metadata override includes responseKeys, re-wrap output schema
+  const finalResponseKeys = (options.metadata?.responseKeys as string[] | undefined) ?? responseKeys;
+  const finalWrappedOutput = 
+    (options.metadata?.responseKeys as string[] | undefined) !== undefined
+      ? wrapOutputSchemaForResponseKeys(messageSchema, finalResponseKeys)
+      : wrappedOutput;
+  
+  if (finalWrappedOutput !== undefined) {
+    baseMetadata.output = finalWrappedOutput;
+  }
+
   const agentInstance = new Agent(name, {
     metadata: {
-      type: 'chat_agent',
-      description: options.description,
-      parameters: parametersSchema,
-      output: outputSchema,
-      requestKeys,
-      responseKeys,
+      ...baseMetadata,
       ...options.metadata,
     },
   });
