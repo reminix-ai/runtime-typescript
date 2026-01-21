@@ -16,19 +16,19 @@
  *
  * Then test the endpoints:
  *
- *     # Invoke endpoint (task-oriented)
- *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
+ *     # With a simple prompt
+ *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/execute \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"prompt": "What is the weather in Paris?"}}'
  *
  *     # Response: {"output": "The weather in Paris is sunny with a temperature of 22°C."}
  *
- *     # Chat endpoint (conversational)
- *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/chat \
+ *     # With messages (chat-style)
+ *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/execute \
  *       -H "Content-Type: application/json" \
- *       -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
+ *       -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}}'
  *
- *     # Response: {"output": "The weather in Tokyo is rainy with a temperature of 18°C.", "messages": [...]}
+ *     # Response: {"output": "The weather in Tokyo is rainy with a temperature of 18°C."}
  */
 
 import { config } from 'dotenv';
@@ -75,7 +75,6 @@ console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/vercel-ai-agent/invoke');
-console.log('  POST /agents/vercel-ai-agent/chat');
+console.log('  POST /agents/vercel-ai-agent/execute');
 console.log('\nAvailable tools:');
 console.log('  - getWeather(city): Get weather for Paris, London, Tokyo, or New York');

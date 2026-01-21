@@ -3,10 +3,8 @@ export type { ServeOptions, CreateAppOptions, FullServeOptions } from './server.
 export { VERSION } from './version.js';
 export type {
   Role,
-  InvokeRequest,
-  InvokeResponse,
-  ChatRequest,
-  ChatResponse,
+  ExecuteRequest,
+  ExecuteResponse,
   Message,
   // Tool types
   ToolSchema,
@@ -17,10 +15,8 @@ export type {
 export { AgentBase, Agent, agent, chatAgent } from './agent.js';
 export type {
   AgentMetadata,
-  InvokeHandler,
-  ChatHandler,
-  InvokeStreamHandler,
-  ChatStreamHandler,
+  ExecuteHandler,
+  ExecuteStreamHandler,
   FetchHandler,
   AgentOptions,
   ChatAgentOptions,
@@ -29,4 +25,4 @@ export type {
 export { AgentAdapter } from './agent-adapter.js';
 // Tool exports
 export { ToolBase, Tool, tool } from './tool.js';
-export type { ToolMetadata, ToolOptions, ExecuteHandler } from './tool.js';
+export type { ToolMetadata, ToolOptions, ExecuteHandler as ToolExecuteHandler } from './tool.js';

@@ -16,19 +16,19 @@
  *
  * Then test the endpoints:
  *
- *     # Invoke endpoint (task-oriented)
- *     curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
+ *     # With input
+ *     curl -X POST http://localhost:8080/agents/langchain-basic/execute \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"input": "What is AI?"}}'
  *
  *     # Response: {"output": "AI (Artificial Intelligence) is..."}
  *
- *     # Chat endpoint (conversational)
- *     curl -X POST http://localhost:8080/agents/langchain-basic/chat \
+ *     # With messages (chat-style)
+ *     curl -X POST http://localhost:8080/agents/langchain-basic/execute \
  *       -H "Content-Type: application/json" \
- *       -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
+ *       -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
  *
- *     # Response: {"output": "Hello! How can I help you today?", "messages": [...]}
+ *     # Response: {"output": "Hello! How can I help you today?"}
  */
 
 import { config } from 'dotenv';
@@ -55,5 +55,4 @@ console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/langchain-basic/invoke');
-console.log('  POST /agents/langchain-basic/chat');
+console.log('  POST /agents/langchain-basic/execute');

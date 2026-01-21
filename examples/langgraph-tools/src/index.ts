@@ -16,19 +16,12 @@
  *
  * Then test the endpoints:
  *
- *     # Invoke endpoint (task-oriented)
- *     curl -X POST http://localhost:8080/agents/langgraph-tools/invoke \
+ *     # Execute the agent
+ *     curl -X POST http://localhost:8080/agents/langgraph-tools/execute \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Paris?"}]}}'
  *
  *     # Response: {"output": "The weather in Paris is sunny with a temperature of 22°C."}
- *
- *     # Chat endpoint (conversational)
- *     curl -X POST http://localhost:8080/agents/langgraph-tools/chat \
- *       -H "Content-Type: application/json" \
- *       -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
- *
- *     # Response: {"output": "The weather in Tokyo is rainy with a temperature of 18°C.", "messages": [...]}
  */
 
 import { config } from 'dotenv';
@@ -77,7 +70,6 @@ console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/langgraph-tools/invoke');
-console.log('  POST /agents/langgraph-tools/chat');
+console.log('  POST /agents/langgraph-tools/execute');
 console.log('\nAvailable tools:');
 console.log('  - get_weather(city): Get weather for Paris, London, Tokyo, or New York');

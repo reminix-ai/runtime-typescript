@@ -8,10 +8,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type InvokeRequest,
-  type InvokeResponse,
-  type ChatRequest,
-  type ChatResponse,
+  type ExecuteRequest,
+  type ExecuteResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -103,26 +101,31 @@ export class AnthropicAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle an invoke request.
-   *
-   * For task-oriented operations. Expects input with 'messages' key
-   * or a 'prompt' key for simple text generation.
-   *
-   * @param request - The invoke request with input data.
-   * @returns The invoke response with the output.
+   * Build Message list from execute request input.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  private buildMessagesFromInput(request: ExecuteRequest): Message[] {
     const input = request.input as Record<string, unknown>;
 
-    // Build messages from input
-    let messages: Message[];
     if ('messages' in input) {
-      messages = input.messages as Message[];
+      return input.messages as Message[];
     } else if ('prompt' in input) {
-      messages = [{ role: 'user', content: String(input.prompt) }];
+      return [{ role: 'user', content: String(input.prompt) }];
     } else {
-      messages = [{ role: 'user', content: JSON.stringify(input) }];
+      return [{ role: 'user', content: JSON.stringify(input) }];
     }
+  }
+
+  /**
+   * Handle an execute request.
+   *
+   * For both task-oriented and chat-style operations. Expects input with 'messages' key
+   * or a 'prompt' key for simple text generation.
+   *
+   * @param request - The execute request with input data.
+   * @returns The execute response with the output.
+   */
+  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+    const messages = this.buildMessagesFromInput(request);
 
     // Extract system message and convert messages
     const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
@@ -142,83 +145,16 @@ export class AnthropicAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle a chat request.
+   * Handle a streaming execute request.
    *
-   * For conversational interactions.
-   *
-   * @param request - The chat request with messages.
-   * @returns The chat response with output and messages.
-   */
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    // Extract system message and convert messages
-    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(request.messages);
-
-    // Call Anthropic API
-    const response = await this.client.messages.create({
-      model: this._model,
-      max_tokens: this._maxTokens,
-      messages: anthropicMessages,
-      ...(system && { system }),
-    });
-
-    // Extract content from response
-    const output = this.extractContent(response);
-
-    // Build response messages (original + assistant response)
-    const responseMessages: Message[] = [
-      ...request.messages,
-      { role: 'assistant', content: output },
-    ];
-
-    return { output, messages: responseMessages };
-  }
-
-  /**
-   * Handle a streaming invoke request.
-   *
-   * @param request - The invoke request with input data.
+   * @param request - The execute request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
-    const input = request.input as Record<string, unknown>;
-
-    // Build messages from input
-    let messages: Message[];
-    if ('messages' in input) {
-      messages = input.messages as Message[];
-    } else if ('prompt' in input) {
-      messages = [{ role: 'user', content: String(input.prompt) }];
-    } else {
-      messages = [{ role: 'user', content: JSON.stringify(input) }];
-    }
+  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+    const messages = this.buildMessagesFromInput(request);
 
     // Extract system message and convert messages
     const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
-
-    // Stream from Anthropic API
-    const stream = this.client.messages.stream({
-      model: this._model,
-      max_tokens: this._maxTokens,
-      messages: anthropicMessages,
-      ...(system && { system }),
-    });
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        yield JSON.stringify({ chunk: event.delta.text });
-      }
-    }
-  }
-
-  /**
-   * Handle a streaming chat request.
-   *
-   * @param request - The chat request with messages.
-   * @yields JSON-encoded chunks from the stream.
-   */
-  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
-    // Extract system message and convert messages
-    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(request.messages);
 
     // Stream from Anthropic API
     const stream = this.client.messages.stream({

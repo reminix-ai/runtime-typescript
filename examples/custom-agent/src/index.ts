@@ -15,22 +15,22 @@
  *     # Discovery
  *     curl http://localhost:8080/info
  *
- *     # Invoke endpoint (task-oriented)
- *     curl -X POST http://localhost:8080/agents/echo/invoke \
+ *     # Execute endpoint
+ *     curl -X POST http://localhost:8080/agents/echo/execute \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"message": "Hello!"}}'
  *
  *     # Response: {"output": "Echo: Hello!"}
  *
- *     # Chat endpoint (conversational)
- *     curl -X POST http://localhost:8080/agents/echo/chat \
+ *     # Execute with messages (chat-style)
+ *     curl -X POST http://localhost:8080/agents/echo/execute \
  *       -H "Content-Type: application/json" \
- *       -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
+ *       -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
  *
- *     # Response: {"output": "You said: Hello!", "messages": [...]}
+ *     # Response: {"output": "You said: Hello!"}
  *
- *     # Streaming invoke
- *     curl -X POST http://localhost:8080/agents/echo/invoke \
+ *     # Streaming execute
+ *     curl -X POST http://localhost:8080/agents/echo/execute \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"message": "Hello!"}, "stream": true}'
  */
@@ -45,9 +45,19 @@ const agent = new Agent('echo', {
   },
 });
 
-// Register invoke handler - task-oriented operations
-agent.onInvoke(async (request) => {
-  const message = (request.input as Record<string, string>).message || '';
+// Register execute handler
+agent.onExecute(async (request) => {
+  const input = request.input as Record<string, unknown>;
+
+  // Check if this is a chat-style request (has messages)
+  if (input.messages && Array.isArray(input.messages)) {
+    const messages = input.messages as Array<{ role: string; content: string }>;
+    const userMessage = messages.length > 0 ? messages[messages.length - 1].content : '';
+    return { output: `You said: ${userMessage}` };
+  }
+
+  // Otherwise treat as task-style request
+  const message = (input.message as string) || '';
 
   // Access optional context
   const userId = request.context?.user_id;
@@ -60,39 +70,24 @@ agent.onInvoke(async (request) => {
   return { output };
 });
 
-// Register chat handler - conversational interactions
-agent.onChat(async (request) => {
-  // Get the last user message
-  const userMessage =
-    request.messages.length > 0 ? request.messages[request.messages.length - 1].content : '';
+// Register streaming execute handler
+agent.onExecuteStream(async function* (request) {
+  const input = request.input as Record<string, unknown>;
 
-  const response = `You said: ${userMessage}`;
+  let response: string;
 
-  return {
-    output: response,
-    messages: [...request.messages, { role: 'assistant', content: response }],
-  };
-});
-
-// Register streaming invoke handler
-agent.onInvokeStream(async function* (request) {
-  const message = (request.input as Record<string, string>).message || '';
-
-  // Stream the response word by word
-  const words = `Echo: ${message}`.split(' ');
-  for (let i = 0; i < words.length; i++) {
-    const chunk = i === 0 ? words[i] : ` ${words[i]}`;
-    yield JSON.stringify({ chunk });
+  // Check if this is a chat-style request (has messages)
+  if (input.messages && Array.isArray(input.messages)) {
+    const messages = input.messages as Array<{ role: string; content: string }>;
+    const userMessage = messages.length > 0 ? messages[messages.length - 1].content : '';
+    response = `You said: ${userMessage}`;
+  } else {
+    const message = (input.message as string) || '';
+    response = `Echo: ${message}`;
   }
-});
-
-// Register streaming chat handler
-agent.onChatStream(async function* (request) {
-  const userMessage =
-    request.messages.length > 0 ? request.messages[request.messages.length - 1].content : '';
 
   // Stream the response word by word
-  const words = `You said: ${userMessage}`.split(' ');
+  const words = response.split(' ');
   for (let i = 0; i < words.length; i++) {
     const chunk = i === 0 ? words[i] : ` ${words[i]}`;
     yield JSON.stringify({ chunk });
@@ -103,16 +98,14 @@ agent.onChatStream(async function* (request) {
 console.log('Custom Agent Example');
 console.log('='.repeat(40));
 console.log(`Agent: ${agent.name}`);
-console.log(`Invoke streaming: ${agent.invokeStreaming}`);
-console.log(`Chat streaming: ${agent.chatStreaming}`);
+console.log(`Streaming: ${agent.streaming}`);
 console.log();
 console.log('Server running on http://localhost:8080');
 console.log();
 console.log('Endpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/echo/invoke');
-console.log('  POST /agents/echo/chat');
+console.log('  POST /agents/echo/execute');
 console.log();
 
 serve({ agents: [agent], port: 8080 });

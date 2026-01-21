@@ -14,10 +14,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type InvokeRequest,
-  type InvokeResponse,
-  type ChatRequest,
-  type ChatResponse,
+  type ExecuteRequest,
+  type ExecuteResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -87,29 +85,6 @@ export class LangGraphAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Convert a LangChain message to a Reminix message.
-   */
-  private toReminixMessage(message: BaseMessage): Message {
-    let role: Message['role'];
-
-    if (message instanceof HumanMessage) {
-      role = 'user';
-    } else if (message instanceof AIMessage) {
-      role = 'assistant';
-    } else if (message instanceof SystemMessage) {
-      role = 'system';
-    } else if (message instanceof ToolMessage) {
-      role = 'tool';
-    } else {
-      role = 'assistant';
-    }
-
-    const content = typeof message.content === 'string' ? message.content : String(message.content);
-
-    return { role, content };
-  }
-
-  /**
    * Check if a message is an AI message.
    */
   private isAIMessage(message: BaseMessage): boolean {
@@ -151,16 +126,33 @@ export class LangGraphAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle an invoke request.
-   *
-   * For task-oriented operations. Passes the input directly to the graph.
-   *
-   * @param request - The invoke request with input data.
-   * @returns The invoke response with the output.
+   * Build LangGraph input from execute request.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Pass input directly to the graph
-    const result = await this.graph.invoke(request.input);
+  private buildGraphInput(request: ExecuteRequest): unknown {
+    const input = request.input as Record<string, unknown>;
+
+    if ('messages' in input) {
+      const messages = input.messages as Message[];
+      const lcMessages = messages.map((m) => this.toLangChainMessage(m));
+      return { messages: lcMessages };
+    } else {
+      return input;
+    }
+  }
+
+  /**
+   * Handle an execute request.
+   *
+   * For both task-oriented and chat-style operations.
+   *
+   * @param request - The execute request with input data.
+   * @returns The execute response with the output.
+   */
+  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+    const graphInput = this.buildGraphInput(request);
+
+    // Call the graph
+    const result = await this.graph.invoke(graphInput);
 
     // Extract output from result
     let output: unknown;
@@ -177,79 +169,16 @@ export class LangGraphAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle a chat request.
+   * Handle a streaming execute request.
    *
-   * For conversational interactions. Converts messages to LangChain format
-   * and invokes the graph with the state dict format.
-   *
-   * @param request - The chat request with messages.
-   * @returns The chat response with output and messages.
-   */
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    // Convert messages to LangChain format
-    const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
-
-    // Call the graph with state dict format
-    const result = (await this.graph.invoke({ messages: lcMessages })) as GraphState;
-
-    // Extract messages from result
-    const resultMessages: BaseMessage[] = result.messages || [];
-
-    // Get content from the last AI message
-    const output = this.getLastAIContent(resultMessages);
-
-    // Convert all messages back to Reminix format
-    const responseMessages = resultMessages.map((m) => this.toReminixMessage(m));
-
-    return { output, messages: responseMessages };
-  }
-
-  /**
-   * Handle a streaming invoke request.
-   *
-   * @param request - The invoke request with input data.
+   * @param request - The execute request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
-    // Stream from the graph (await if stream returns a promise)
-    const streamResult = this.graph.stream(request.input);
-    const stream = streamResult instanceof Promise ? await streamResult : streamResult;
-    for await (const chunk of stream) {
-      // LangGraph streams dicts with node outputs
-      if (chunk && typeof chunk === 'object') {
-        for (const [, nodeOutput] of Object.entries(chunk as Record<string, unknown>)) {
-          if (nodeOutput && typeof nodeOutput === 'object' && 'messages' in nodeOutput) {
-            const messages = (nodeOutput as { messages: BaseMessage[] }).messages;
-            for (const msg of messages) {
-              if (msg instanceof AIMessage) {
-                const content = typeof msg.content === 'string' ? msg.content : String(msg.content);
-                if (content) {
-                  yield JSON.stringify({ chunk: content });
-                }
-              }
-            }
-          } else {
-            yield JSON.stringify({ chunk: JSON.stringify(nodeOutput) });
-          }
-        }
-      } else {
-        yield JSON.stringify({ chunk: String(chunk) });
-      }
-    }
-  }
-
-  /**
-   * Handle a streaming chat request.
-   *
-   * @param request - The chat request with messages.
-   * @yields JSON-encoded chunks from the stream.
-   */
-  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
-    // Convert messages to LangChain format
-    const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
+  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+    const graphInput = this.buildGraphInput(request);
 
     // Stream from the graph (await if stream returns a promise)
-    const streamResult = this.graph.stream({ messages: lcMessages });
+    const streamResult = this.graph.stream(graphInput);
     const stream = streamResult instanceof Promise ? await streamResult : streamResult;
     for await (const chunk of stream) {
       // LangGraph streams dicts with node outputs

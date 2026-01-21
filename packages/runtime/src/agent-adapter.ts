@@ -2,7 +2,7 @@
  * Base agent adapter class for framework integrations.
  */
 
-import type { InvokeRequest, ChatRequest } from './types.js';
+import type { ExecuteRequest } from './types.js';
 import { AgentBase, type AgentMetadata } from './agent.js';
 
 /**
@@ -20,11 +20,7 @@ export abstract class AgentAdapter extends AgentBase {
   /**
    * All built-in adapters support streaming.
    */
-  override get invokeStreaming(): boolean {
-    return true;
-  }
-
-  override get chatStreaming(): boolean {
+  override get streaming(): boolean {
     return true;
   }
 
@@ -39,18 +35,10 @@ export abstract class AgentAdapter extends AgentBase {
   }
 
   /**
-   * Handle a streaming invoke request.
+   * Handle a streaming execute request.
    */
   // eslint-disable-next-line require-yield
-  async *invokeStream(_request: InvokeRequest): AsyncGenerator<string, void, unknown> {
-    throw new Error('Streaming not implemented for this adapter');
-  }
-
-  /**
-   * Handle a streaming chat request.
-   */
-  // eslint-disable-next-line require-yield
-  async *chatStream(_request: ChatRequest): AsyncGenerator<string, void, unknown> {
+  async *executeStream(_request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this adapter');
   }
 }

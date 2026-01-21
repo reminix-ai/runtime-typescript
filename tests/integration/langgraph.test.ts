@@ -7,7 +7,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
-import { wrap } from '@reminix/langgraph';
+import { wrapAgent } from '@reminix/langgraph';
 import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getOpenAIApiKey } from './setup.js';
@@ -35,12 +35,12 @@ describe('LangGraph Adapter Integration', () => {
     const apiKey = getOpenAIApiKey();
     const llm = new ChatOpenAI({ model: 'gpt-4.1-nano', apiKey });
     const graph = createReactAgent({ llm, tools: [getWeather] });
-    const agent = wrap(graph, 'test-langgraph');
-    app = createApp([agent]);
+    const agent = wrapAgent(graph, 'test-langgraph');
+    app = createApp({ agents: [agent] });
   });
 
-  it('should invoke', async () => {
-    const response = await app.request('/agents/test-langgraph/invoke', {
+  it('should execute', async () => {
+    const response = await app.request('/agents/test-langgraph/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -51,36 +51,39 @@ describe('LangGraph Adapter Integration', () => {
     });
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as { output: string };
     expect(data.output).toBeDefined();
   });
 
-  it('should handle chat', async () => {
-    const response = await app.request('/agents/test-langgraph/chat', {
+  it('should handle chat-style execute', async () => {
+    const response = await app.request('/agents/test-langgraph/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
+        input: {
+          messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
+        },
       }),
     });
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as { output: string };
     expect(data.output).toBeDefined();
-    expect(data.messages).toBeDefined();
   });
 
   it('should call tools and return results', async () => {
-    const response = await app.request('/agents/test-langgraph/chat', {
+    const response = await app.request('/agents/test-langgraph/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: "What's the weather in Paris?" }],
+        input: {
+          messages: [{ role: 'user', content: "What's the weather in Paris?" }],
+        },
       }),
     });
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as { output: string };
     expect(data.output).toBeDefined();
     // The agent should have called the tool and returned weather info
     const output = data.output.toLowerCase();

@@ -7,7 +7,7 @@ import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
 import type { AgentBase } from './agent.js';
 import type { ToolBase } from './tool.js';
-import type { InvokeRequest, ChatRequest, ToolExecuteRequest } from './types.js';
+import type { ExecuteRequest, ToolExecuteRequest } from './types.js';
 import { VERSION } from './version.js';
 
 export interface ServeOptions {
@@ -65,8 +65,7 @@ export function createApp(options: CreateAppOptions): Hono {
       agents: agents.map((agent) => ({
         name: agent.name,
         ...agent.metadata,
-        invoke: { streaming: agent.invokeStreaming },
-        chat: { streaming: agent.chatStreaming },
+        streaming: agent.streaming,
       })),
       tools: tools.map((tool) => ({
         name: tool.name,
@@ -75,8 +74,8 @@ export function createApp(options: CreateAppOptions): Hono {
     });
   });
 
-  // Invoke endpoint
-  app.post('/agents/:agentName/invoke', async (c) => {
+  // Execute endpoint
+  app.post('/agents/:agentName/execute', async (c) => {
     const agentName = c.req.param('agentName');
     const agent = agentMap.get(agentName);
 
@@ -84,18 +83,31 @@ export function createApp(options: CreateAppOptions): Hono {
       return c.json({ error: `Agent '${agentName}' not found` }, 404);
     }
 
-    const body = await c.req.json<InvokeRequest>();
+    const body = await c.req.json<Record<string, unknown>>();
 
-    // Validate request
-    if (!body.input || Object.keys(body.input).length === 0) {
-      return c.json({ error: 'input is required and must not be empty' }, 400);
+    // Get requestKeys from agent metadata (all agents have defaults)
+    const requestKeys = (agent.metadata.requestKeys as string[]) ?? [];
+
+    // Extract declared keys from body into input object
+    // e.g., requestKeys: ['prompt'] with body { prompt: '...' } -> input = { prompt: '...' }
+    const input: Record<string, unknown> = {};
+    for (const key of requestKeys) {
+      if (key in body) {
+        input[key] = body[key];
+      }
     }
 
+    const request: ExecuteRequest = {
+      input,
+      stream: body.stream === true,
+      context: body.context as Record<string, unknown> | undefined,
+    };
+
     // Handle streaming
-    if (body.stream) {
+    if (request.stream) {
       return streamSSE(c, async (stream) => {
         try {
-          for await (const chunk of agent.invokeStream(body)) {
+          for await (const chunk of agent.executeStream(request)) {
             await stream.writeSSE({ data: chunk });
           }
           await stream.writeSSE({ data: '[DONE]' });
@@ -106,42 +118,7 @@ export function createApp(options: CreateAppOptions): Hono {
       });
     }
 
-    const response = await agent.invoke(body);
-    return c.json(response);
-  });
-
-  // Chat endpoint
-  app.post('/agents/:agentName/chat', async (c) => {
-    const agentName = c.req.param('agentName');
-    const agent = agentMap.get(agentName);
-
-    if (!agent) {
-      return c.json({ error: `Agent '${agentName}' not found` }, 404);
-    }
-
-    const body = await c.req.json<ChatRequest>();
-
-    // Validate request
-    if (!body.messages || body.messages.length === 0) {
-      return c.json({ error: 'messages is required and must not be empty' }, 400);
-    }
-
-    // Handle streaming
-    if (body.stream) {
-      return streamSSE(c, async (stream) => {
-        try {
-          for await (const chunk of agent.chatStream(body)) {
-            await stream.writeSSE({ data: chunk });
-          }
-          await stream.writeSSE({ data: '[DONE]' });
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unknown error';
-          await stream.writeSSE({ data: JSON.stringify({ error: message }) });
-        }
-      });
-    }
-
-    const response = await agent.chat(body);
+    const response = await agent.execute(request);
     return c.json(response);
   });
 

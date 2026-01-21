@@ -16,19 +16,19 @@
  *
  * Then test the endpoints:
  *
- *     # Invoke endpoint (task-oriented)
- *     curl -X POST http://localhost:8080/agents/openai-basic/invoke \
+ *     # With a simple prompt
+ *     curl -X POST http://localhost:8080/agents/openai-basic/execute \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"prompt": "What is the capital of France?"}}'
  *
  *     # Response: {"output": "The capital of France is Paris."}
  *
- *     # Chat endpoint (conversational)
- *     curl -X POST http://localhost:8080/agents/openai-basic/chat \
+ *     # With messages (chat-style)
+ *     curl -X POST http://localhost:8080/agents/openai-basic/execute \
  *       -H "Content-Type: application/json" \
- *       -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
+ *       -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
  *
- *     # Response: {"output": "Hello! How can I help you today?", "messages": [...]}
+ *     # Response: {"output": "Hello! How can I help you today?"}
  */
 
 import { config } from 'dotenv';
@@ -55,5 +55,4 @@ console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/openai-basic/invoke');
-console.log('  POST /agents/openai-basic/chat');
+console.log('  POST /agents/openai-basic/execute');

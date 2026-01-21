@@ -8,10 +8,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type InvokeRequest,
-  type InvokeResponse,
-  type ChatRequest,
-  type ChatResponse,
+  type ExecuteRequest,
+  type ExecuteResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -66,26 +64,32 @@ export class OpenAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle an invoke request.
-   *
-   * For task-oriented operations. Expects input with 'messages' key
-   * or a 'prompt' key for simple text generation.
-   *
-   * @param request - The invoke request with input data.
-   * @returns The invoke response with the output.
+   * Build OpenAI messages from execute request input.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Check if input contains messages
-    let messages: OpenAI.Chat.ChatCompletionMessageParam[];
+  private buildOpenAIMessages(request: ExecuteRequest): OpenAI.Chat.ChatCompletionMessageParam[] {
     const input = request.input as Record<string, unknown>;
 
     if ('messages' in input) {
-      messages = input.messages as OpenAI.Chat.ChatCompletionMessageParam[];
+      const messages = input.messages as Message[];
+      return messages.map((m) => this.toOpenAIMessage(m));
     } else if ('prompt' in input) {
-      messages = [{ role: 'user', content: String(input.prompt) }];
+      return [{ role: 'user', content: String(input.prompt) }];
     } else {
-      messages = [{ role: 'user', content: JSON.stringify(input) }];
+      return [{ role: 'user', content: JSON.stringify(input) }];
     }
+  }
+
+  /**
+   * Handle an execute request.
+   *
+   * For both task-oriented and chat-style operations. Expects input with 'messages' key
+   * or a 'prompt' key for simple text generation.
+   *
+   * @param request - The execute request with input data.
+   * @returns The execute response with the output.
+   */
+  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+    const messages = this.buildOpenAIMessages(request);
 
     // Call OpenAI API
     const response = await this.client.chat.completions.create({
@@ -100,83 +104,18 @@ export class OpenAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle a chat request.
+   * Handle a streaming execute request.
    *
-   * For conversational interactions.
-   *
-   * @param request - The chat request with messages.
-   * @returns The chat response with output and messages.
-   */
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    // Convert messages to OpenAI format
-    const openaiMessages = request.messages.map((m) => this.toOpenAIMessage(m));
-
-    // Call OpenAI API
-    const response = await this.client.chat.completions.create({
-      model: this._model,
-      messages: openaiMessages,
-    });
-
-    // Extract content from response
-    const output = response.choices[0]?.message?.content ?? '';
-
-    // Build response messages (original + assistant response)
-    const responseMessages: Message[] = [
-      ...request.messages,
-      { role: 'assistant', content: output },
-    ];
-
-    return { output, messages: responseMessages };
-  }
-
-  /**
-   * Handle a streaming invoke request.
-   *
-   * @param request - The invoke request with input data.
+   * @param request - The execute request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
-    // Build messages from input
-    let messages: OpenAI.Chat.ChatCompletionMessageParam[];
-    const input = request.input as Record<string, unknown>;
-
-    if ('messages' in input) {
-      messages = input.messages as OpenAI.Chat.ChatCompletionMessageParam[];
-    } else if ('prompt' in input) {
-      messages = [{ role: 'user', content: String(input.prompt) }];
-    } else {
-      messages = [{ role: 'user', content: JSON.stringify(input) }];
-    }
+  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+    const messages = this.buildOpenAIMessages(request);
 
     // Stream from OpenAI API
     const stream = await this.client.chat.completions.create({
       model: this._model,
       messages,
-      stream: true,
-    });
-
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        yield JSON.stringify({ chunk: content });
-      }
-    }
-  }
-
-  /**
-   * Handle a streaming chat request.
-   *
-   * @param request - The chat request with messages.
-   * @yields JSON-encoded chunks from the stream.
-   */
-  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
-    // Convert messages to OpenAI format
-    const openaiMessages = request.messages.map((m) => this.toOpenAIMessage(m));
-
-    // Stream from OpenAI API
-    const stream = await this.client.chat.completions.create({
-      model: this._model,
-      messages: openaiMessages,
       stream: true,
     });
 

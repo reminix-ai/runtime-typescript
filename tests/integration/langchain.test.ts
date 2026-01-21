@@ -6,7 +6,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { wrap } from '@reminix/langchain';
+import { wrapAgent } from '@reminix/langchain';
 import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getOpenAIApiKey } from './setup.js';
@@ -34,52 +34,57 @@ describe('LangChain Adapter Integration', () => {
     const apiKey = getOpenAIApiKey();
     const llm = new ChatOpenAI({ model: 'gpt-4.1-nano', apiKey });
     const llmWithTools = llm.bindTools([getWeather]);
-    const agent = wrap(llmWithTools, 'test-langchain');
-    app = createApp([agent]);
+    const agent = wrapAgent(llmWithTools, 'test-langchain');
+    app = createApp({ agents: [agent] });
   });
 
-  it('should invoke', async () => {
-    const response = await app.request('/agents/test-langchain/invoke', {
+  it('should execute', async () => {
+    const response = await app.request('/agents/test-langchain/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: [{ role: 'user', content: "Say 'hello' and nothing else." }],
+        input: {
+          messages: [{ role: 'user', content: "Say 'hello' and nothing else." }],
+        },
       }),
     });
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as { output: string };
     expect(data.output).toBeDefined();
   });
 
-  it('should handle chat', async () => {
-    const response = await app.request('/agents/test-langchain/chat', {
+  it('should handle chat-style execute', async () => {
+    const response = await app.request('/agents/test-langchain/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
+        input: {
+          messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
+        },
       }),
     });
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as { output: string };
     expect(data.output).toBeDefined();
-    expect(data.messages).toBeDefined();
   });
 
   it('should support tool calling', async () => {
-    const response = await app.request('/agents/test-langchain/chat', {
+    const response = await app.request('/agents/test-langchain/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [
-          { role: 'user', content: "What's the weather in Paris? Use the get_weather tool." },
-        ],
+        input: {
+          messages: [
+            { role: 'user', content: "What's the weather in Paris? Use the get_weather tool." },
+          ],
+        },
       }),
     });
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as { output: string };
     expect(data.output).toBeDefined();
     // The model should return tool_calls (bind_tools doesn't execute)
   });

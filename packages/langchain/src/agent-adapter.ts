@@ -15,10 +15,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type InvokeRequest,
-  type InvokeResponse,
-  type ChatRequest,
-  type ChatResponse,
+  type ExecuteRequest,
+  type ExecuteResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -72,39 +70,34 @@ export class LangChainAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Convert a LangChain message to a Reminix message.
+   * Build LangChain input from execute request.
    */
-  private toReminixMessage(message: BaseMessage): Message {
-    let role: Message['role'];
+  private buildLangChainInput(request: ExecuteRequest): unknown {
+    const input = request.input as Record<string, unknown>;
 
-    if (message instanceof HumanMessage) {
-      role = 'user';
-    } else if (message instanceof AIMessage) {
-      role = 'assistant';
-    } else if (message instanceof SystemMessage) {
-      role = 'system';
-    } else if (message instanceof ToolMessage) {
-      role = 'tool';
+    if ('messages' in input) {
+      const messages = input.messages as Message[];
+      return messages.map((m) => this.toLangChainMessage(m));
+    } else if ('prompt' in input) {
+      return input.prompt;
     } else {
-      role = 'assistant';
+      return input;
     }
-
-    const content = typeof message.content === 'string' ? message.content : String(message.content);
-
-    return { role, content };
   }
 
   /**
-   * Handle an invoke request.
+   * Handle an execute request.
    *
-   * For task-oriented operations. Passes the input directly to the runnable.
+   * For both task-oriented and chat-style operations. Expects input with 'messages' key
+   * or a 'prompt' key for simple text generation.
    *
-   * @param request - The invoke request with input data.
-   * @returns The invoke response with the output.
+   * @param request - The execute request with input data.
+   * @returns The execute response with the output.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    // Pass input directly to the runnable
-    const response = await this.agent.invoke(request.input);
+  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+    const invokeInput = this.buildLangChainInput(request);
+
+    const response = await this.agent.invoke(invokeInput);
 
     // Extract output from response
     let output: unknown;
@@ -120,70 +113,16 @@ export class LangChainAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle a chat request.
+   * Handle a streaming execute request.
    *
-   * For conversational interactions. Converts messages to LangChain format.
-   *
-   * @param request - The chat request with messages.
-   * @returns The chat response with output and messages.
-   */
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    // Convert messages to LangChain format
-    const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
-
-    // Call the runnable
-    const response = await this.agent.invoke(lcMessages);
-
-    // Extract content from response
-    let output: string;
-    let responseMessage: Message;
-    if (response && typeof response === 'object' && 'content' in response) {
-      output = typeof response.content === 'string' ? response.content : String(response.content);
-      responseMessage = this.toReminixMessage(response as BaseMessage);
-    } else {
-      output = String(response);
-      responseMessage = { role: 'assistant', content: output };
-    }
-
-    // Build response messages (original + assistant response)
-    const responseMessages: Message[] = [...request.messages, responseMessage];
-
-    return { output, messages: responseMessages };
-  }
-
-  /**
-   * Handle a streaming invoke request.
-   *
-   * @param request - The invoke request with input data.
+   * @param request - The execute request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
-    // Stream from the runnable
-    for await (const chunk of await this.agent.stream(request.input)) {
-      let content: string;
-      if (chunk && typeof chunk === 'object' && 'content' in chunk) {
-        content = typeof chunk.content === 'string' ? chunk.content : String(chunk.content);
-      } else if (typeof chunk === 'object') {
-        content = JSON.stringify(chunk);
-      } else {
-        content = String(chunk);
-      }
-      yield JSON.stringify({ chunk: content });
-    }
-  }
-
-  /**
-   * Handle a streaming chat request.
-   *
-   * @param request - The chat request with messages.
-   * @yields JSON-encoded chunks from the stream.
-   */
-  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
-    // Convert messages to LangChain format
-    const lcMessages = request.messages.map((m) => this.toLangChainMessage(m));
+  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+    const streamInput = this.buildLangChainInput(request);
 
     // Stream from the runnable
-    for await (const chunk of await this.agent.stream(lcMessages)) {
+    for await (const chunk of await this.agent.stream(streamInput)) {
       let content: string;
       if (chunk && typeof chunk === 'object' && 'content' in chunk) {
         content = typeof chunk.content === 'string' ? chunk.content : String(chunk.content);

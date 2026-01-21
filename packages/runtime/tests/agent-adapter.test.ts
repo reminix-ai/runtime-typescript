@@ -3,13 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  AgentAdapter,
-  type InvokeRequest,
-  type InvokeResponse,
-  type ChatRequest,
-  type ChatResponse,
-} from '../src/index.js';
+import { AgentAdapter, type ExecuteRequest, type ExecuteResponse } from '../src/index.js';
 
 /**
  * Create a minimal concrete adapter for testing.
@@ -19,19 +13,16 @@ class TestAdapter extends AgentAdapter {
     return 'test-agent';
   }
 
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+    // Check if it's a chat-style request (has messages)
+    const messages = (request.input as { messages?: { content: string }[] }).messages;
+    if (messages) {
+      const userMsg = messages[messages.length - 1].content;
+      return { output: `Hello from chat: ${userMsg}` };
+    }
+    // Otherwise, it's an invoke-style request
     const task = (request.input as Record<string, unknown>).task || 'unknown';
-    return {
-      output: `Completed: ${task}`,
-    };
-  }
-
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    const userMsg = request.messages[request.messages.length - 1].content;
-    return {
-      output: `Hello from chat: ${userMsg}`,
-      messages: [{ role: 'assistant', content: `Hello from chat: ${userMsg}` }],
-    };
+    return { output: `Completed: ${task}` };
   }
 }
 
@@ -54,47 +45,35 @@ describe('Concrete Adapter', () => {
     expect(adapter.name).toBe('test-agent');
   });
 
-  it('should return InvokeResponse from invoke', async () => {
+  it('should return ExecuteResponse from execute', async () => {
     const adapter = new TestAdapter();
-    const request: InvokeRequest = {
+    const request: ExecuteRequest = {
       input: { task: 'summarize' },
     };
 
-    const response = await adapter.invoke(request);
+    const response = await adapter.execute(request);
 
     expect(response.output).toBe('Completed: summarize');
   });
 
-  it('should return ChatResponse from chat', async () => {
+  it('should return ExecuteResponse from execute with messages input', async () => {
     const adapter = new TestAdapter();
-    const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'hello' }],
+    const request: ExecuteRequest = {
+      input: { messages: [{ role: 'user', content: 'hello' }] },
     };
 
-    const response = await adapter.chat(request);
+    const response = await adapter.execute(request);
 
     expect(response.output).toBe('Hello from chat: hello');
-    expect(response.messages).toHaveLength(1);
   });
 
-  it('should throw from invokeStream by default', async () => {
+  it('should throw from executeStream by default', async () => {
     const adapter = new TestAdapter();
-    const request: InvokeRequest = {
+    const request: ExecuteRequest = {
       input: { task: 'test' },
     };
 
-    const generator = adapter.invokeStream(request);
-
-    await expect(generator.next()).rejects.toThrow('Streaming not implemented for this adapter');
-  });
-
-  it('should throw from chatStream by default', async () => {
-    const adapter = new TestAdapter();
-    const request: ChatRequest = {
-      messages: [{ role: 'user', content: 'hello' }],
-    };
-
-    const generator = adapter.chatStream(request);
+    const generator = adapter.executeStream(request);
 
     await expect(generator.next()).rejects.toThrow('Streaming not implemented for this adapter');
   });

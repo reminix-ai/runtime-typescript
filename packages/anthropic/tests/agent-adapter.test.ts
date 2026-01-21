@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
+import type { ExecuteRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, AnthropicAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -46,7 +46,7 @@ describe('wrap', () => {
   });
 });
 
-describe('AnthropicAgentAdapter.invoke', () => {
+describe('AnthropicAgentAdapter.execute', () => {
   it('should call the client', async () => {
     const mockClient = {
       messages: {
@@ -57,9 +57,9 @@ describe('AnthropicAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: InvokeRequest = { input: { prompt: 'Hi' } };
+    const request: ExecuteRequest = { input: { prompt: 'Hi' } };
 
-    await adapter.invoke(request);
+    await adapter.execute(request);
 
     expect(mockClient.messages.create).toHaveBeenCalled();
   });
@@ -74,9 +74,9 @@ describe('AnthropicAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: InvokeRequest = { input: { prompt: 'Hi' } };
+    const request: ExecuteRequest = { input: { prompt: 'Hi' } };
 
-    const response = await adapter.invoke(request);
+    const response = await adapter.execute(request);
 
     expect(response.output).toBe('Hello from Anthropic!');
   });
@@ -91,52 +91,13 @@ describe('AnthropicAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: InvokeRequest = {
+    const request: ExecuteRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
 
-    await adapter.invoke(request);
+    await adapter.execute(request);
 
     expect(mockClient.messages.create).toHaveBeenCalled();
-  });
-});
-
-describe('AnthropicAgentAdapter.chat', () => {
-  it('should call the client', async () => {
-    const mockClient = {
-      messages: {
-        create: vi.fn().mockResolvedValue({
-          content: [{ type: 'text', text: 'Hello!' }],
-        }),
-      },
-    };
-
-    const adapter = wrapAgent(mockClient as any);
-    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
-
-    await adapter.chat(request);
-
-    expect(mockClient.messages.create).toHaveBeenCalled();
-  });
-
-  it('should return output and messages', async () => {
-    const mockClient = {
-      messages: {
-        create: vi.fn().mockResolvedValue({
-          content: [{ type: 'text', text: 'Chat response' }],
-        }),
-      },
-    };
-
-    const adapter = wrapAgent(mockClient as any);
-    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
-
-    const response = await adapter.chat(request);
-
-    expect(response.output).toBe('Chat response');
-    expect(response.messages).toHaveLength(2);
-    expect(response.messages[1].role).toBe('assistant');
-    expect(response.messages[1].content).toBe('Chat response');
   });
 
   it('should extract system message', async () => {
@@ -149,14 +110,16 @@ describe('AnthropicAgentAdapter.chat', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: ChatRequest = {
-      messages: [
-        { role: 'system', content: 'You are helpful' },
-        { role: 'user', content: 'Hi' },
-      ],
+    const request: ExecuteRequest = {
+      input: {
+        messages: [
+          { role: 'system', content: 'You are helpful' },
+          { role: 'user', content: 'Hi' },
+        ],
+      },
     };
 
-    await adapter.chat(request);
+    await adapter.execute(request);
 
     const callArg = mockClient.messages.create.mock.calls[0][0];
     expect(callArg.system).toBe('You are helpful');

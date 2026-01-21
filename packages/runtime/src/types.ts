@@ -22,26 +22,19 @@ export interface Message {
   name?: string;
 }
 
-export interface InvokeRequest {
+export interface ExecuteRequest {
   input: Record<string, unknown>;
   stream?: boolean;
   context?: Record<string, unknown>;
 }
 
-export interface InvokeResponse {
-  output: unknown;
-}
-
-export interface ChatRequest {
-  messages: Message[];
-  stream?: boolean;
-  context?: Record<string, unknown>;
-}
-
-export interface ChatResponse {
-  output: string;
-  messages: Message[];
-}
+/**
+ * Response from agent execute.
+ * The shape depends on the agent's responseKeys.
+ * - Regular agents: { output: unknown }
+ * - Chat agents: { message: Message }
+ */
+export type ExecuteResponse = Record<string, unknown>;
 
 // Tool types
 

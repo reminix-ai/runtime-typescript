@@ -17,7 +17,7 @@ npm install @reminix/runtime
 ```typescript
 import { agent, chatAgent, serve } from '@reminix/runtime';
 
-// Create an invoke agent
+// Create an agent for task-oriented operations
 const calculator = agent('calculator', {
   description: 'Add two numbers',
   parameters: {
@@ -28,7 +28,7 @@ const calculator = agent('calculator', {
   execute: async ({ a, b }) => (a as number) + (b as number),
 });
 
-// Create a chat agent
+// Create a chat agent for conversational interactions
 const assistant = chatAgent('assistant', {
   description: 'A helpful assistant',
   execute: async (messages) => `You said: ${messages.at(-1)?.content}`,
@@ -46,8 +46,7 @@ The runtime creates a REST server (powered by [Hono](https://hono.dev)) with the
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Runtime discovery (version, agents, tools) |
-| `/agents/{name}/invoke` | POST | Stateless invocation |
-| `/agents/{name}/chat` | POST | Conversational chat |
+| `/agents/{name}/execute` | POST | Execute an agent |
 | `/tools/{name}/execute` | POST | Execute a tool |
 
 ### Health Endpoint
@@ -85,12 +84,13 @@ Returns runtime information, available agents, and tools:
         "required": ["a", "b"]
       },
       "output": { "type": "number" },
-      "invoke": { "streaming": false },
-      "chat": { "streaming": false }
+      "requestKeys": ["a", "b"],
+      "responseKeys": ["output"],
+      "streaming": false
     },
     {
       "name": "assistant",
-      "type": "agent",
+      "type": "chat_agent",
       "description": "A helpful assistant",
       "parameters": {
         "type": "object",
@@ -102,9 +102,10 @@ Returns runtime information, available agents, and tools:
         },
         "required": ["messages"]
       },
-      "output": { "type": "string" },
-      "invoke": { "streaming": false },
-      "chat": { "streaming": false }
+      "output": { "type": "object" },
+      "requestKeys": ["messages"],
+      "responseKeys": ["message"],
+      "streaming": false
     }
   ],
   "tools": [
@@ -119,14 +120,17 @@ Returns runtime information, available agents, and tools:
 }
 ```
 
-### Invoke Endpoint
+### Agent Execute Endpoint
 
-`POST /agents/{name}/invoke` - For stateless operations.
+`POST /agents/{name}/execute` - Execute an agent.
 
+Request keys are defined by the agent's `parameters` schema. For example, a calculator agent with `parameters: { properties: { a, b } }` expects `a` and `b` at the top level:
+
+**Task-oriented agent:**
 ```bash
-curl -X POST http://localhost:8080/agents/calculator/invoke \
+curl -X POST http://localhost:8080/agents/calculator/execute \
   -H "Content-Type: application/json" \
-  -d '{"input": {"a": 5, "b": 3}}'
+  -d '{"a": 5, "b": 3}'
 ```
 
 **Response:**
@@ -136,12 +140,12 @@ curl -X POST http://localhost:8080/agents/calculator/invoke \
 }
 ```
 
-### Chat Endpoint
+**Chat agent:**
 
-`POST /agents/{name}/chat` - For conversational interactions.
+Chat agents expect `messages` at the top level and return `message`:
 
 ```bash
-curl -X POST http://localhost:8080/agents/assistant/chat \
+curl -X POST http://localhost:8080/agents/assistant/execute \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [
@@ -153,11 +157,10 @@ curl -X POST http://localhost:8080/agents/assistant/chat \
 **Response:**
 ```json
 {
-  "output": "You said: Hello!",
-  "messages": [
-    {"role": "user", "content": "Hello!"},
-    {"role": "assistant", "content": "You said: Hello!"}
-  ]
+  "message": {
+    "role": "assistant",
+    "content": "You said: Hello!"
+  }
 }
 ```
 
@@ -168,7 +171,7 @@ curl -X POST http://localhost:8080/agents/assistant/chat \
 ```bash
 curl -X POST http://localhost:8080/tools/get_weather/execute \
   -H "Content-Type: application/json" \
-  -d '{"input": {"location": "San Francisco"}}'
+  -d '{"location": "San Francisco"}'
 ```
 
 **Response:**
@@ -180,11 +183,11 @@ curl -X POST http://localhost:8080/tools/get_weather/execute \
 
 ## Agents
 
-Agents handle requests via the `/agents/{name}/invoke` or `/agents/{name}/chat` endpoints.
+Agents handle requests via the `/agents/{name}/execute` endpoint.
 
-### Invoke Agent
+### Task-Oriented Agent
 
-Use `agent()` for task-oriented agents that take input and return output:
+Use `agent()` for task-oriented agents that take structured input and return output:
 
 ```typescript
 import { agent, serve } from '@reminix/runtime';
@@ -255,7 +258,7 @@ Both factories support streaming via async generators. When you use an async gen
 ```typescript
 import { agent, chatAgent, serve } from '@reminix/runtime';
 
-// Streaming invoke agent
+// Streaming task agent
 const streamer = agent('streamer', {
   description: 'Stream text word by word',
   parameters: {
@@ -395,7 +398,7 @@ const app = createApp({ agents: [myAgent], tools: [myTool] });
 
 ### `agent(name, options)`
 
-Factory function to create an invoke agent.
+Factory function to create a task-oriented agent.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -493,25 +496,31 @@ const myTool = tool('my_tool', {
 ### Request/Response Types
 
 ```typescript
-interface InvokeRequest {
-  input: Record<string, unknown>;  // Arbitrary input for task execution
-  stream?: boolean;                // Whether to stream the response
+// Request: top-level keys based on agent's requestKeys (derived from parameters)
+// For a calculator agent with parameters { a: number, b: number }:
+interface CalculatorRequest {
+  a: number;                          // Top-level key from parameters
+  b: number;                          // Top-level key from parameters
+  stream?: boolean;                   // Whether to stream the response
   context?: Record<string, unknown>;  // Optional metadata
 }
 
-interface InvokeResponse {
-  output: unknown;                 // The result (can be any type)
-}
-
+// For a chat agent:
 interface ChatRequest {
-  messages: Message[];             // Conversation history
-  stream?: boolean;                // Whether to stream the response
-  context?: Record<string, unknown>;  // Optional metadata
+  messages: Message[];                // Top-level key (requestKeys: ['messages'])
+  stream?: boolean;
+  context?: Record<string, unknown>;
 }
 
+// Response: keys based on agent's responseKeys
+// Regular agent (responseKeys: ['output']):
+interface AgentResponse {
+  output: unknown;
+}
+
+// Chat agent (responseKeys: ['message']):
 interface ChatResponse {
-  output: string;                  // The final answer
-  messages: Message[];             // Full execution history
+  message: { role: string; content: string };
 }
 ```
 
@@ -519,25 +528,21 @@ interface ChatResponse {
 
 ### Agent Class
 
-For more control, you can use the `Agent` class directly. This is useful when you need both invoke and chat handlers on the same agent, or want more programmatic control.
+For more control, you can use the `Agent` class directly:
 
 ```typescript
 import { Agent, serve } from '@reminix/runtime';
 
 const agent = new Agent('my-agent', { metadata: { version: '1.0' } });
 
-agent.onInvoke(async (request) => {
+agent.onExecute(async (request) => {
   return { output: 'Hello!' };
 });
 
-agent.onChat(async (request) => {
-  return { output: 'Hi!', messages: [...request.messages, { role: 'assistant', content: 'Hi!' }] };
-});
-
-// Optional: separate streaming handlers
-agent.onInvokeStream(async function* (request) {
-  yield '{"chunk": "Hello"}';
-  yield '{"chunk": " world!"}';
+// Optional: streaming handler
+agent.onExecuteStream(async function* (request) {
+  yield 'Hello';
+  yield ' world!';
 });
 
 serve({ agents: [agent], port: 8080 });
@@ -581,17 +586,9 @@ class MyFrameworkAdapter extends AgentAdapter {
     return this._name;
   }
 
-  async invoke(request) {
+  async execute(request) {
     const result = await this.client.run(request.input);
     return { output: result };
-  }
-
-  async chat(request) {
-    const result = await this.client.chat(request.messages);
-    return {
-      output: result,
-      messages: [...request.messages, { role: 'assistant', content: result }],
-    };
   }
 }
 ```

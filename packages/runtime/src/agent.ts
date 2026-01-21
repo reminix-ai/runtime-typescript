@@ -2,8 +2,20 @@
  * Agent classes for Reminix Runtime.
  */
 
-import type { InvokeRequest, InvokeResponse, ChatRequest, ChatResponse, Message } from './types.js';
+import type { ExecuteRequest, ExecuteResponse, Message } from './types.js';
 import { VERSION } from './version.js';
+
+/**
+ * Default parameters schema for agents.
+ * Request: { prompt: '...' }
+ */
+const DEFAULT_AGENT_PARAMETERS = {
+  type: 'object' as const,
+  properties: {
+    prompt: { type: 'string', description: 'The prompt or task for the agent' },
+  },
+  required: ['prompt'],
+};
 
 /**
  * Web-standard fetch handler type.
@@ -14,50 +26,39 @@ export type FetchHandler = (request: Request) => Promise<Response>;
  * Metadata returned by agents for discovery.
  */
 export interface AgentMetadata {
-  type: 'agent' | 'adapter';
+  type: 'agent' | 'chat_agent' | 'adapter';
   adapter?: string;
+  /** Top-level keys expected in request body (besides stream, context) */
+  requestKeys?: string[];
+  /** Top-level keys returned in response */
+  responseKeys?: string[];
   [key: string]: unknown;
 }
 
 /**
- * Handler type for invoke requests.
+ * Handler type for execute requests.
  */
-export type InvokeHandler = (request: InvokeRequest) => Promise<InvokeResponse>;
+export type ExecuteHandler = (request: ExecuteRequest) => Promise<ExecuteResponse>;
 
 /**
- * Handler type for chat requests.
+ * Handler type for streaming execute requests.
  */
-export type ChatHandler = (request: ChatRequest) => Promise<ChatResponse>;
-
-/**
- * Handler type for streaming invoke requests.
- */
-export type InvokeStreamHandler = (request: InvokeRequest) => AsyncGenerator<string, void, unknown>;
-
-/**
- * Handler type for streaming chat requests.
- */
-export type ChatStreamHandler = (request: ChatRequest) => AsyncGenerator<string, void, unknown>;
+export type ExecuteStreamHandler = (
+  request: ExecuteRequest
+) => AsyncGenerator<string, void, unknown>;
 
 /**
  * Abstract base class defining the agent interface.
  *
  * This is the core contract that all agents must fulfill.
  * Use `Agent` for callback-based registration or extend
- * `BaseAdapter` for framework adapters.
+ * `AgentAdapter` for framework adapters.
  */
 export abstract class AgentBase {
   /**
-   * Whether invoke supports streaming. Override to enable.
+   * Whether execute supports streaming. Override to enable.
    */
-  get invokeStreaming(): boolean {
-    return false;
-  }
-
-  /**
-   * Whether chat supports streaming. Override to enable.
-   */
-  get chatStreaming(): boolean {
+  get streaming(): boolean {
     return false;
   }
 
@@ -71,32 +72,24 @@ export abstract class AgentBase {
    * Override this to provide custom metadata.
    */
   get metadata(): AgentMetadata {
-    return { type: 'agent' };
+    return {
+      type: 'agent',
+      parameters: DEFAULT_AGENT_PARAMETERS,
+      requestKeys: ['prompt'],
+      responseKeys: ['output'],
+    };
   }
 
   /**
-   * Handle an invoke request.
+   * Handle an execute request.
    */
-  abstract invoke(request: InvokeRequest): Promise<InvokeResponse>;
+  abstract execute(request: ExecuteRequest): Promise<ExecuteResponse>;
 
   /**
-   * Handle a chat request.
-   */
-  abstract chat(request: ChatRequest): Promise<ChatResponse>;
-
-  /**
-   * Handle a streaming invoke request.
+   * Handle a streaming execute request.
    */
   // eslint-disable-next-line require-yield
-  async *invokeStream(_request: InvokeRequest): AsyncGenerator<string, void, unknown> {
-    throw new Error('Streaming not implemented for this agent');
-  }
-
-  /**
-   * Handle a streaming chat request.
-   */
-  // eslint-disable-next-line require-yield
-  async *chatStream(_request: ChatRequest): AsyncGenerator<string, void, unknown> {
+  async *executeStream(_request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this agent');
   }
 
@@ -110,7 +103,7 @@ export abstract class AgentBase {
    * ```typescript
    * // Vercel Edge Function
    * const agent = new Agent('my-agent');
-   * agent.onInvoke(async (req) => ({ output: 'Hello!' }));
+   * agent.onExecute(async (req) => ({ output: 'Hello!' }));
    * export default agent.toHandler();
    *
    * // Cloudflare Worker
@@ -155,8 +148,7 @@ export abstract class AgentBase {
                 {
                   name: this.name,
                   ...this.metadata,
-                  invoke: { streaming: this.invokeStreaming },
-                  chat: { streaming: this.chatStreaming },
+                  streaming: this.streaming,
                 },
               ],
             },
@@ -164,10 +156,10 @@ export abstract class AgentBase {
           );
         }
 
-        // POST /agents/{name}/invoke
-        const invokeMatch = path.match(/^\/agents\/([^/]+)\/invoke$/);
-        if (method === 'POST' && invokeMatch) {
-          const agentName = invokeMatch[1];
+        // POST /agents/{name}/execute
+        const executeMatch = path.match(/^\/agents\/([^/]+)\/execute$/);
+        if (method === 'POST' && executeMatch) {
+          const agentName = executeMatch[1];
           if (agentName !== this.name) {
             return Response.json(
               { error: `Agent '${agentName}' not found` },
@@ -175,22 +167,33 @@ export abstract class AgentBase {
             );
           }
 
-          const body = (await request.json()) as InvokeRequest;
+          const body = (await request.json()) as Record<string, unknown>;
 
-          if (!body.input || Object.keys(body.input).length === 0) {
-            return Response.json(
-              { error: 'input is required and must not be empty' },
-              { status: 400, headers: corsHeaders }
-            );
+          // Get requestKeys from agent metadata (all agents have defaults)
+          const requestKeys = (this.metadata.requestKeys as string[]) ?? [];
+
+          // Extract declared keys from body into input object
+          // e.g., requestKeys: ['prompt'] with body { prompt: '...' } -> input = { prompt: '...' }
+          const input: Record<string, unknown> = {};
+          for (const key of requestKeys) {
+            if (key in body) {
+              input[key] = body[key];
+            }
           }
 
+          const executeRequest: ExecuteRequest = {
+            input,
+            stream: body.stream === true,
+            context: body.context as Record<string, unknown> | undefined,
+          };
+
           // Handle streaming
-          if (body.stream) {
+          if (executeRequest.stream) {
             const stream = new ReadableStream({
               start: async (controller) => {
                 const encoder = new TextEncoder();
                 try {
-                  for await (const chunk of this.invokeStream(body)) {
+                  for await (const chunk of this.executeStream(executeRequest)) {
                     controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
                   }
                   controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -214,61 +217,7 @@ export abstract class AgentBase {
             });
           }
 
-          const response = await this.invoke(body);
-          return Response.json(response, { headers: corsHeaders });
-        }
-
-        // POST /agents/{name}/chat
-        const chatMatch = path.match(/^\/agents\/([^/]+)\/chat$/);
-        if (method === 'POST' && chatMatch) {
-          const agentName = chatMatch[1];
-          if (agentName !== this.name) {
-            return Response.json(
-              { error: `Agent '${agentName}' not found` },
-              { status: 404, headers: corsHeaders }
-            );
-          }
-
-          const body = (await request.json()) as ChatRequest;
-
-          if (!body.messages || body.messages.length === 0) {
-            return Response.json(
-              { error: 'messages is required and must not be empty' },
-              { status: 400, headers: corsHeaders }
-            );
-          }
-
-          // Handle streaming
-          if (body.stream) {
-            const stream = new ReadableStream({
-              start: async (controller) => {
-                const encoder = new TextEncoder();
-                try {
-                  for await (const chunk of this.chatStream(body)) {
-                    controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
-                  }
-                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-                } catch (error) {
-                  const message = error instanceof Error ? error.message : 'Unknown error';
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`)
-                  );
-                }
-                controller.close();
-              },
-            });
-
-            return new Response(stream, {
-              headers: {
-                ...corsHeaders,
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                Connection: 'keep-alive',
-              },
-            });
-          }
-
-          const response = await this.chat(body);
+          const response = await this.execute(executeRequest);
           return Response.json(response, { headers: corsHeaders });
         }
 
@@ -290,12 +239,8 @@ export abstract class AgentBase {
  * ```typescript
  * const agent = new Agent('my-agent');
  *
- * agent.onInvoke(async (request) => {
+ * agent.onExecute(async (request) => {
  *   return { output: 'Hello!' };
- * });
- *
- * agent.onChat(async (request) => {
- *   return { output: 'Hi!', messages: [...] };
  * });
  *
  * serve({ agents: [agent], port: 8080 });
@@ -305,15 +250,13 @@ export class Agent extends AgentBase {
   private readonly _name: string;
   private readonly _metadata: Record<string, unknown>;
 
-  private _invokeHandler: InvokeHandler | null = null;
-  private _chatHandler: ChatHandler | null = null;
-  private _invokeStreamHandler: InvokeStreamHandler | null = null;
-  private _chatStreamHandler: ChatStreamHandler | null = null;
+  private _executeHandler: ExecuteHandler | null = null;
+  private _executeStreamHandler: ExecuteStreamHandler | null = null;
 
   /**
    * Create a new agent.
    *
-   * @param name - The agent name (used in URLs like /agents/{name}/invoke)
+   * @param name - The agent name (used in URLs like /agents/{name}/execute)
    * @param options - Optional configuration
    */
   constructor(name: string, options?: { metadata?: Record<string, unknown> }) {
@@ -333,114 +276,67 @@ export class Agent extends AgentBase {
    * Return agent metadata for discovery.
    */
   get metadata(): AgentMetadata {
-    return { type: 'agent', ...this._metadata };
+    return {
+      type: 'agent',
+      parameters: DEFAULT_AGENT_PARAMETERS,
+      requestKeys: ['prompt'],
+      responseKeys: ['output'],
+      ...this._metadata,
+    };
   }
 
   /**
-   * Whether invoke supports streaming.
+   * Whether execute supports streaming.
    */
-  override get invokeStreaming(): boolean {
-    return this._invokeStreamHandler !== null;
+  override get streaming(): boolean {
+    return this._executeStreamHandler !== null;
   }
 
   /**
-   * Whether chat supports streaming.
-   */
-  override get chatStreaming(): boolean {
-    return this._chatStreamHandler !== null;
-  }
-
-  /**
-   * Register an invoke handler.
+   * Register an execute handler.
    *
    * @example
-   * agent.onInvoke(async (request) => {
+   * agent.onExecute(async (request) => {
    *   return { output: 'Hello!' };
    * });
    */
-  onInvoke(handler: InvokeHandler): this {
-    this._invokeHandler = handler;
+  onExecute(handler: ExecuteHandler): this {
+    this._executeHandler = handler;
     return this;
   }
 
   /**
-   * Register a chat handler.
+   * Register a streaming execute handler.
    *
    * @example
-   * agent.onChat(async (request) => {
-   *   return { output: 'Hi!', messages: [...] };
-   * });
-   */
-  onChat(handler: ChatHandler): this {
-    this._chatHandler = handler;
-    return this;
-  }
-
-  /**
-   * Register a streaming invoke handler.
-   *
-   * @example
-   * agent.onInvokeStream(async function* (request) {
+   * agent.onExecuteStream(async function* (request) {
    *   yield '{"chunk": "Hello"}';
    *   yield '{"chunk": " world!"}';
    * });
    */
-  onInvokeStream(handler: InvokeStreamHandler): this {
-    this._invokeStreamHandler = handler;
+  onExecuteStream(handler: ExecuteStreamHandler): this {
+    this._executeStreamHandler = handler;
     return this;
   }
 
   /**
-   * Register a streaming chat handler.
-   *
-   * @example
-   * agent.onChatStream(async function* (request) {
-   *   yield '{"chunk": "Hi"}';
-   * });
+   * Handle an execute request.
    */
-  onChatStream(handler: ChatStreamHandler): this {
-    this._chatStreamHandler = handler;
-    return this;
+  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+    if (this._executeHandler === null) {
+      throw new Error(`No execute handler registered for agent '${this._name}'`);
+    }
+    return this._executeHandler(request);
   }
 
   /**
-   * Handle an invoke request.
+   * Handle a streaming execute request.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
-    if (this._invokeHandler === null) {
-      throw new Error(`No invoke handler registered for agent '${this._name}'`);
+  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+    if (this._executeStreamHandler === null) {
+      throw new Error(`No streaming execute handler registered for agent '${this._name}'`);
     }
-    return this._invokeHandler(request);
-  }
-
-  /**
-   * Handle a chat request.
-   */
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    if (this._chatHandler === null) {
-      throw new Error(`No chat handler registered for agent '${this._name}'`);
-    }
-    return this._chatHandler(request);
-  }
-
-  /**
-   * Handle a streaming invoke request.
-   */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
-    if (this._invokeStreamHandler === null) {
-      throw new Error(`No streaming invoke handler registered for agent '${this._name}'`);
-    }
-    yield* this._invokeStreamHandler(request);
-  }
-
-  /**
-   * Handle a streaming chat request.
-   */
-  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
-    if (this._chatStreamHandler === null) {
-      throw new Error(`No streaming chat handler registered for agent '${this._name}'`);
-    }
-    yield* this._chatStreamHandler(request);
+    yield* this._executeStreamHandler(request);
   }
 }
 
@@ -449,20 +345,24 @@ export class Agent extends AgentBase {
 // =============================================================================
 
 /**
- * Options for creating an invoke agent with the agent() factory.
+ * Options for creating an agent with the agent() factory.
  */
 export interface AgentOptions {
   /** Human-readable description of what the agent does */
   description?: string;
   /** Optional metadata for discovery */
   metadata?: Record<string, unknown>;
-  /** JSON Schema for input parameters */
+  /**
+   * JSON Schema for input parameters.
+   * The keys in `properties` become the top-level request keys.
+   * Defaults to { prompt: string } if not provided.
+   */
   parameters?: {
     type: 'object';
     properties: Record<string, unknown>;
     required?: string[];
   };
-  /** Optional JSON Schema for output (for documentation and type inference) */
+  /** JSON Schema for output */
   output?: Record<string, unknown>;
   /**
    * Execute handler - can be a regular async function or an async generator for streaming.
@@ -489,11 +389,11 @@ export interface ChatAgentOptions {
   /**
    * Execute handler - can be a regular async function or an async generator for streaming.
    *
-   * Regular function: Returns output string directly
+   * Regular function: Returns a Message object
    * Async generator: Yields string chunks (automatically collected for non-streaming requests)
    */
   execute:
-    | ((messages: Message[], context?: Record<string, unknown>) => Promise<string>)
+    | ((messages: Message[], context?: Record<string, unknown>) => Promise<Message>)
     | ((
         messages: Message[],
         context?: Record<string, unknown>
@@ -510,11 +410,24 @@ function isAsyncGeneratorFunction(
 }
 
 /**
- * Create an invoke agent from a configuration object.
+ * Create an agent from a configuration object.
+ *
+ * By default, agents expect `{ prompt: string }` in the request body and
+ * return `{ output: ... }`. You can customize by providing `parameters`.
  *
  * @example
  * ```typescript
- * // Non-streaming agent
+ * // Simple agent with default parameters
+ * // Request: { prompt: 'Hello world' }
+ * // Response: { output: 'You said: Hello world' }
+ * const echo = agent('echo', {
+ *   description: 'Echo the prompt',
+ *   execute: async ({ prompt }) => `You said: ${prompt}`,
+ * });
+ *
+ * // Agent with custom parameters
+ * // Request: { a: 1, b: 2 }
+ * // Response: { output: 3 }
  * const calculator = agent('calculator', {
  *   description: 'Add two numbers',
  *   parameters: {
@@ -526,15 +439,12 @@ function isAsyncGeneratorFunction(
  * });
  *
  * // Streaming agent (async generator)
+ * // Request: { prompt: 'hello world' }
+ * // Response: { output: 'hello world ' } (streamed)
  * const streamer = agent('streamer', {
  *   description: 'Stream text word by word',
- *   parameters: {
- *     type: 'object',
- *     properties: { text: { type: 'string' } },
- *     required: ['text'],
- *   },
- *   execute: async function* ({ text }) {
- *     for (const word of (text as string).split(' ')) {
+ *   execute: async function* ({ prompt }) {
+ *     for (const word of (prompt as string).split(' ')) {
  *       yield word + ' ';
  *     }
  *   },
@@ -542,11 +452,21 @@ function isAsyncGeneratorFunction(
  * ```
  */
 export function agent(name: string, options: AgentOptions): Agent {
+  // Use provided parameters or default to { prompt: string }
+  const parameters = options.parameters ?? DEFAULT_AGENT_PARAMETERS;
+
+  // Derive requestKeys from parameters.properties
+  const requestKeys = Object.keys(parameters.properties);
+  const responseKeys = ['output'];
+
   const agentInstance = new Agent(name, {
     metadata: {
+      type: 'agent',
       description: options.description,
-      parameters: options.parameters,
+      parameters,
       ...(options.output !== undefined && { output: options.output }),
+      requestKeys,
+      responseKeys,
       ...options.metadata,
     },
   });
@@ -554,24 +474,30 @@ export function agent(name: string, options: AgentOptions): Agent {
   // Detect if execute is an async generator function
   const isStreaming = isAsyncGeneratorFunction(options.execute);
 
+  // Get the response key from the agent's metadata (allows custom override)
+  const getResponseKey = () => {
+    const keys = agentInstance.metadata.responseKeys as string[] | undefined;
+    return keys?.[0] ?? 'output';
+  };
+
   if (isStreaming) {
     const streamExecute = options.execute as (
       input: Record<string, unknown>,
       context?: Record<string, unknown>
     ) => AsyncGenerator<string, void, unknown>;
 
-    // Register streaming invoke handler
-    agentInstance.onInvokeStream(async function* (request: InvokeRequest) {
+    // Register streaming execute handler
+    agentInstance.onExecuteStream(async function* (request: ExecuteRequest) {
       yield* streamExecute(request.input, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
-    agentInstance.onInvoke(async (request: InvokeRequest): Promise<InvokeResponse> => {
+    agentInstance.onExecute(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
       const chunks: string[] = [];
       for await (const chunk of streamExecute(request.input, request.context)) {
         chunks.push(chunk);
       }
-      return { output: chunks.join('') };
+      return { [getResponseKey()]: chunks.join('') };
     });
   } else {
     const regularExecute = options.execute as (
@@ -579,9 +505,9 @@ export function agent(name: string, options: AgentOptions): Agent {
       context?: Record<string, unknown>
     ) => Promise<unknown>;
 
-    agentInstance.onInvoke(async (request: InvokeRequest): Promise<InvokeResponse> => {
+    agentInstance.onExecute(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
       const result = await regularExecute(request.input, request.context);
-      return { output: result };
+      return { [getResponseKey()]: result };
     });
   }
 
@@ -591,14 +517,22 @@ export function agent(name: string, options: AgentOptions): Agent {
 /**
  * Create a chat agent from a configuration object.
  *
+ * This is a convenience factory that creates an agent with a standard chat
+ * interface (messages in, message out).
+ *
+ * Request: `{ messages: [...] }`
+ * Response: `{ message: { role: 'assistant', content: '...' } }`
+ *
  * @example
  * ```typescript
  * // Non-streaming chat agent
+ * // Request: { messages: [{ role: 'user', content: 'hello' }] }
+ * // Response: { message: { role: 'assistant', content: 'You said: hello' } }
  * const bot = chatAgent('bot', {
  *   description: 'A simple chatbot',
  *   execute: async (messages) => {
  *     const lastMsg = messages.at(-1)?.content ?? '';
- *     return `You said: ${lastMsg}`;
+ *     return { role: 'assistant', content: `You said: ${lastMsg}` };
  *   },
  * });
  *
@@ -614,6 +548,10 @@ export function agent(name: string, options: AgentOptions): Agent {
  * ```
  */
 export function chatAgent(name: string, options: ChatAgentOptions): Agent {
+  // Chat agents have fixed request/response keys
+  const requestKeys = ['messages'];
+  const responseKeys = ['message'];
+
   // Define standard chat agent schemas
   const parametersSchema = {
     type: 'object',
@@ -632,13 +570,23 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     },
     required: ['messages'],
   };
-  const outputSchema = { type: 'string' };
+  const outputSchema = {
+    type: 'object',
+    properties: {
+      role: { type: 'string' },
+      content: { type: 'string' },
+    },
+    required: ['role', 'content'],
+  };
 
   const agentInstance = new Agent(name, {
     metadata: {
+      type: 'chat_agent',
       description: options.description,
       parameters: parametersSchema,
       output: outputSchema,
+      requestKeys,
+      responseKeys,
       ...options.metadata,
     },
   });
@@ -646,41 +594,43 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
   // Detect if execute is an async generator function
   const isStreaming = isAsyncGeneratorFunction(options.execute);
 
+  // Get the response key from the agent's metadata (allows custom override)
+  const getResponseKey = () => {
+    const keys = agentInstance.metadata.responseKeys as string[] | undefined;
+    return keys?.[0] ?? 'message';
+  };
+
   if (isStreaming) {
     const streamExecute = options.execute as (
       messages: Message[],
       context?: Record<string, unknown>
     ) => AsyncGenerator<string, void, unknown>;
 
-    // Register streaming chat handler
-    agentInstance.onChatStream(async function* (request: ChatRequest) {
-      yield* streamExecute(request.messages, request.context);
+    // Register streaming execute handler
+    agentInstance.onExecuteStream(async function* (request: ExecuteRequest) {
+      const rawMessages = (request.input.messages ?? []) as Message[];
+      yield* streamExecute(rawMessages, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
-    agentInstance.onChat(async (request: ChatRequest): Promise<ChatResponse> => {
+    agentInstance.onExecute(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
+      const rawMessages = (request.input.messages ?? []) as Message[];
       const chunks: string[] = [];
-      for await (const chunk of streamExecute(request.messages, request.context)) {
+      for await (const chunk of streamExecute(rawMessages, request.context)) {
         chunks.push(chunk);
       }
-      const output = chunks.join('');
-      return {
-        output,
-        messages: [...request.messages, { role: 'assistant', content: output }],
-      };
+      return { [getResponseKey()]: { role: 'assistant', content: chunks.join('') } };
     });
   } else {
     const regularExecute = options.execute as (
       messages: Message[],
       context?: Record<string, unknown>
-    ) => Promise<string>;
+    ) => Promise<Message>;
 
-    agentInstance.onChat(async (request: ChatRequest): Promise<ChatResponse> => {
-      const output = await regularExecute(request.messages, request.context);
-      return {
-        output,
-        messages: [...request.messages, { role: 'assistant', content: output }],
-      };
+    agentInstance.onExecute(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
+      const rawMessages = (request.input.messages ?? []) as Message[];
+      const message = await regularExecute(rawMessages, request.context);
+      return { [getResponseKey()]: message };
     });
   }
 

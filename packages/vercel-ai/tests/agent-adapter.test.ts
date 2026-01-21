@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { InvokeRequest, ChatRequest } from '@reminix/runtime';
+import type { ExecuteRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, VercelAIAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -41,7 +41,7 @@ describe('wrap', () => {
   });
 });
 
-describe('VercelAIAgentAdapter.invoke', () => {
+describe('VercelAIAgentAdapter.execute', () => {
   it('should call generateText with prompt input', async () => {
     const mockModel = { modelId: 'gpt-4o' };
     const adapter = wrapAgent(mockModel as any);
@@ -50,8 +50,8 @@ describe('VercelAIAgentAdapter.invoke', () => {
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello!' });
     (adapter as any)._generateText = mockGenerateText;
 
-    const request: InvokeRequest = { input: { prompt: 'Hi' } };
-    await adapter.invoke(request);
+    const request: ExecuteRequest = { input: { prompt: 'Hi' } };
+    await adapter.execute(request);
 
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: mockModel,
@@ -66,63 +66,29 @@ describe('VercelAIAgentAdapter.invoke', () => {
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello from Vercel AI!' });
     (adapter as any)._generateText = mockGenerateText;
 
-    const request: InvokeRequest = { input: { prompt: 'Hi' } };
-    const response = await adapter.invoke(request);
+    const request: ExecuteRequest = { input: { prompt: 'Hi' } };
+    const response = await adapter.execute(request);
 
     expect(response.output).toBe('Hello from Vercel AI!');
   });
 
-  it('should handle messages input by converting to prompt', async () => {
+  it('should handle messages input with generateText', async () => {
     const mockModel = { modelId: 'gpt-4o' };
     const adapter = wrapAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
     (adapter as any)._generateText = mockGenerateText;
 
-    const request: InvokeRequest = {
+    const request: ExecuteRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
-    await adapter.invoke(request);
+    await adapter.execute(request);
 
-    // Messages are concatenated into a prompt for invoke (stateless)
+    // Messages are passed directly for chat-style input
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: mockModel,
-      prompt: 'Hello',
+      messages: [{ role: 'user', content: 'Hello' }],
     });
-  });
-});
-
-describe('VercelAIAgentAdapter.chat', () => {
-  it('should call generateText with converted messages', async () => {
-    const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrapAgent(mockModel as any);
-
-    const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello!' });
-    (adapter as any)._generateText = mockGenerateText;
-
-    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
-    await adapter.chat(request);
-
-    expect(mockGenerateText).toHaveBeenCalledWith({
-      model: mockModel,
-      messages: [{ role: 'user', content: 'Hi' }],
-    });
-  });
-
-  it('should return output and messages', async () => {
-    const mockModel = { modelId: 'gpt-4o' };
-    const adapter = wrapAgent(mockModel as any);
-
-    const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Chat response' });
-    (adapter as any)._generateText = mockGenerateText;
-
-    const request: ChatRequest = { messages: [{ role: 'user', content: 'Hi' }] };
-    const response = await adapter.chat(request);
-
-    expect(response.output).toBe('Chat response');
-    expect(response.messages).toHaveLength(2);
-    expect(response.messages[1].role).toBe('assistant');
-    expect(response.messages[1].content).toBe('Chat response');
   });
 
   it('should preserve system messages', async () => {
@@ -132,13 +98,15 @@ describe('VercelAIAgentAdapter.chat', () => {
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
     (adapter as any)._generateText = mockGenerateText;
 
-    const request: ChatRequest = {
-      messages: [
-        { role: 'system', content: 'You are helpful' },
-        { role: 'user', content: 'Hi' },
-      ],
+    const request: ExecuteRequest = {
+      input: {
+        messages: [
+          { role: 'system', content: 'You are helpful' },
+          { role: 'user', content: 'Hi' },
+        ],
+      },
     };
-    await adapter.chat(request);
+    await adapter.execute(request);
 
     const callArg = mockGenerateText.mock.calls[0][0];
     expect(callArg.messages).toHaveLength(2);

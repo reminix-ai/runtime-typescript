@@ -11,10 +11,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type InvokeRequest,
-  type InvokeResponse,
-  type ChatRequest,
-  type ChatResponse,
+  type ExecuteRequest,
+  type ExecuteResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -95,41 +93,51 @@ export class VercelAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle an invoke request.
-   *
-   * For task-oriented operations. Expects input with 'messages' key
-   * or a 'prompt' key for simple text generation.
-   *
-   * @param request - The invoke request with input data.
-   * @returns The invoke response with the output.
+   * Build prompt or messages from execute request.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  private buildInputFromRequest(request: ExecuteRequest): {
+    prompt?: string;
+    messages?: ModelMessage[];
+  } {
     const input = request.input as Record<string, unknown>;
 
-    // Build prompt from input
-    let prompt: string;
-    if ('prompt' in input) {
-      prompt = String(input.prompt);
-    } else if ('messages' in input) {
-      const messages = input.messages as Array<{ role: string; content: string }>;
-      prompt = messages.map((m) => m.content).join('\n');
+    if ('messages' in input) {
+      const messages = input.messages as Message[];
+      return { messages: this.toModelMessages(messages) };
+    } else if ('prompt' in input) {
+      return { prompt: String(input.prompt) };
     } else {
-      prompt = JSON.stringify(input);
+      return { prompt: JSON.stringify(input) };
     }
+  }
+
+  /**
+   * Handle an execute request.
+   *
+   * For both task-oriented and chat-style operations. Expects input with 'messages' key
+   * or a 'prompt' key for simple text generation.
+   *
+   * @param request - The execute request with input data.
+   * @returns The execute response with the output.
+   */
+  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+    const { prompt, messages } = this.buildInputFromRequest(request);
 
     let output: string;
 
     if (this.isAgent) {
       // Use ToolLoopAgent.generate()
       const agent = this.modelOrAgent as AnyToolLoopAgent;
-      const result = await agent.generate({ prompt, options: {} });
+      // Agent API expects either prompt or messages, not both
+      const agentInput = prompt ? { prompt, options: {} } : { messages: messages!, options: {} };
+      const result = await agent.generate(agentInput);
       output = result.text;
     } else {
       // Use generateText with LanguageModel
       const model = this.modelOrAgent as LanguageModel;
       const result = await this._generateText({
         model,
-        prompt,
+        ...(prompt ? { prompt } : { messages: messages! }),
       });
       output = result.text;
     }
@@ -138,66 +146,20 @@ export class VercelAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle a chat request.
+   * Handle a streaming execute request.
    *
-   * For conversational interactions.
-   *
-   * @param request - The chat request with messages.
-   * @returns The chat response with output and messages.
-   */
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    const messages = this.toModelMessages(request.messages);
-
-    let output: string;
-
-    if (this.isAgent) {
-      // Use ToolLoopAgent.generate()
-      const agent = this.modelOrAgent as AnyToolLoopAgent;
-      const result = await agent.generate({ messages, options: {} });
-      output = result.text;
-    } else {
-      // Use generateText with LanguageModel
-      const model = this.modelOrAgent as LanguageModel;
-      const result = await this._generateText({
-        model,
-        messages,
-      });
-      output = result.text;
-    }
-
-    // Build response messages (original + assistant response)
-    const responseMessages: Message[] = [
-      ...request.messages,
-      { role: 'assistant', content: output },
-    ];
-
-    return { output, messages: responseMessages };
-  }
-
-  /**
-   * Handle a streaming invoke request.
-   *
-   * @param request - The invoke request with input data.
+   * @param request - The execute request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
-    const input = request.input as Record<string, unknown>;
-
-    // Build prompt from input
-    let prompt: string;
-    if ('prompt' in input) {
-      prompt = String(input.prompt);
-    } else if ('messages' in input) {
-      const messages = input.messages as Array<{ role: string; content: string }>;
-      prompt = messages.map((m) => m.content).join('\n');
-    } else {
-      prompt = JSON.stringify(input);
-    }
+  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+    const { prompt, messages } = this.buildInputFromRequest(request);
 
     if (this.isAgent) {
       // Use ToolLoopAgent.stream()
       const agent = this.modelOrAgent as AnyToolLoopAgent;
-      const result = await agent.stream({ prompt, options: {} });
+      // Agent API expects either prompt or messages, not both
+      const agentInput = prompt ? { prompt, options: {} } : { messages: messages!, options: {} };
+      const result = await agent.stream(agentInput);
       for await (const chunk of result.textStream) {
         yield JSON.stringify({ chunk });
       }
@@ -206,36 +168,7 @@ export class VercelAIAgentAdapter extends AgentAdapter {
       const model = this.modelOrAgent as LanguageModel;
       const result = this._streamText({
         model,
-        prompt,
-      });
-      for await (const chunk of result.textStream) {
-        yield JSON.stringify({ chunk });
-      }
-    }
-  }
-
-  /**
-   * Handle a streaming chat request.
-   *
-   * @param request - The chat request with messages.
-   * @yields JSON-encoded chunks from the stream.
-   */
-  async *chatStream(request: ChatRequest): AsyncGenerator<string, void, unknown> {
-    const messages = this.toModelMessages(request.messages);
-
-    if (this.isAgent) {
-      // Use ToolLoopAgent.stream()
-      const agent = this.modelOrAgent as AnyToolLoopAgent;
-      const result = await agent.stream({ messages, options: {} });
-      for await (const chunk of result.textStream) {
-        yield JSON.stringify({ chunk });
-      }
-    } else {
-      // Use streamText with LanguageModel
-      const model = this.modelOrAgent as LanguageModel;
-      const result = this._streamText({
-        model,
-        messages,
+        ...(prompt ? { prompt } : { messages: messages! }),
       });
       for await (const chunk of result.textStream) {
         yield JSON.stringify({ chunk });
