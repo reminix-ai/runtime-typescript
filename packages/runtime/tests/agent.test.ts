@@ -330,7 +330,7 @@ describe('agent() Factory', () => {
     });
   });
 
-  it('should set output in metadata when provided', () => {
+  it('should set output in metadata when provided and wrap it', () => {
     const calculator = agent('calculator', {
       description: 'Add two numbers',
       parameters: {
@@ -342,7 +342,11 @@ describe('agent() Factory', () => {
       execute: async () => 0,
     });
 
-    expect(calculator.metadata.output).toEqual({ type: 'number' });
+    expect(calculator.metadata.output).toEqual({
+      type: 'object',
+      properties: { output: { type: 'number' } },
+      required: ['output'],
+    });
   });
 
   it('should not include output in metadata when not provided', () => {
@@ -490,7 +494,7 @@ describe('chatAgent() Factory', () => {
     expect(params.required).toContain('messages');
   });
 
-  it('should set standard output schema in metadata', () => {
+  it('should set standard output schema in metadata wrapped for response structure', () => {
     const bot = chatAgent('bot', {
       execute: async () => ({ role: 'assistant', content: 'Hello!' }),
     });
@@ -498,10 +502,16 @@ describe('chatAgent() Factory', () => {
     expect(bot.metadata.output).toEqual({
       type: 'object',
       properties: {
-        role: { type: 'string' },
-        content: { type: 'string' },
+        message: {
+          type: 'object',
+          properties: {
+            role: { type: 'string' },
+            content: { type: 'string' },
+          },
+          required: ['role', 'content'],
+        },
       },
-      required: ['role', 'content'],
+      required: ['message'],
     });
   });
 

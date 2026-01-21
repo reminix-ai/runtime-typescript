@@ -504,7 +504,7 @@ export function agent(name: string, options: AgentOptions): Agent {
 
   // Derive requestKeys from parameters.properties
   const requestKeys = Object.keys(parameters.properties);
-  
+
   // Default responseKeys (can be overridden via metadata)
   const responseKeys = ['output'];
 
@@ -519,14 +519,15 @@ export function agent(name: string, options: AgentOptions): Agent {
     requestKeys,
     responseKeys,
   };
-  
+
   // If metadata override includes responseKeys, re-wrap output schema
-  const finalResponseKeys = (options.metadata?.responseKeys as string[] | undefined) ?? responseKeys;
-  const finalWrappedOutput = 
+  const finalResponseKeys =
+    (options.metadata?.responseKeys as string[] | undefined) ?? responseKeys;
+  const finalWrappedOutput =
     (options.metadata?.responseKeys as string[] | undefined) !== undefined
       ? wrapOutputSchemaForResponseKeys(options.output, finalResponseKeys)
       : wrappedOutput;
-  
+
   if (finalWrappedOutput !== undefined) {
     baseMetadata.output = finalWrappedOutput;
   }
@@ -637,7 +638,7 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     },
     required: ['messages'],
   };
-  
+
   // Message schema (the value, not the full response)
   const messageSchema = {
     type: 'object',
@@ -659,14 +660,15 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     requestKeys,
     responseKeys,
   };
-  
+
   // If metadata override includes responseKeys, re-wrap output schema
-  const finalResponseKeys = (options.metadata?.responseKeys as string[] | undefined) ?? responseKeys;
-  const finalWrappedOutput = 
+  const finalResponseKeys =
+    (options.metadata?.responseKeys as string[] | undefined) ?? responseKeys;
+  const finalWrappedOutput =
     (options.metadata?.responseKeys as string[] | undefined) !== undefined
       ? wrapOutputSchemaForResponseKeys(messageSchema, finalResponseKeys)
       : wrappedOutput;
-  
+
   if (finalWrappedOutput !== undefined) {
     baseMetadata.output = finalWrappedOutput;
   }
