@@ -412,6 +412,29 @@ describe('agent() Factory', () => {
     });
   });
 
+  it('should set output in metadata when provided', () => {
+    const calculator = agent('calculator', {
+      description: 'Add two numbers',
+      parameters: {
+        type: 'object',
+        properties: { a: { type: 'number' }, b: { type: 'number' } },
+        required: ['a', 'b'],
+      },
+      output: { type: 'number' },
+      execute: async () => 0,
+    });
+
+    expect(calculator.metadata.output).toEqual({ type: 'number' });
+  });
+
+  it('should not include output in metadata when not provided', () => {
+    const calculator = agent('calculator', {
+      execute: async () => 0,
+    });
+
+    expect(calculator.metadata.output).toBeUndefined();
+  });
+
   it('should handle invoke requests', async () => {
     const calculator = agent('calculator', {
       execute: async ({ a, b }) => (a as number) + (b as number),

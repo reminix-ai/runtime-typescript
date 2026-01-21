@@ -84,6 +84,7 @@ Returns runtime information, available agents, and tools:
         "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
         "required": ["a", "b"]
       },
+      "output": { "type": "number" },
       "invoke": { "streaming": false },
       "chat": { "streaming": false }
     },
@@ -390,6 +391,7 @@ Factory function to create an invoke agent.
 | `name` | `string` | Unique identifier for the agent |
 | `options.description` | `string` | Human-readable description |
 | `options.parameters` | `object` | JSON Schema for input parameters |
+| `options.output` | `object` | Optional JSON Schema for output |
 | `options.execute` | `function` | Async function or async generator to execute |
 
 ```typescript

@@ -462,6 +462,8 @@ export interface AgentOptions {
     properties: Record<string, unknown>;
     required?: string[];
   };
+  /** Optional JSON Schema for output (for documentation and type inference) */
+  output?: Record<string, unknown>;
   /**
    * Execute handler - can be a regular async function or an async generator for streaming.
    *
@@ -544,6 +546,7 @@ export function agent(name: string, options: AgentOptions): Agent {
     metadata: {
       description: options.description,
       parameters: options.parameters,
+      ...(options.output !== undefined && { output: options.output }),
       ...options.metadata,
     },
   });
