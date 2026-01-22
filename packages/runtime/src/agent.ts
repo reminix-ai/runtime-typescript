@@ -389,11 +389,11 @@ export interface ChatAgentOptions {
   /**
    * Execute handler - can be a regular async function or an async generator for streaming.
    *
-   * Regular function: Returns a Message object
+   * Regular function: Returns a list of Message objects
    * Async generator: Yields string chunks (automatically collected for non-streaming requests)
    */
   execute:
-    | ((messages: Message[], context?: Record<string, unknown>) => Promise<Message>)
+    | ((messages: Message[], context?: Record<string, unknown>) => Promise<Message[]>)
     | ((
         messages: Message[],
         context?: Record<string, unknown>
@@ -602,21 +602,21 @@ export function agent(name: string, options: AgentOptions): Agent {
  * Create a chat agent from a configuration object.
  *
  * This is a convenience factory that creates an agent with a standard chat
- * interface (messages in, message out).
+ * interface (messages in, messages out).
  *
  * Request: `{ messages: [...] }`
- * Response: `{ message: { role: 'assistant', content: '...' } }`
+ * Response: `{ messages: [{ role: 'assistant', content: '...' }, ...] }`
  *
  * @example
  * ```typescript
  * // Non-streaming chat agent
  * // Request: { messages: [{ role: 'user', content: 'hello' }] }
- * // Response: { message: { role: 'assistant', content: 'You said: hello' } }
+ * // Response: { messages: [{ role: 'assistant', content: 'You said: hello' }] }
  * const bot = chatAgent('bot', {
  *   description: 'A simple chatbot',
  *   execute: async (messages) => {
  *     const lastMsg = messages.at(-1)?.content ?? '';
- *     return { role: 'assistant', content: `You said: ${lastMsg}` };
+ *     return [{ role: 'assistant', content: `You said: ${lastMsg}` }];
  *   },
  * });
  *
@@ -634,7 +634,7 @@ export function agent(name: string, options: AgentOptions): Agent {
 export function chatAgent(name: string, options: ChatAgentOptions): Agent {
   // Chat agents have default request/response keys (can be overridden via metadata)
   const requestKeys = ['messages'];
-  const responseKeys = ['message'];
+  const responseKeys = ['messages'];
 
   // Define standard chat agent schemas
   const parametersSchema = {
@@ -655,18 +655,21 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     required: ['messages'],
   };
 
-  // Message schema (the value, not the full response)
-  const messageSchema = {
-    type: 'object',
-    properties: {
-      role: { type: 'string' },
-      content: { type: 'string' },
+  // Messages schema (array of messages, the value, not the full response)
+  const messagesSchema = {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        role: { type: 'string' },
+        content: { type: 'string' },
+      },
+      required: ['role', 'content'],
     },
-    required: ['role', 'content'],
   };
 
-  // Wrap message schema to match responseKeys structure
-  const wrappedOutput = wrapOutputSchemaForResponseKeys(messageSchema, responseKeys);
+  // Wrap messages schema to match responseKeys structure
+  const wrappedOutput = wrapOutputSchemaForResponseKeys(messagesSchema, responseKeys);
 
   // Build metadata (allow metadata override to change responseKeys)
   const baseMetadata: Record<string, unknown> = {
@@ -682,7 +685,7 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     (options.metadata?.responseKeys as string[] | undefined) ?? responseKeys;
   const finalWrappedOutput =
     (options.metadata?.responseKeys as string[] | undefined) !== undefined
-      ? wrapOutputSchemaForResponseKeys(messageSchema, finalResponseKeys)
+      ? wrapOutputSchemaForResponseKeys(messagesSchema, finalResponseKeys)
       : wrappedOutput;
 
   if (finalWrappedOutput !== undefined) {
@@ -702,7 +705,7 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
   // Get the response keys from the agent's metadata (allows custom override)
   const getResponseKeys = () => {
     const keys = agentInstance.metadata.responseKeys as string[] | undefined;
-    return keys && keys.length > 0 ? keys : ['message'];
+    return keys && keys.length > 0 ? keys : ['messages'];
   };
 
   if (isStreaming) {
@@ -724,8 +727,8 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
       for await (const chunk of streamExecute(rawMessages, request.context)) {
         chunks.push(chunk);
       }
-      const result = { role: 'assistant', content: chunks.join('') };
-      // For chat agents, always wrap in first responseKey (typically "message")
+      const result = [{ role: 'assistant', content: chunks.join('') }];
+      // For chat agents, always wrap in first responseKey (typically "messages")
       const responseKeys = getResponseKeys();
       return { [responseKeys[0]]: result };
     });
@@ -733,7 +736,7 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     const regularExecute = options.execute as (
       messages: Message[],
       context?: Record<string, unknown>
-    ) => Promise<Message>;
+    ) => Promise<Message[]>;
 
     agentInstance.onExecute(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
       const rawMessages = (request.input.messages ?? []) as Message[];
@@ -746,19 +749,17 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
         typeof result === 'object' &&
         result !== null &&
         !Array.isArray(result) &&
-        'role' in result === false && // Not a Message (Message has 'role' property)
         responseKeys.every((key) => key in (result as Record<string, unknown>))
       ) {
         return result as Record<string, unknown>;
       }
 
-      // Convert Message to dict if needed, then wrap in first responseKey
-      const messageDict =
-        typeof result === 'object' && result !== null && 'role' in result && 'content' in result
-          ? { role: (result as Message).role, content: (result as Message).content }
-          : result;
+      // Convert list of Message objects to list of dicts
+      const messagesList = Array.isArray(result)
+        ? result.map((m) => ({ role: m.role, content: m.content }))
+        : [{ role: (result as Message).role, content: (result as Message).content }];
 
-      return { [responseKeys[0]]: messageDict };
+      return { [responseKeys[0]]: messagesList };
     });
   }
 

@@ -467,7 +467,7 @@ describe('chatAgent() Factory', () => {
   it('should create an Agent instance', () => {
     const bot = chatAgent('bot', {
       description: 'A simple bot',
-      execute: async () => ({ role: 'assistant', content: 'Hello!' }),
+      execute: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
     expect(bot).toBeInstanceOf(Agent);
@@ -477,7 +477,7 @@ describe('chatAgent() Factory', () => {
   it('should set description in metadata', () => {
     const bot = chatAgent('bot', {
       description: 'A helpful assistant',
-      execute: async () => ({ role: 'assistant', content: 'Hello!' }),
+      execute: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
     expect(bot.metadata.description).toBe('A helpful assistant');
@@ -485,7 +485,7 @@ describe('chatAgent() Factory', () => {
 
   it('should set standard parameters schema in metadata', () => {
     const bot = chatAgent('bot', {
-      execute: async () => ({ role: 'assistant', content: 'Hello!' }),
+      execute: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
     const params = bot.metadata.parameters as Record<string, unknown>;
@@ -496,22 +496,25 @@ describe('chatAgent() Factory', () => {
 
   it('should set standard output schema in metadata wrapped for response structure', () => {
     const bot = chatAgent('bot', {
-      execute: async () => ({ role: 'assistant', content: 'Hello!' }),
+      execute: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
     expect(bot.metadata.output).toEqual({
       type: 'object',
       properties: {
-        message: {
-          type: 'object',
-          properties: {
-            role: { type: 'string' },
-            content: { type: 'string' },
+        messages: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              role: { type: 'string' },
+              content: { type: 'string' },
+            },
+            required: ['role', 'content'],
           },
-          required: ['role', 'content'],
         },
       },
-      required: ['message'],
+      required: ['messages'],
     });
   });
 
@@ -519,7 +522,7 @@ describe('chatAgent() Factory', () => {
     const echoBot = chatAgent('echo-bot', {
       execute: async (messages) => {
         const lastMsg = messages.at(-1)?.content ?? '';
-        return { role: 'assistant', content: `You said: ${lastMsg}` };
+        return [{ role: 'assistant', content: `You said: ${lastMsg}` }];
       },
     });
 
@@ -527,7 +530,10 @@ describe('chatAgent() Factory', () => {
       input: { messages: [{ role: 'user', content: 'hello' }] },
     });
 
-    expect(response.message).toEqual({ role: 'assistant', content: 'You said: hello' });
+    expect((response.messages as Array<{ role: string; content: string }>)[0]).toEqual({
+      role: 'assistant',
+      content: 'You said: hello',
+    });
   });
 
   it('should pass context to execute handler', async () => {
@@ -536,7 +542,7 @@ describe('chatAgent() Factory', () => {
     const bot = chatAgent('bot', {
       execute: async (messages, context) => {
         receivedContext = context;
-        return { role: 'assistant', content: 'done' };
+        return [{ role: 'assistant', content: 'done' }];
       },
     });
 
@@ -584,6 +590,9 @@ describe('chatAgent() Factory', () => {
       input: { messages: [{ role: 'user', content: 'hi' }] },
     });
 
-    expect(response.message).toEqual({ role: 'assistant', content: 'Hello world!' });
+    expect((response.messages as Array<{ role: string; content: string }>)[0]).toEqual({
+      role: 'assistant',
+      content: 'Hello world!',
+    });
   });
 });
