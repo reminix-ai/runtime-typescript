@@ -32,7 +32,7 @@ export interface ExecuteRequest {
  * Response from agent execute.
  * The shape depends on the agent's responseKeys.
  * - Regular agents: { output: unknown }
- * - Chat agents: { message: Message }
+ * - Chat agents: { messages: Message[] }
  */
 export type ExecuteResponse = Record<string, unknown>;
 

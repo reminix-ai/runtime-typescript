@@ -64,14 +64,14 @@ class MockChatAdapter extends AgentAdapter {
     return {
       ...super.metadata,
       requestKeys: ['messages'],
-      responseKeys: ['message'],
+      responseKeys: ['messages'],
     };
   }
 
   async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
     const messages = (request.input as { messages?: { content: string }[] }).messages ?? [];
     const userMessage = messages[messages.length - 1]?.content ?? '';
-    return { message: { role: 'assistant', content: `Chat response to: ${userMessage}` } };
+    return { messages: [{ role: 'assistant', content: `Chat response to: ${userMessage}` }] };
   }
 }
 
@@ -175,7 +175,7 @@ describe('Execute Endpoint', () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.message).toEqual({
+    expect(data.messages[0]).toEqual({
       role: 'assistant',
       content: 'Chat response to: hi there',
     });
