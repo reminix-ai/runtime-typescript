@@ -507,10 +507,40 @@ describe('chatAgent() Factory', () => {
           items: {
             type: 'object',
             properties: {
-              role: { type: 'string' },
-              content: { type: 'string' },
+              role: {
+                type: 'string',
+                enum: ['system', 'user', 'assistant', 'tool'],
+              },
+              content: {
+                type: ['string', 'null'],
+              },
+              name: {
+                type: 'string',
+              },
+              tool_call_id: {
+                type: 'string',
+              },
+              tool_calls: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    type: { type: 'string', enum: ['function'] },
+                    function: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string' },
+                        arguments: { type: 'string' },
+                      },
+                      required: ['name', 'arguments'],
+                    },
+                  },
+                  required: ['id', 'type', 'function'],
+                },
+              },
             },
-            required: ['role', 'content'],
+            required: ['role'],
           },
         },
       },

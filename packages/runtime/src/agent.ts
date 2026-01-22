@@ -636,20 +636,53 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
   const requestKeys = ['messages'];
   const responseKeys = ['messages'];
 
+  // Message item schema (shared between parameters and output)
+  const messageItemSchema = {
+    type: 'object',
+    properties: {
+      role: {
+        type: 'string',
+        enum: ['system', 'user', 'assistant', 'tool'],
+      },
+      content: {
+        type: ['string', 'null'],
+      },
+      name: {
+        type: 'string',
+      },
+      tool_call_id: {
+        type: 'string',
+      },
+      tool_calls: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string', enum: ['function'] },
+            function: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                arguments: { type: 'string' },
+              },
+              required: ['name', 'arguments'],
+            },
+          },
+          required: ['id', 'type', 'function'],
+        },
+      },
+    },
+    required: ['role'],
+  };
+
   // Define standard chat agent schemas
   const parametersSchema = {
     type: 'object',
     properties: {
       messages: {
         type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            role: { type: 'string' },
-            content: { type: 'string' },
-          },
-          required: ['role', 'content'],
-        },
+        items: messageItemSchema,
       },
     },
     required: ['messages'],
@@ -658,14 +691,7 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
   // Messages schema (array of messages, the value, not the full response)
   const messagesSchema = {
     type: 'array',
-    items: {
-      type: 'object',
-      properties: {
-        role: { type: 'string' },
-        content: { type: 'string' },
-      },
-      required: ['role', 'content'],
-    },
+    items: messageItemSchema,
   };
 
   // Wrap messages schema to match responseKeys structure
