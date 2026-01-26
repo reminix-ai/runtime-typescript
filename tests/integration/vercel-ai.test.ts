@@ -44,7 +44,7 @@ describe('Vercel AI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: { prompt: "Say 'hello' and nothing else." },
+        prompt: "Say 'hello' and nothing else.",
       }),
     });
 
@@ -58,9 +58,7 @@ describe('Vercel AI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
-        },
+        messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
       }),
     });
 
@@ -74,9 +72,7 @@ describe('Vercel AI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [{ role: 'user', content: "What's the weather in Paris?" }],
-        },
+        messages: [{ role: 'user', content: "What's the weather in Paris?" }],
       }),
     });
 

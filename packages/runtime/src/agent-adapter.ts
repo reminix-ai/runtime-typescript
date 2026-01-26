@@ -26,11 +26,14 @@ export abstract class AgentAdapter extends AgentBase {
 
   /**
    * Return adapter metadata for discovery.
+   * Adapters accept both 'messages' (chat-style) and 'prompt' (simple) inputs.
    */
   get metadata(): AgentMetadata {
     return {
       type: 'adapter',
       adapter: (this.constructor as typeof AgentAdapter).adapterName,
+      requestKeys: ['messages', 'prompt'],
+      responseKeys: ['output'],
     };
   }
 

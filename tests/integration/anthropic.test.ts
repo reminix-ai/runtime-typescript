@@ -28,7 +28,7 @@ describe('Anthropic Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: { prompt: "Say 'hello' and nothing else." },
+        prompt: "Say 'hello' and nothing else.",
       }),
     });
 
@@ -43,9 +43,7 @@ describe('Anthropic Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [{ role: 'user', content: "Say 'test' and nothing else." }],
-        },
+        messages: [{ role: 'user', content: "Say 'test' and nothing else." }],
       }),
     });
 
@@ -60,12 +58,10 @@ describe('Anthropic Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [
-            { role: 'system', content: "You only respond with 'yes'." },
-            { role: 'user', content: 'Do you understand?' },
-          ],
-        },
+        messages: [
+          { role: 'system', content: "You only respond with 'yes'." },
+          { role: 'user', content: 'Do you understand?' },
+        ],
       }),
     });
 
@@ -80,9 +76,7 @@ describe('Anthropic Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
-        },
+        messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
       }),
     });
 
@@ -91,12 +85,12 @@ describe('Anthropic Adapter Integration', () => {
     expect(data.output).toBeDefined();
   });
 
-  it.fails('should stream execute (not implemented yet)', async () => {
+  it('should stream execute', async () => {
     const response = await app.request('/agents/test-anthropic/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: { prompt: "Say 'stream' and nothing else." },
+        prompt: "Say 'stream' and nothing else.",
         stream: true,
       }),
     });

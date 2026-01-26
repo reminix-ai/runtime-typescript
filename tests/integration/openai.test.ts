@@ -24,7 +24,7 @@ describe('OpenAI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: { prompt: "Say 'hello' and nothing else." },
+        prompt: "Say 'hello' and nothing else.",
       }),
     });
 
@@ -39,9 +39,7 @@ describe('OpenAI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [{ role: 'user', content: "Say 'test' and nothing else." }],
-        },
+        messages: [{ role: 'user', content: "Say 'test' and nothing else." }],
       }),
     });
 
@@ -56,9 +54,7 @@ describe('OpenAI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
-        },
+        messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
       }),
     });
 
@@ -67,12 +63,12 @@ describe('OpenAI Adapter Integration', () => {
     expect(data.output).toBeDefined();
   });
 
-  it.fails('should stream execute (not implemented yet)', async () => {
+  it('should stream execute', async () => {
     const response = await app.request('/agents/test-openai/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: { prompt: "Say 'stream' and nothing else." },
+        prompt: "Say 'stream' and nothing else.",
         stream: true,
       }),
     });

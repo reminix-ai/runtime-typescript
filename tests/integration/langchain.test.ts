@@ -43,9 +43,7 @@ describe('LangChain Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [{ role: 'user', content: "Say 'hello' and nothing else." }],
-        },
+        messages: [{ role: 'user', content: "Say 'hello' and nothing else." }],
       }),
     });
 
@@ -59,9 +57,7 @@ describe('LangChain Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
-        },
+        messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
       }),
     });
 
@@ -75,11 +71,9 @@ describe('LangChain Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: {
-          messages: [
-            { role: 'user', content: "What's the weather in Paris? Use the get_weather tool." },
-          ],
-        },
+        messages: [
+          { role: 'user', content: "What's the weather in Paris? Use the get_weather tool." },
+        ],
       }),
     });
 
