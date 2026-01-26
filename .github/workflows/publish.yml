@@ -71,3 +71,22 @@ jobs:
         run: pnpm -r --filter './packages/**' publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Add Package Links to Summary
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "## 📦 Published to npm" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for pkg in packages/*/package.json; do
+            if [ -f "$pkg" ]; then
+              NAME=$(node -e "console.log(require('./$pkg').name)")
+              PRIVATE=$(node -e "console.log(require('./$pkg').private || false)")
+              if [ "$PRIVATE" != "true" ]; then
+                echo "- [\`$NAME@$VERSION\`](https://www.npmjs.com/package/$NAME/v/$VERSION)" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          done
