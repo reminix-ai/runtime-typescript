@@ -123,10 +123,10 @@ describe('Info Endpoint', () => {
 });
 
 describe('Execute Endpoint', () => {
-  it('POST /agents/{agent}/execute should return execute response', async () => {
+  it('POST /agents/{agent}/invoke should return execute response', async () => {
     const app = createApp({ agents: [new MockTaskAdapter('my-agent')] });
     // Request body has top-level keys matching requestKeys: ['task']
-    const response = await app.request('/agents/my-agent/execute', {
+    const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ task: 'summarize' }),
@@ -137,9 +137,9 @@ describe('Execute Endpoint', () => {
     expect(data.output).toBe('Completed task: summarize');
   });
 
-  it('POST /agents/{agent}/execute should accept context', async () => {
+  it('POST /agents/{agent}/invoke should accept context', async () => {
     const app = createApp({ agents: [new MockTaskAdapter('my-agent')] });
-    const response = await app.request('/agents/my-agent/execute', {
+    const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -151,9 +151,9 @@ describe('Execute Endpoint', () => {
     expect(response.status).toBe(200);
   });
 
-  it('POST /agents/{agent}/execute should return 404 for unknown agent', async () => {
+  it('POST /agents/{agent}/invoke should return 404 for unknown agent', async () => {
     const app = createApp({ agents: [new MockTaskAdapter('my-agent')] });
-    const response = await app.request('/agents/unknown-agent/execute', {
+    const response = await app.request('/agents/unknown-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ task: 'test' }),
@@ -164,10 +164,10 @@ describe('Execute Endpoint', () => {
     expect(data.error.toLowerCase()).toContain('not found');
   });
 
-  it('POST /agents/{agent}/execute should handle chat-style input', async () => {
+  it('POST /agents/{agent}/invoke should handle chat-style input', async () => {
     const app = createApp({ agents: [new MockChatAdapter('my-agent')] });
     // Request body has top-level keys matching requestKeys: ['messages']
-    const response = await app.request('/agents/my-agent/execute', {
+    const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: [{ role: 'user', content: 'hi there' }] }),
@@ -183,7 +183,7 @@ describe('Execute Endpoint', () => {
 });
 
 describe('Tool Execute Endpoint', () => {
-  it('POST /tools/{tool}/execute should return tool response', async () => {
+  it('POST /tools/{tool}/call should return tool response', async () => {
     const greetTool = tool('greet', {
       description: 'Greet someone',
       parameters: {
@@ -191,11 +191,11 @@ describe('Tool Execute Endpoint', () => {
         properties: { name: { type: 'string' } },
         required: ['name'],
       },
-      execute: async (input) => ({ message: `Hello, ${input.name}!` }),
+      handler: async (input) => ({ message: `Hello, ${input.name}!` }),
     });
 
     const app = createApp({ tools: [greetTool] });
-    const response = await app.request('/tools/greet/execute', {
+    const response = await app.request('/tools/greet/call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input: { name: 'World' } }),
@@ -206,20 +206,20 @@ describe('Tool Execute Endpoint', () => {
     expect(data.output).toEqual({ message: 'Hello, World!' });
   });
 
-  it('POST /tools/{tool}/execute should accept context', async () => {
+  it('POST /tools/{tool}/call should accept context', async () => {
     let receivedContext: Record<string, unknown> | undefined;
 
     const myTool = tool('my-tool', {
       description: 'Test tool',
       parameters: { type: 'object', properties: {} },
-      execute: async (input, context) => {
+      handler: async (input, context) => {
         receivedContext = context;
         return { done: true };
       },
     });
 
     const app = createApp({ tools: [myTool] });
-    await app.request('/tools/my-tool/execute', {
+    await app.request('/tools/my-tool/call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input: {}, context: { user_id: '123' } }),
@@ -228,15 +228,15 @@ describe('Tool Execute Endpoint', () => {
     expect(receivedContext).toEqual({ user_id: '123' });
   });
 
-  it('POST /tools/{tool}/execute should return 404 for unknown tool', async () => {
+  it('POST /tools/{tool}/call should return 404 for unknown tool', async () => {
     const myTool = tool('my-tool', {
       description: 'Test tool',
       parameters: { type: 'object', properties: {} },
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     const app = createApp({ tools: [myTool] });
-    const response = await app.request('/tools/unknown-tool/execute', {
+    const response = await app.request('/tools/unknown-tool/call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input: {} }),
@@ -245,17 +245,17 @@ describe('Tool Execute Endpoint', () => {
     expect(response.status).toBe(404);
   });
 
-  it('POST /tools/{tool}/execute should return error on exception', async () => {
+  it('POST /tools/{tool}/call should return error on exception', async () => {
     const failingTool = tool('failing', {
       description: 'A tool that fails',
       parameters: { type: 'object', properties: {} },
-      execute: async () => {
+      handler: async () => {
         throw new Error('Something went wrong');
       },
     });
 
     const app = createApp({ tools: [failingTool] });
-    const response = await app.request('/tools/failing/execute', {
+    const response = await app.request('/tools/failing/call', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input: {} }),
@@ -277,7 +277,7 @@ describe('Info Endpoint with Tools', () => {
         properties: { param: { type: 'string' } },
         required: ['param'],
       },
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     const app = createApp({ tools: [myTool] });
@@ -297,7 +297,7 @@ describe('Info Endpoint with Tools', () => {
     const myTool = tool('my-tool', {
       description: 'Test tool',
       parameters: { type: 'object', properties: {} },
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     const app = createApp({

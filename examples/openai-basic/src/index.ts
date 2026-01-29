@@ -17,14 +17,14 @@
  * Then test the endpoints:
  *
  *     # With a simple prompt
- *     curl -X POST http://localhost:8080/agents/openai-basic/execute \
+ *     curl -X POST http://localhost:8080/agents/openai-basic/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"prompt": "What is the capital of France?"}}'
  *
  *     # Response: {"output": "The capital of France is Paris."}
  *
  *     # With messages (chat-style)
- *     curl -X POST http://localhost:8080/agents/openai-basic/execute \
+ *     curl -X POST http://localhost:8080/agents/openai-basic/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
  *
@@ -55,4 +55,4 @@ console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/openai-basic/execute');
+console.log('  POST /agents/openai-basic/invoke');

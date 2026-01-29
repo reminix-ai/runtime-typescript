@@ -61,8 +61,8 @@ export interface ToolOptions {
   parameters: ToolSchema;
   /** Optional JSON Schema for output (for documentation and type inference) */
   output?: ToolSchema;
-  /** Function to execute when the tool is called */
-  execute: ExecuteHandler;
+  /** Handler function to execute when the tool is called */
+  handler: ExecuteHandler;
 }
 
 /**
@@ -81,7 +81,7 @@ export class Tool extends ToolBase {
     this._description = options.description;
     this._parameters = options.parameters;
     this._output = options.output;
-    this._executeHandler = options.execute;
+    this._executeHandler = options.handler;
   }
 
   get name(): string {
@@ -135,7 +135,7 @@ export class Tool extends ToolBase {
  *       condition: { type: 'string' },
  *     },
  *   },
- *   execute: async (input) => {
+ *   handler: async (input) => {
  *     const location = input.location as string;
  *     return { temp: 22, condition: 'sunny' };
  *   },

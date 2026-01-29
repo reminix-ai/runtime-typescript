@@ -20,7 +20,7 @@ describe('Vercel AI Adapter Integration', () => {
     const getWeather = tool({
       description: 'Get the current weather for a city',
       inputSchema: z.object({ city: z.string() }),
-      execute: async ({ city }) => {
+      handler: async ({ city }) => {
         const weatherData: Record<string, string> = {
           paris: 'Sunny, 22°C',
           london: 'Cloudy, 15°C',
@@ -40,7 +40,7 @@ describe('Vercel AI Adapter Integration', () => {
   });
 
   it('should execute with a prompt', async () => {
-    const response = await app.request('/agents/test-vercel-ai/execute', {
+    const response = await app.request('/agents/test-vercel-ai/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -54,7 +54,7 @@ describe('Vercel AI Adapter Integration', () => {
   });
 
   it('should handle chat-style execute', async () => {
-    const response = await app.request('/agents/test-vercel-ai/execute', {
+    const response = await app.request('/agents/test-vercel-ai/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -68,7 +68,7 @@ describe('Vercel AI Adapter Integration', () => {
   });
 
   it('should call tools and return results', async () => {
-    const response = await app.request('/agents/test-vercel-ai/execute', {
+    const response = await app.request('/agents/test-vercel-ai/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -17,7 +17,7 @@
  * Then test the endpoints:
  *
  *     # Execute the agent
- *     curl -X POST http://localhost:8080/agents/langgraph-tools/execute \
+ *     curl -X POST http://localhost:8080/agents/langgraph-tools/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Paris?"}]}}'
  *
@@ -70,6 +70,6 @@ console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/langgraph-tools/execute');
+console.log('  POST /agents/langgraph-tools/invoke');
 console.log('\nAvailable tools:');
 console.log('  - get_weather(city): Get weather for Paris, London, Tokyo, or New York');

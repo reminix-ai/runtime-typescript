@@ -24,7 +24,7 @@ describe('Anthropic Adapter Integration', () => {
   });
 
   it('should execute with a prompt', async () => {
-    const response = await app.request('/agents/test-anthropic/execute', {
+    const response = await app.request('/agents/test-anthropic/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -39,7 +39,7 @@ describe('Anthropic Adapter Integration', () => {
   });
 
   it('should execute with messages array', async () => {
-    const response = await app.request('/agents/test-anthropic/execute', {
+    const response = await app.request('/agents/test-anthropic/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -54,7 +54,7 @@ describe('Anthropic Adapter Integration', () => {
   });
 
   it('should execute with system message', async () => {
-    const response = await app.request('/agents/test-anthropic/execute', {
+    const response = await app.request('/agents/test-anthropic/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -72,7 +72,7 @@ describe('Anthropic Adapter Integration', () => {
   });
 
   it('should handle chat-style execute', async () => {
-    const response = await app.request('/agents/test-anthropic/execute', {
+    const response = await app.request('/agents/test-anthropic/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -86,7 +86,7 @@ describe('Anthropic Adapter Integration', () => {
   });
 
   it('should stream execute', async () => {
-    const response = await app.request('/agents/test-anthropic/execute', {
+    const response = await app.request('/agents/test-anthropic/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

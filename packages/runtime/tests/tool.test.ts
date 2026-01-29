@@ -16,7 +16,7 @@ describe('Tool Creation', () => {
         },
         required: ['name'],
       },
-      execute: async (input) => ({ result: input.name }),
+      handler: async (input) => ({ result: input.name }),
     });
 
     expect(myTool).toBeInstanceOf(Tool);
@@ -30,7 +30,7 @@ describe('Tool Creation', () => {
         type: 'object',
         properties: {},
       },
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     expect(myTool.description).toBe('Get the current weather');
@@ -49,7 +49,7 @@ describe('Tool Creation', () => {
     const myTool = tool('weather', {
       description: 'Get weather',
       parameters: params,
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     expect(myTool.parameters).toEqual(params);
@@ -61,7 +61,7 @@ describe('Tool Metadata', () => {
     const myTool = tool('my-tool', {
       description: 'Test tool',
       parameters: { type: 'object', properties: {} },
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     expect(myTool.metadata.type).toBe('tool');
@@ -71,7 +71,7 @@ describe('Tool Metadata', () => {
     const myTool = tool('my-tool', {
       description: 'My tool description',
       parameters: { type: 'object', properties: {} },
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     expect(myTool.metadata.description).toBe('My tool description');
@@ -89,7 +89,7 @@ describe('Tool Metadata', () => {
     const myTool = tool('my-tool', {
       description: 'Test',
       parameters: params,
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     expect(myTool.metadata.parameters).toEqual(params);
@@ -108,7 +108,7 @@ describe('Tool Metadata', () => {
       description: 'Test',
       parameters: { type: 'object', properties: {} },
       output: outputSchema,
-      execute: async () => ({ result: 'ok', count: 42 }),
+      handler: async () => ({ result: 'ok', count: 42 }),
     });
 
     expect(myTool.metadata.output).toEqual(outputSchema);
@@ -119,7 +119,7 @@ describe('Tool Metadata', () => {
     const myTool = tool('my-tool', {
       description: 'Test',
       parameters: { type: 'object', properties: {} },
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     expect(myTool.metadata.output).toBeUndefined();
@@ -138,7 +138,7 @@ describe('Tool Execute', () => {
         },
         required: ['name'],
       },
-      execute: async (input) => ({
+      handler: async (input) => ({
         message: `Hello, ${input.name}!`,
       }),
     });
@@ -160,7 +160,7 @@ describe('Tool Execute', () => {
         },
         required: ['a', 'b'],
       },
-      execute: (input) => (input.a as number) + (input.b as number),
+      handler: (input) => (input.a as number) + (input.b as number),
     });
 
     const response = await add.execute({ input: { a: 2, b: 3 } });
@@ -174,7 +174,7 @@ describe('Tool Execute', () => {
     const myTool = tool('my-tool', {
       description: 'Test',
       parameters: { type: 'object', properties: {} },
-      execute: async (input, context) => {
+      handler: async (input, context) => {
         receivedContext = context;
         return { done: true };
       },
@@ -200,7 +200,7 @@ describe('Tool Execute', () => {
         },
         required: ['name', 'age'],
       },
-      execute: async (input) => ({
+      handler: async (input) => ({
         user: {
           name: input.name,
           age: input.age,
@@ -224,7 +224,7 @@ describe('Tool Error Handling', () => {
     const failingTool = tool('failing', {
       description: 'A tool that fails',
       parameters: { type: 'object', properties: {} },
-      execute: async () => {
+      handler: async () => {
         throw new Error('Something went wrong');
       },
     });
@@ -239,7 +239,7 @@ describe('Tool Error Handling', () => {
     const failingTool = tool('failing', {
       description: 'A tool that throws non-Error',
       parameters: { type: 'object', properties: {} },
-      execute: async () => {
+      handler: async () => {
         throw 'string error';
       },
     });
@@ -256,7 +256,7 @@ describe('Tool Inheritance', () => {
     const myTool = tool('my-tool', {
       description: 'Test',
       parameters: { type: 'object', properties: {} },
-      execute: async () => ({}),
+      handler: async () => ({}),
     });
 
     expect(myTool).toBeInstanceOf(ToolBase);
@@ -286,7 +286,7 @@ describe('Tool with Complex Schema', () => {
         },
         required: ['user'],
       },
-      execute: async (input) => ({
+      handler: async (input) => ({
         processed: true,
         user: input.user,
       }),
@@ -318,7 +318,7 @@ describe('Tool with Complex Schema', () => {
         },
         required: ['items'],
       },
-      execute: async (input) => ({
+      handler: async (input) => ({
         count: (input.items as string[]).length,
         items: input.items,
       }),

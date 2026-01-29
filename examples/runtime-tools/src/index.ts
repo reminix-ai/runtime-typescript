@@ -16,12 +16,12 @@
  *     curl http://localhost:8080/info
  *
  *     # Execute the weather tool
- *     curl -X POST http://localhost:8080/tools/get_weather/execute \
+ *     curl -X POST http://localhost:8080/tools/get_weather/call \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"location": "San Francisco"}}'
  *
  *     # Execute the calculator tool
- *     curl -X POST http://localhost:8080/tools/calculate/execute \
+ *     curl -X POST http://localhost:8080/tools/calculate/call \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"a": 10, "b": 5, "operation": "add"}}'
  */
@@ -66,7 +66,7 @@ const getWeather = tool('get_weather', {
       condition: { type: 'string' },
     },
   },
-  execute: async (input) => {
+  handler: async (input) => {
     const location = (input.location as string).toLowerCase();
     const units = (input.units as string) || 'fahrenheit';
 
@@ -108,7 +108,7 @@ const calculate = tool('calculate', {
     },
     required: ['a', 'b', 'operation'],
   },
-  execute: async (input) => {
+  handler: async (input) => {
     const a = input.a as number;
     const b = input.b as number;
     const op = input.operation as string;
@@ -153,7 +153,7 @@ const stringUtils = tool('string_utils', {
     },
     required: ['text', 'operation'],
   },
-  execute: async (input) => {
+  handler: async (input) => {
     const text = input.text as string;
     const op = input.operation as string;
 
@@ -185,9 +185,9 @@ console.log();
 console.log('Endpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /tools/get_weather/execute');
-console.log('  POST /tools/calculate/execute');
-console.log('  POST /tools/string_utils/execute');
+console.log('  POST /tools/get_weather/call');
+console.log('  POST /tools/calculate/call');
+console.log('  POST /tools/string_utils/call');
 console.log();
 
 serve({ tools: [getWeather, calculate, stringUtils], port: 8080 });

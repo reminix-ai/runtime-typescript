@@ -16,21 +16,21 @@
  *     curl http://localhost:8080/info
  *
  *     # Execute endpoint
- *     curl -X POST http://localhost:8080/agents/echo/execute \
+ *     curl -X POST http://localhost:8080/agents/echo/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"message": "Hello!"}}'
  *
  *     # Response: {"output": "Echo: Hello!"}
  *
  *     # Execute with messages (chat-style)
- *     curl -X POST http://localhost:8080/agents/echo/execute \
+ *     curl -X POST http://localhost:8080/agents/echo/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
  *
  *     # Response: {"output": "You said: Hello!"}
  *
  *     # Streaming execute
- *     curl -X POST http://localhost:8080/agents/echo/execute \
+ *     curl -X POST http://localhost:8080/agents/echo/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"message": "Hello!"}, "stream": true}'
  */
@@ -46,7 +46,7 @@ const agent = new Agent('echo', {
 });
 
 // Register execute handler
-agent.onExecute(async (request) => {
+agent.handler(async (request) => {
   const input = request.input as Record<string, unknown>;
 
   // Check if this is a chat-style request (has messages)
@@ -71,7 +71,7 @@ agent.onExecute(async (request) => {
 });
 
 // Register streaming execute handler
-agent.onExecuteStream(async function* (request) {
+agent.handlerStream(async function* (request) {
   const input = request.input as Record<string, unknown>;
 
   let response: string;
@@ -105,7 +105,7 @@ console.log();
 console.log('Endpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/echo/execute');
+console.log('  POST /agents/echo/invoke');
 console.log();
 
 serve({ agents: [agent], port: 8080 });

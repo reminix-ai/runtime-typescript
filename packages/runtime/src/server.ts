@@ -74,8 +74,8 @@ export function createApp(options: CreateAppOptions): Hono {
     });
   });
 
-  // Execute endpoint
-  app.post('/agents/:agentName/execute', async (c) => {
+  // Agent invoke endpoint
+  app.post('/agents/:agentName/invoke', async (c) => {
     const agentName = c.req.param('agentName');
     const agent = agentMap.get(agentName);
 
@@ -122,8 +122,8 @@ export function createApp(options: CreateAppOptions): Hono {
     return c.json(response);
   });
 
-  // Tool execute endpoint
-  app.post('/tools/:toolName/execute', async (c) => {
+  // Tool call endpoint
+  app.post('/tools/:toolName/call', async (c) => {
     const toolName = c.req.param('toolName');
     const tool = toolMap.get(toolName);
 

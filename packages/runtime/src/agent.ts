@@ -103,7 +103,7 @@ export abstract class AgentBase {
    * ```typescript
    * // Vercel Edge Function
    * const agent = new Agent('my-agent');
-   * agent.onExecute(async (req) => ({ output: 'Hello!' }));
+   * agent.handler(async (req) => ({ output: 'Hello!' }));
    * export default agent.toHandler();
    *
    * // Cloudflare Worker
@@ -156,10 +156,10 @@ export abstract class AgentBase {
           );
         }
 
-        // POST /agents/{name}/execute
-        const executeMatch = path.match(/^\/agents\/([^/]+)\/execute$/);
-        if (method === 'POST' && executeMatch) {
-          const agentName = executeMatch[1];
+        // POST /agents/{name}/invoke
+        const invokeMatch = path.match(/^\/agents\/([^/]+)\/invoke$/);
+        if (method === 'POST' && invokeMatch) {
+          const agentName = invokeMatch[1];
           if (agentName !== this.name) {
             return Response.json(
               { error: `Agent '${agentName}' not found` },
@@ -239,7 +239,7 @@ export abstract class AgentBase {
  * ```typescript
  * const agent = new Agent('my-agent');
  *
- * agent.onExecute(async (request) => {
+ * agent.handler(async (request) => {
  *   return { output: 'Hello!' };
  * });
  *
@@ -256,7 +256,7 @@ export class Agent extends AgentBase {
   /**
    * Create a new agent.
    *
-   * @param name - The agent name (used in URLs like /agents/{name}/execute)
+   * @param name - The agent name (used in URLs like /agents/{name}/invoke)
    * @param options - Optional configuration
    */
   constructor(name: string, options?: { metadata?: Record<string, unknown> }) {
@@ -293,31 +293,35 @@ export class Agent extends AgentBase {
   }
 
   /**
-   * Register an execute handler.
+   * Register a handler.
    *
    * @example
-   * agent.onExecute(async (request) => {
+   * agent.handler(async (request) => {
    *   return { output: 'Hello!' };
    * });
    */
-  onExecute(handler: ExecuteHandler): this {
-    this._executeHandler = handler;
+  handler(fn: ExecuteHandler): this {
+    this._executeHandler = fn;
     return this;
   }
 
   /**
-   * Register a streaming execute handler.
+   * Register a streaming handler.
    *
    * @example
-   * agent.onExecuteStream(async function* (request) {
+   * agent.handlerStream(async function* (request) {
    *   yield '{"chunk": "Hello"}';
    *   yield '{"chunk": " world!"}';
    * });
    */
-  onExecuteStream(handler: ExecuteStreamHandler): this {
-    this._executeStreamHandler = handler;
+  handlerStream(fn: ExecuteStreamHandler): this {
+    this._executeStreamHandler = fn;
     return this;
   }
+
+  // Aliases for backward compatibility
+  onExecute = this.handler;
+  onExecuteStream = this.handlerStream;
 
   /**
    * Handle an execute request.
@@ -365,12 +369,12 @@ export interface AgentOptions {
   /** JSON Schema for output */
   output?: Record<string, unknown>;
   /**
-   * Execute handler - can be a regular async function or an async generator for streaming.
+   * Handler function - can be a regular async function or an async generator for streaming.
    *
    * Regular function: Returns output directly
    * Async generator: Yields string chunks (automatically collected for non-streaming requests)
    */
-  execute:
+  handler:
     | ((input: Record<string, unknown>, context?: Record<string, unknown>) => Promise<unknown>)
     | ((
         input: Record<string, unknown>,
@@ -387,12 +391,12 @@ export interface ChatAgentOptions {
   /** Optional metadata for discovery */
   metadata?: Record<string, unknown>;
   /**
-   * Execute handler - can be a regular async function or an async generator for streaming.
+   * Handler function - can be a regular async function or an async generator for streaming.
    *
    * Regular function: Returns a list of Message objects
    * Async generator: Yields string chunks (automatically collected for non-streaming requests)
    */
-  execute:
+  handler:
     | ((messages: Message[], context?: Record<string, unknown>) => Promise<Message[]>)
     | ((
         messages: Message[],
@@ -469,7 +473,7 @@ function wrapOutputSchemaForResponseKeys(
  * // Response: { output: 'You said: Hello world' }
  * const echo = agent('echo', {
  *   description: 'Echo the prompt',
- *   execute: async ({ prompt }) => `You said: ${prompt}`,
+ *   handler: async ({ prompt }) => `You said: ${prompt}`,
  * });
  *
  * // Agent with custom parameters
@@ -482,7 +486,7 @@ function wrapOutputSchemaForResponseKeys(
  *     properties: { a: { type: 'number' }, b: { type: 'number' } },
  *     required: ['a', 'b'],
  *   },
- *   execute: async ({ a, b }) => (a as number) + (b as number),
+ *   handler: async ({ a, b }) => (a as number) + (b as number),
  * });
  *
  * // Streaming agent (async generator)
@@ -490,7 +494,7 @@ function wrapOutputSchemaForResponseKeys(
  * // Response: { output: 'hello world ' } (streamed)
  * const streamer = agent('streamer', {
  *   description: 'Stream text word by word',
- *   execute: async function* ({ prompt }) {
+ *   handler: async function* ({ prompt }) {
  *     for (const word of (prompt as string).split(' ')) {
  *       yield word + ' ';
  *     }
@@ -539,8 +543,8 @@ export function agent(name: string, options: AgentOptions): Agent {
     },
   });
 
-  // Detect if execute is an async generator function
-  const isStreaming = isAsyncGeneratorFunction(options.execute);
+  // Detect if handler is an async generator function
+  const isStreaming = isAsyncGeneratorFunction(options.handler);
 
   // Get the response keys from the agent's metadata (allows custom override)
   const getResponseKeys = () => {
@@ -549,20 +553,20 @@ export function agent(name: string, options: AgentOptions): Agent {
   };
 
   if (isStreaming) {
-    const streamExecute = options.execute as (
+    const streamHandler = options.handler as (
       input: Record<string, unknown>,
       context?: Record<string, unknown>
     ) => AsyncGenerator<string, void, unknown>;
 
-    // Register streaming execute handler
-    agentInstance.onExecuteStream(async function* (request: ExecuteRequest) {
-      yield* streamExecute(request.input, request.context);
+    // Register streaming handler
+    agentInstance.handlerStream(async function* (request: ExecuteRequest) {
+      yield* streamHandler(request.input, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
-    agentInstance.onExecute(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
+    agentInstance.handler(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
       const chunks: string[] = [];
-      for await (const chunk of streamExecute(request.input, request.context)) {
+      for await (const chunk of streamHandler(request.input, request.context)) {
         chunks.push(chunk);
       }
       const result = chunks.join('');
@@ -574,13 +578,13 @@ export function agent(name: string, options: AgentOptions): Agent {
       return { [responseKeys[0]]: result };
     });
   } else {
-    const regularExecute = options.execute as (
+    const regularHandler = options.handler as (
       input: Record<string, unknown>,
       context?: Record<string, unknown>
     ) => Promise<unknown>;
 
-    agentInstance.onExecute(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
-      const result = await regularExecute(request.input, request.context);
+    agentInstance.handler(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
+      const result = await regularHandler(request.input, request.context);
       // If result is dict with all responseKeys, use as-is; otherwise wrap in first responseKey
       const responseKeys = getResponseKeys();
       if (
@@ -614,7 +618,7 @@ export function agent(name: string, options: AgentOptions): Agent {
  * // Response: { messages: [{ role: 'assistant', content: 'You said: hello' }] }
  * const bot = chatAgent('bot', {
  *   description: 'A simple chatbot',
- *   execute: async (messages) => {
+ *   handler: async (messages) => {
  *     const lastMsg = messages.at(-1)?.content ?? '';
  *     return [{ role: 'assistant', content: `You said: ${lastMsg}` }];
  *   },
@@ -623,7 +627,7 @@ export function agent(name: string, options: AgentOptions): Agent {
  * // Streaming chat agent (async generator)
  * const streamingBot = chatAgent('streaming-bot', {
  *   description: 'A streaming chatbot',
- *   execute: async function* (messages) {
+ *   handler: async function* (messages) {
  *     yield 'Hello';
  *     yield ' ';
  *     yield 'world!';
@@ -725,8 +729,8 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     },
   });
 
-  // Detect if execute is an async generator function
-  const isStreaming = isAsyncGeneratorFunction(options.execute);
+  // Detect if handler is an async generator function
+  const isStreaming = isAsyncGeneratorFunction(options.handler);
 
   // Get the response keys from the agent's metadata (allows custom override)
   const getResponseKeys = () => {
@@ -735,22 +739,22 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
   };
 
   if (isStreaming) {
-    const streamExecute = options.execute as (
+    const streamHandler = options.handler as (
       messages: Message[],
       context?: Record<string, unknown>
     ) => AsyncGenerator<string, void, unknown>;
 
-    // Register streaming execute handler
-    agentInstance.onExecuteStream(async function* (request: ExecuteRequest) {
+    // Register streaming handler
+    agentInstance.handlerStream(async function* (request: ExecuteRequest) {
       const rawMessages = (request.input.messages ?? []) as Message[];
-      yield* streamExecute(rawMessages, request.context);
+      yield* streamHandler(rawMessages, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
-    agentInstance.onExecute(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
+    agentInstance.handler(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
       const rawMessages = (request.input.messages ?? []) as Message[];
       const chunks: string[] = [];
-      for await (const chunk of streamExecute(rawMessages, request.context)) {
+      for await (const chunk of streamHandler(rawMessages, request.context)) {
         chunks.push(chunk);
       }
       const result = [{ role: 'assistant', content: chunks.join('') }];
@@ -759,14 +763,14 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
       return { [responseKeys[0]]: result };
     });
   } else {
-    const regularExecute = options.execute as (
+    const regularHandler = options.handler as (
       messages: Message[],
       context?: Record<string, unknown>
     ) => Promise<Message[]>;
 
-    agentInstance.onExecute(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
+    agentInstance.handler(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
       const rawMessages = (request.input.messages ?? []) as Message[];
-      const result = await regularExecute(rawMessages, request.context);
+      const result = await regularHandler(rawMessages, request.context);
       const responseKeys = getResponseKeys();
 
       // Check if result is already a full response dict with all responseKeys

@@ -34,8 +34,8 @@ Once running, the following endpoints are available:
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Agent discovery |
-| `/agents/vercel-ai-agent/execute` | POST | Execute agent |
-| `/agents/vercel-ai-agent/execute` | POST | Execute agent |
+| `/agents/vercel-ai-agent/invoke` | POST | Execute agent |
+| `/agents/vercel-ai-agent/invoke` | POST | Execute agent |
 
 ## Available Tools
 
@@ -51,12 +51,12 @@ curl http://localhost:8080/health
 curl http://localhost:8080/info
 
 # Invoke (with tool use)
-curl -X POST http://localhost:8080/agents/vercel-ai-agent/execute \
+curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
   -H "Content-Type: application/json" \
   -d '{"input": {"prompt": "What is the weather in Paris?"}}'
 
 # Chat
-curl -X POST http://localhost:8080/agents/vercel-ai-agent/execute \
+curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
 ```
@@ -78,7 +78,7 @@ import { serve } from '@reminix/runtime';
 const getWeather = tool({
   description: 'Get the current weather for a city',
   inputSchema: z.object({ city: z.string() }),
-  execute: async ({ city }) => `Weather in ${city}: Sunny, 22°C`,
+  handler: async ({ city }) => `Weather in ${city}: Sunny, 22°C`,
 });
 
 const toolAgent = new ToolLoopAgent({

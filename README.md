@@ -57,20 +57,20 @@ const calculator = agent('calculator', {
     properties: { a: { type: 'number' }, b: { type: 'number' } },
     required: ['a', 'b'],
   },
-  execute: async ({ a, b }) => (a as number) + (b as number),
+  handler: async ({ a, b }) => (a as number) + (b as number),
 });
 
 const assistant = chatAgent('assistant', {
   description: 'A helpful assistant',
-  execute: async (messages) => `You said: ${messages.at(-1)?.content}`,
+  handler: async (messages) => `You said: ${messages.at(-1)?.content}`,
 });
 
 serve({ agents: [calculator, assistant], port: 8080 });
 ```
 
 Your agents are now available at:
-- `POST /agents/calculator/execute` - Execute the calculator agent
-- `POST /agents/assistant/execute` - Execute the assistant agent
+- `POST /agents/calculator/invoke` - Execute the calculator agent
+- `POST /agents/assistant/invoke` - Execute the assistant agent
 
 See the [runtime package docs](./packages/runtime) for tools, streaming, and advanced usage.
 

@@ -17,14 +17,14 @@
  * Then test the endpoints:
  *
  *     # With input
- *     curl -X POST http://localhost:8080/agents/langchain-basic/execute \
+ *     curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"input": "What is AI?"}}'
  *
  *     # Response: {"output": "AI (Artificial Intelligence) is..."}
  *
  *     # With messages (chat-style)
- *     curl -X POST http://localhost:8080/agents/langchain-basic/execute \
+ *     curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
  *
@@ -55,4 +55,4 @@ console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/langchain-basic/execute');
+console.log('  POST /agents/langchain-basic/invoke');

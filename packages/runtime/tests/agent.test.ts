@@ -46,7 +46,7 @@ describe('Agent Handler Registration', () => {
   it('should register execute handler with onExecute', async () => {
     const agent = new Agent('test-agent');
 
-    agent.onExecute(async (request) => {
+    agent.handler(async (request) => {
       return { content: 'test' };
     });
 
@@ -59,7 +59,7 @@ describe('Agent Handler Registration', () => {
   it('should return this for method chaining', () => {
     const agent = new Agent('test-agent');
 
-    const result = agent.onExecute(async () => ({ content: 'execute' }));
+    const result = agent.handler(async () => ({ content: 'execute' }));
 
     expect(result).toBe(agent);
   });
@@ -74,7 +74,7 @@ describe('Agent Streaming Flags', () => {
   it('should have streaming true when handler registered', () => {
     const agent = new Agent('test-agent');
 
-    agent.onExecuteStream(async function* () {
+    agent.handlerStream(async function* () {
       yield '{"chunk": "test"}';
     });
 
@@ -86,7 +86,7 @@ describe('Agent Execute', () => {
   it('should call registered execute handler', async () => {
     const agent = new Agent('test-agent');
 
-    agent.onExecute(async (request) => {
+    agent.handler(async (request) => {
       const task = (request.input as Record<string, string>).task || 'unknown';
       return { content: `Completed: ${task}` };
     });
@@ -108,7 +108,7 @@ describe('Agent Execute Stream', () => {
   it('should call registered execute stream handler', async () => {
     const agent = new Agent('test-agent');
 
-    agent.onExecuteStream(async function* (request) {
+    agent.handlerStream(async function* (request) {
       yield '{"chunk": "Hello"}';
       yield '{"chunk": " world"}';
     });
@@ -136,7 +136,7 @@ describe('Agent With Context', () => {
     const agent = new Agent('test-agent');
     let receivedContext: Record<string, unknown> | undefined;
 
-    agent.onExecute(async (request) => {
+    agent.handler(async (request) => {
       receivedContext = request.context;
       return { content: 'done' };
     });
@@ -186,15 +186,15 @@ describe('Agent toHandler', () => {
     expect(body.agents[0].version).toBe('1.0');
   });
 
-  it('should handle /agents/{name}/execute endpoint with default prompt key', async () => {
+  it('should handle /agents/{name}/invoke endpoint with default prompt key', async () => {
     const testAgent = new Agent('test-agent');
-    testAgent.onExecute(async (req) => ({
+    testAgent.handler(async (req) => ({
       content: `Received: ${(req.input as Record<string, string>).prompt}`,
     }));
     const handler = testAgent.toHandler();
 
     // Default requestKeys is ['prompt'], so send { prompt: '...' }
-    const request = new Request('http://localhost/agents/test-agent/execute', {
+    const request = new Request('http://localhost/agents/test-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: 'hello' }),
@@ -206,7 +206,7 @@ describe('Agent toHandler', () => {
     expect(body.content).toBe('Received: hello');
   });
 
-  it('should handle /agents/{name}/execute with custom requestKeys', async () => {
+  it('should handle /agents/{name}/invoke with custom requestKeys', async () => {
     // Create agent with custom requestKeys via metadata
     const testAgent = new Agent('test-agent', {
       metadata: {
@@ -214,14 +214,14 @@ describe('Agent toHandler', () => {
         responseKeys: ['content'],
       },
     });
-    testAgent.onExecute(async (req) => {
+    testAgent.handler(async (req) => {
       const messages = (req.input as { messages: Message[] }).messages;
       return { content: `Reply to: ${messages[0].content}` };
     });
     const handler = testAgent.toHandler();
 
     // Custom requestKeys: ['messages']
-    const request = new Request('http://localhost/agents/test-agent/execute', {
+    const request = new Request('http://localhost/agents/test-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }),
@@ -235,10 +235,10 @@ describe('Agent toHandler', () => {
 
   it('should return 404 for wrong agent name', async () => {
     const testAgent = new Agent('test-agent');
-    testAgent.onExecute(async () => ({ content: 'ok' }));
+    testAgent.handler(async () => ({ content: 'ok' }));
     const handler = testAgent.toHandler();
 
-    const request = new Request('http://localhost/agents/wrong-agent/execute', {
+    const request = new Request('http://localhost/agents/wrong-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input: { task: 'test' } }),
@@ -285,7 +285,7 @@ describe('agent() Factory', () => {
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
       },
-      execute: async ({ a, b }) => (a as number) + (b as number),
+      handler: async ({ a, b }) => (a as number) + (b as number),
     });
 
     expect(calculator).toBeInstanceOf(Agent);
@@ -300,7 +300,7 @@ describe('agent() Factory', () => {
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
       },
-      execute: async () => 0,
+      handler: async () => 0,
     });
 
     expect(calculator.metadata.description).toBe('Add two numbers');
@@ -317,7 +317,7 @@ describe('agent() Factory', () => {
         },
         required: ['a', 'b'],
       },
-      execute: async () => 0,
+      handler: async () => 0,
     });
 
     expect(calculator.metadata.parameters).toEqual({
@@ -339,7 +339,7 @@ describe('agent() Factory', () => {
         required: ['a', 'b'],
       },
       output: { type: 'number' },
-      execute: async () => 0,
+      handler: async () => 0,
     });
 
     expect(calculator.metadata.output).toEqual({
@@ -356,7 +356,7 @@ describe('agent() Factory', () => {
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
       },
-      execute: async () => 0,
+      handler: async () => 0,
     });
 
     expect(calculator.metadata.output).toBeUndefined();
@@ -369,7 +369,7 @@ describe('agent() Factory', () => {
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
       },
-      execute: async () => 0,
+      handler: async () => 0,
     });
 
     expect(calculator.metadata.requestKeys).toEqual(['a', 'b']);
@@ -383,7 +383,7 @@ describe('agent() Factory', () => {
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
       },
-      execute: async ({ a, b }) => (a as number) + (b as number),
+      handler: async ({ a, b }) => (a as number) + (b as number),
     });
 
     // input contains the extracted keys from request body
@@ -400,7 +400,7 @@ describe('agent() Factory', () => {
         properties: { task: { type: 'string' } },
         required: ['task'],
       },
-      execute: async (input, context) => {
+      handler: async (input, context) => {
         receivedContext = context;
         return 'done';
       },
@@ -421,7 +421,7 @@ describe('agent() Factory', () => {
         properties: { text: { type: 'string' } },
         required: ['text'],
       },
-      execute: async function* ({ text }) {
+      handler: async function* ({ text }) {
         for (const word of (text as string).split(' ')) {
           yield word + ' ';
         }
@@ -447,7 +447,7 @@ describe('agent() Factory', () => {
         properties: { text: { type: 'string' } },
         required: ['text'],
       },
-      execute: async function* ({ text }) {
+      handler: async function* ({ text }) {
         for (const word of (text as string).split(' ')) {
           yield word + ' ';
         }
@@ -467,7 +467,7 @@ describe('chatAgent() Factory', () => {
   it('should create an Agent instance', () => {
     const bot = chatAgent('bot', {
       description: 'A simple bot',
-      execute: async () => [{ role: 'assistant', content: 'Hello!' }],
+      handler: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
     expect(bot).toBeInstanceOf(Agent);
@@ -477,7 +477,7 @@ describe('chatAgent() Factory', () => {
   it('should set description in metadata', () => {
     const bot = chatAgent('bot', {
       description: 'A helpful assistant',
-      execute: async () => [{ role: 'assistant', content: 'Hello!' }],
+      handler: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
     expect(bot.metadata.description).toBe('A helpful assistant');
@@ -485,7 +485,7 @@ describe('chatAgent() Factory', () => {
 
   it('should set standard parameters schema in metadata', () => {
     const bot = chatAgent('bot', {
-      execute: async () => [{ role: 'assistant', content: 'Hello!' }],
+      handler: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
     const params = bot.metadata.parameters as Record<string, unknown>;
@@ -496,7 +496,7 @@ describe('chatAgent() Factory', () => {
 
   it('should set standard output schema in metadata wrapped for response structure', () => {
     const bot = chatAgent('bot', {
-      execute: async () => [{ role: 'assistant', content: 'Hello!' }],
+      handler: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
     expect(bot.metadata.output).toEqual({
@@ -550,7 +550,7 @@ describe('chatAgent() Factory', () => {
 
   it('should handle execute requests with messages input', async () => {
     const echoBot = chatAgent('echo-bot', {
-      execute: async (messages) => {
+      handler: async (messages) => {
         const lastMsg = messages.at(-1)?.content ?? '';
         return [{ role: 'assistant', content: `You said: ${lastMsg}` }];
       },
@@ -570,7 +570,7 @@ describe('chatAgent() Factory', () => {
     let receivedContext: Record<string, unknown> | undefined;
 
     const bot = chatAgent('bot', {
-      execute: async (messages, context) => {
+      handler: async (messages, context) => {
         receivedContext = context;
         return [{ role: 'assistant', content: 'done' }];
       },
@@ -586,7 +586,7 @@ describe('chatAgent() Factory', () => {
 
   it('should handle streaming with async generator', async () => {
     const streamingBot = chatAgent('streaming-bot', {
-      execute: async function* () {
+      handler: async function* () {
         yield 'Hello';
         yield ' ';
         yield 'world!';
@@ -609,7 +609,7 @@ describe('chatAgent() Factory', () => {
 
   it('should collect chunks for non-streaming requests', async () => {
     const streamingBot = chatAgent('streaming-bot', {
-      execute: async function* () {
+      handler: async function* () {
         yield 'Hello';
         yield ' ';
         yield 'world!';

@@ -40,7 +40,7 @@ describe('LangGraph Adapter Integration', () => {
   });
 
   it('should execute', async () => {
-    const response = await app.request('/agents/test-langgraph/execute', {
+    const response = await app.request('/agents/test-langgraph/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -54,7 +54,7 @@ describe('LangGraph Adapter Integration', () => {
   });
 
   it('should handle chat-style execute', async () => {
-    const response = await app.request('/agents/test-langgraph/execute', {
+    const response = await app.request('/agents/test-langgraph/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -68,7 +68,7 @@ describe('LangGraph Adapter Integration', () => {
   });
 
   it('should call tools and return results', async () => {
-    const response = await app.request('/agents/test-langgraph/execute', {
+    const response = await app.request('/agents/test-langgraph/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

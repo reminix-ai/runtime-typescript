@@ -27,13 +27,13 @@ const calculator = agent('calculator', {
     properties: { a: { type: 'number' }, b: { type: 'number' } },
     required: ['a', 'b'],
   },
-  execute: async ({ a, b }) => (a as number) + (b as number),
+  handler: async ({ a, b }) => (a as number) + (b as number),
 });
 
 // Create a chat agent for conversational interactions
 const assistant = chatAgent('assistant', {
   description: 'A helpful assistant',
-  execute: async (messages) => `You said: ${messages.at(-1)?.content}`,
+  handler: async (messages) => `You said: ${messages.at(-1)?.content}`,
 });
 
 // Serve the agents
@@ -48,8 +48,8 @@ The runtime creates a REST server (powered by [Hono](https://hono.dev)) with the
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/info` | GET | Runtime discovery (version, agents, tools) |
-| `/agents/{name}/execute` | POST | Execute an agent |
-| `/tools/{name}/execute` | POST | Execute a tool |
+| `/agents/{name}/invoke` | POST | Execute an agent |
+| `/tools/{name}/call` | POST | Execute a tool |
 
 ### Health Endpoint
 
@@ -144,13 +144,13 @@ Returns runtime information, available agents, and tools:
 
 ### Agent Execute Endpoint
 
-`POST /agents/{name}/execute` - Execute an agent.
+`POST /agents/{name}/invoke` - Execute an agent.
 
 Request keys are defined by the agent's `parameters` schema. For example, a calculator agent with `parameters: { properties: { a, b } }` expects `a` and `b` at the top level:
 
 **Task-oriented agent:**
 ```bash
-curl -X POST http://localhost:8080/agents/calculator/execute \
+curl -X POST http://localhost:8080/agents/calculator/invoke \
   -H "Content-Type: application/json" \
   -d '{"a": 5, "b": 3}'
 ```
@@ -167,7 +167,7 @@ curl -X POST http://localhost:8080/agents/calculator/execute \
 Chat agents expect `messages` at the top level and return `messages` (array):
 
 ```bash
-curl -X POST http://localhost:8080/agents/assistant/execute \
+curl -X POST http://localhost:8080/agents/assistant/invoke \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [
@@ -190,10 +190,10 @@ curl -X POST http://localhost:8080/agents/assistant/execute \
 
 ### Tool Execute Endpoint
 
-`POST /tools/{name}/execute` - Execute a standalone tool.
+`POST /tools/{name}/call` - Execute a standalone tool.
 
 ```bash
-curl -X POST http://localhost:8080/tools/get_weather/execute \
+curl -X POST http://localhost:8080/tools/get_weather/call \
   -H "Content-Type: application/json" \
   -d '{"location": "San Francisco"}'
 ```
@@ -207,7 +207,7 @@ curl -X POST http://localhost:8080/tools/get_weather/execute \
 
 ## Agents
 
-Agents handle requests via the `/agents/{name}/execute` endpoint.
+Agents handle requests via the `/agents/{name}/invoke` endpoint.
 
 ### Task-Oriented Agent
 
@@ -226,7 +226,7 @@ const calculator = agent('calculator', {
     },
     required: ['a', 'b'],
   },
-  execute: async ({ a, b }) => (a as number) + (b as number),
+  handler: async ({ a, b }) => (a as number) + (b as number),
 });
 
 const textProcessor = agent('text-processor', {
@@ -239,7 +239,7 @@ const textProcessor = agent('text-processor', {
     },
     required: ['text'],
   },
-  execute: async ({ text, operation }) => {
+  handler: async ({ text, operation }) => {
     const t = text as string;
     return operation === 'uppercase' ? t.toUpperCase() : t.toLowerCase();
   },
@@ -257,7 +257,7 @@ import { chatAgent, serve } from '@reminix/runtime';
 
 const assistant = chatAgent('assistant', {
   description: 'A helpful assistant',
-  execute: async (messages) => {
+  handler: async (messages) => {
     const lastMsg = messages.at(-1)?.content ?? '';
     return `You said: ${lastMsg}`;
   },
@@ -266,7 +266,7 @@ const assistant = chatAgent('assistant', {
 // With context support
 const contextualBot = chatAgent('contextual-bot', {
   description: 'Bot with context awareness',
-  execute: async (messages, context) => {
+  handler: async (messages, context) => {
     const userId = context?.user_id ?? 'unknown';
     return `Hello user ${userId}!`;
   },
@@ -290,7 +290,7 @@ const streamer = agent('streamer', {
     properties: { text: { type: 'string' } },
     required: ['text'],
   },
-  execute: async function* ({ text }) {
+  handler: async function* ({ text }) {
     for (const word of (text as string).split(' ')) {
       yield word + ' ';
     }
@@ -300,7 +300,7 @@ const streamer = agent('streamer', {
 // Streaming chat agent
 const streamingAssistant = chatAgent('streaming-assistant', {
   description: 'Stream responses token by token',
-  execute: async function* (messages) {
+  handler: async function* (messages) {
     const response = `You said: ${messages.at(-1)?.content}`;
     for (const char of response) {
       yield char;
@@ -317,7 +317,7 @@ For streaming agents:
 
 ## Tools
 
-Tools are standalone functions served via `/tools/{name}/execute`. They're useful for exposing utility functions, external API integrations, or any reusable logic.
+Tools are standalone functions served via `/tools/{name}/call`. They're useful for exposing utility functions, external API integrations, or any reusable logic.
 
 ### Creating Tools
 
@@ -343,7 +343,7 @@ const getWeather = tool('get_weather', {
       condition: { type: 'string' },
     },
   },
-  execute: async (input) => {
+  handler: async (input) => {
     const location = input.location as string;
     return { temp: 72, condition: 'sunny', location };
   },
@@ -366,7 +366,7 @@ const summarizer = agent('summarizer', {
     properties: { text: { type: 'string' } },
     required: ['text'],
   },
-  execute: async ({ text }) => (text as string).slice(0, 100) + '...',
+  handler: async ({ text }) => (text as string).slice(0, 100) + '...',
 });
 
 const calculator = tool('calculate', {
@@ -376,7 +376,7 @@ const calculator = tool('calculate', {
     properties: { expression: { type: 'string' } },
     required: ['expression'],
   },
-  execute: async (input) => ({ result: eval(input.expression as string) }),
+  handler: async (input) => ({ result: eval(input.expression as string) }),
 });
 
 serve({ agents: [summarizer], tools: [calculator], port: 8080 });
@@ -443,14 +443,14 @@ const myAgent = agent('my-agent', {
     properties: { input: { type: 'string' } },
     required: ['input'],
   },
-  execute: async ({ input }) => ({ result: input }),
+  handler: async ({ input }) => ({ result: input }),
 });
 
 // Streaming agent
 const streamingAgent = agent('streaming-agent', {
   description: 'Streams output',
   parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
-  execute: async function* ({ text }) {
+  handler: async function* ({ text }) {
     for (const word of (text as string).split(' ')) {
       yield word + ' ';
     }
@@ -474,17 +474,17 @@ import { chatAgent } from '@reminix/runtime';
 // Regular chat agent
 const bot = chatAgent('bot', {
   description: 'A simple bot',
-  execute: async (messages) => `You said: ${messages.at(-1)?.content}`,
+  handler: async (messages) => `You said: ${messages.at(-1)?.content}`,
 });
 
 // With context
 const contextBot = chatAgent('context-bot', {
-  execute: async (messages, context) => `Hello ${context?.user_id}!`,
+  handler: async (messages, context) => `Hello ${context?.user_id}!`,
 });
 
 // Streaming chat agent
 const streamingBot = chatAgent('streaming-bot', {
-  execute: async function* (messages) {
+  handler: async function* (messages) {
     yield 'Hello';
     yield ' world!';
   },
@@ -513,7 +513,7 @@ const myTool = tool('my_tool', {
     properties: { input: { type: 'string' } },
     required: ['input'],
   },
-  execute: async (input) => ({ result: input.input }),
+  handler: async (input) => ({ result: input.input }),
 });
 ```
 
@@ -559,12 +559,12 @@ import { Agent, serve } from '@reminix/runtime';
 
 const agent = new Agent('my-agent', { metadata: { version: '1.0' } });
 
-agent.onExecute(async (request) => {
+agent.handler(async (request) => {
   return { output: 'Hello!' };
 });
 
 // Optional: streaming handler
-agent.onExecuteStream(async function* (request) {
+agent.handlerStream(async function* (request) {
   yield 'Hello';
   yield ' world!';
 });
@@ -586,7 +586,7 @@ const myTool = new Tool('get_weather', {
     properties: { location: { type: 'string' } },
     required: ['location'],
   },
-  execute: async (input) => ({ temp: 72, location: input.location }),
+  handler: async (input) => ({ temp: 72, location: input.location }),
 });
 
 serve({ tools: [myTool], port: 8080 });
@@ -625,7 +625,7 @@ Use `toHandler()` for serverless deployments:
 import { agent } from '@reminix/runtime';
 
 const myAgent = agent('my-agent', {
-  execute: async ({ task }) => `Completed: ${task}`,
+  handler: async ({ task }) => `Completed: ${task}`,
 });
 
 // Vercel Edge Function

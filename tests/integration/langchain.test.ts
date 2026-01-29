@@ -39,7 +39,7 @@ describe('LangChain Adapter Integration', () => {
   });
 
   it('should execute', async () => {
-    const response = await app.request('/agents/test-langchain/execute', {
+    const response = await app.request('/agents/test-langchain/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -53,7 +53,7 @@ describe('LangChain Adapter Integration', () => {
   });
 
   it('should handle chat-style execute', async () => {
-    const response = await app.request('/agents/test-langchain/execute', {
+    const response = await app.request('/agents/test-langchain/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -67,7 +67,7 @@ describe('LangChain Adapter Integration', () => {
   });
 
   it('should support tool calling', async () => {
-    const response = await app.request('/agents/test-langchain/execute', {
+    const response = await app.request('/agents/test-langchain/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

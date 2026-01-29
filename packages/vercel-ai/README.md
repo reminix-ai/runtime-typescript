@@ -42,7 +42,7 @@ const weatherTool = tool({
   inputSchema: z.object({
     city: z.string()
   }),
-  execute: async ({ city }) => {
+  handler: async ({ city }) => {
     return { city, temp: 72, condition: 'sunny' };
   }
 });
@@ -69,7 +69,7 @@ serve({ agents: [reminixAgent], port: 8080 });
 ```
 
 Your agent is now available at:
-- `POST /agents/<name>/execute` - Execute the agent
+- `POST /agents/<name>/invoke` - Execute the agent
 
 ## API Reference
 
@@ -122,7 +122,7 @@ serve({ agents: [gpt, claude, gemini], port: 8080 });
 
 ## Endpoint Input/Output Formats
 
-### POST /agents/{name}/execute
+### POST /agents/{name}/invoke
 
 Execute the agent with a prompt or messages.
 

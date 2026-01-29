@@ -17,14 +17,14 @@
  * Then test the endpoints:
  *
  *     # With a simple prompt
- *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/execute \
+ *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"prompt": "What is the weather in Paris?"}}'
  *
  *     # Response: {"output": "The weather in Paris is sunny with a temperature of 22°C."}
  *
  *     # With messages (chat-style)
- *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/execute \
+ *     curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
  *       -H "Content-Type: application/json" \
  *       -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}}'
  *
@@ -48,7 +48,7 @@ import { serve } from '@reminix/runtime';
 const getWeather = tool({
   description: 'Get the current weather for a city',
   inputSchema: z.object({ city: z.string() }),
-  execute: async ({ city }) => {
+  handler: async ({ city }) => {
     const weatherData: Record<string, string> = {
       paris: 'Sunny, 22°C',
       london: 'Cloudy, 15°C',
@@ -75,6 +75,6 @@ console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
 console.log('  GET  /info');
-console.log('  POST /agents/vercel-ai-agent/execute');
+console.log('  POST /agents/vercel-ai-agent/invoke');
 console.log('\nAvailable tools:');
 console.log('  - getWeather(city): Get weather for Paris, London, Tokyo, or New York');
