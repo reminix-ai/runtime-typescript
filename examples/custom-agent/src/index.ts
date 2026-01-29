@@ -71,7 +71,7 @@ agent.handler(async (request) => {
 });
 
 // Register streaming execute handler
-agent.handlerStream(async function* (request) {
+agent.streamHandler(async function* (request) {
   const input = request.input as Record<string, unknown>;
 
   let response: string;

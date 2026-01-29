@@ -309,19 +309,19 @@ export class Agent extends AgentBase {
    * Register a streaming handler.
    *
    * @example
-   * agent.handlerStream(async function* (request) {
+   * agent.streamHandler(async function* (request) {
    *   yield '{"chunk": "Hello"}';
    *   yield '{"chunk": " world!"}';
    * });
    */
-  handlerStream(fn: ExecuteStreamHandler): this {
+  streamHandler(fn: ExecuteStreamHandler): this {
     this._executeStreamHandler = fn;
     return this;
   }
 
   // Aliases for backward compatibility
   onExecute = this.handler;
-  onExecuteStream = this.handlerStream;
+  onExecuteStream = this.streamHandler;
 
   /**
    * Handle an execute request.
@@ -553,20 +553,20 @@ export function agent(name: string, options: AgentOptions): Agent {
   };
 
   if (isStreaming) {
-    const streamHandler = options.handler as (
+    const streamFn = options.handler as (
       input: Record<string, unknown>,
       context?: Record<string, unknown>
     ) => AsyncGenerator<string, void, unknown>;
 
     // Register streaming handler
-    agentInstance.handlerStream(async function* (request: ExecuteRequest) {
-      yield* streamHandler(request.input, request.context);
+    agentInstance.streamHandler(async function* (request: ExecuteRequest) {
+      yield* streamFn(request.input, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
     agentInstance.handler(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
       const chunks: string[] = [];
-      for await (const chunk of streamHandler(request.input, request.context)) {
+      for await (const chunk of streamFn(request.input, request.context)) {
         chunks.push(chunk);
       }
       const result = chunks.join('');
@@ -739,22 +739,22 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
   };
 
   if (isStreaming) {
-    const streamHandler = options.handler as (
+    const streamFn = options.handler as (
       messages: Message[],
       context?: Record<string, unknown>
     ) => AsyncGenerator<string, void, unknown>;
 
     // Register streaming handler
-    agentInstance.handlerStream(async function* (request: ExecuteRequest) {
+    agentInstance.streamHandler(async function* (request: ExecuteRequest) {
       const rawMessages = (request.input.messages ?? []) as Message[];
-      yield* streamHandler(rawMessages, request.context);
+      yield* streamFn(rawMessages, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
     agentInstance.handler(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
       const rawMessages = (request.input.messages ?? []) as Message[];
       const chunks: string[] = [];
-      for await (const chunk of streamHandler(rawMessages, request.context)) {
+      for await (const chunk of streamFn(rawMessages, request.context)) {
         chunks.push(chunk);
       }
       const result = [{ role: 'assistant', content: chunks.join('') }];

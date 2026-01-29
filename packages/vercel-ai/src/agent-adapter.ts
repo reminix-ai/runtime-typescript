@@ -200,7 +200,7 @@ export class VercelAIAgentAdapter extends AgentAdapter {
  *     getWeather: tool({
  *       description: 'Get weather for a city',
  *       inputSchema: z.object({ city: z.string() }),
- *       handler: async ({ city }) => ({ temp: 72, condition: 'sunny' })
+ *       execute: async ({ city }) => ({ temp: 72, condition: 'sunny' })
  *     })
  *   }
  * });

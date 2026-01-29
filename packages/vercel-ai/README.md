@@ -42,7 +42,7 @@ const weatherTool = tool({
   inputSchema: z.object({
     city: z.string()
   }),
-  handler: async ({ city }) => {
+  execute: async ({ city }) => {
     return { city, temp: 72, condition: 'sunny' };
   }
 });

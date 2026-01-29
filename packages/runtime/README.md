@@ -430,7 +430,7 @@ Factory function to create a task-oriented agent.
 | `options.description` | `string` | Human-readable description |
 | `options.parameters` | `object` | JSON Schema for input parameters |
 | `options.output` | `object` | Optional JSON Schema for output |
-| `options.execute` | `function` | Async function or async generator to execute |
+| `options.handler` | `function` | Async function or async generator |
 
 ```typescript
 import { agent } from '@reminix/runtime';
@@ -466,7 +466,7 @@ Factory function to create a chat agent.
 |-----------|------|-------------|
 | `name` | `string` | Unique identifier for the agent |
 | `options.description` | `string` | Human-readable description |
-| `options.execute` | `function` | Async function or async generator receiving messages |
+| `options.handler` | `function` | Async function or async generator receiving messages |
 
 ```typescript
 import { chatAgent } from '@reminix/runtime';
@@ -501,7 +501,7 @@ Factory function to create a tool.
 | `options.description` | `string` | Human-readable description |
 | `options.parameters` | `object` | JSON Schema for input parameters |
 | `options.output` | `object` | Optional JSON Schema for output |
-| `options.execute` | `function` | Async function to execute when called |
+| `options.handler` | `function` | Async function to call when invoked |
 
 ```typescript
 import { tool } from '@reminix/runtime';
@@ -564,7 +564,7 @@ agent.handler(async (request) => {
 });
 
 // Optional: streaming handler
-agent.handlerStream(async function* (request) {
+agent.streamHandler(async function* (request) {
   yield 'Hello';
   yield ' world!';
 });

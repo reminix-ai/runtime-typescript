@@ -74,7 +74,7 @@ describe('Agent Streaming Flags', () => {
   it('should have streaming true when handler registered', () => {
     const agent = new Agent('test-agent');
 
-    agent.handlerStream(async function* () {
+    agent.streamHandler(async function* () {
       yield '{"chunk": "test"}';
     });
 
@@ -108,7 +108,7 @@ describe('Agent Execute Stream', () => {
   it('should call registered execute stream handler', async () => {
     const agent = new Agent('test-agent');
 
-    agent.handlerStream(async function* (request) {
+    agent.streamHandler(async function* (request) {
       yield '{"chunk": "Hello"}';
       yield '{"chunk": " world"}';
     });

@@ -78,7 +78,7 @@ import { serve } from '@reminix/runtime';
 const getWeather = tool({
   description: 'Get the current weather for a city',
   inputSchema: z.object({ city: z.string() }),
-  handler: async ({ city }) => `Weather in ${city}: Sunny, 22°C`,
+  execute: async ({ city }) => `Weather in ${city}: Sunny, 22°C`,
 });
 
 const toolAgent = new ToolLoopAgent({
