@@ -319,7 +319,6 @@ export class Agent extends AgentBase {
     return this;
   }
 
-
   /**
    * Handle an execute request.
    */
