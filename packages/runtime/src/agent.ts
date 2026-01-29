@@ -319,9 +319,6 @@ export class Agent extends AgentBase {
     return this;
   }
 
-  // Aliases for backward compatibility
-  onExecute = this.handler;
-  onExecuteStream = this.streamHandler;
 
   /**
    * Handle an execute request.
