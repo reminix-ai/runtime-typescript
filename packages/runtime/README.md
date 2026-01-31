@@ -2,7 +2,7 @@
 
 The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `agent()` and `tool()` factory functions for building and serving AI agents.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `agent()` and `tool()` factory functions, agent templates (prompt, chat, task, rag, thread), and types `Message` and `ToolCall` for OpenAI-style conversations.
 
 Built on [Hono](https://hono.dev) for portability across Node.js, Deno, Bun, and edge runtimes.
 
@@ -123,7 +123,7 @@ curl -X POST http://localhost:8080/agents/calculator/invoke \
 
 **Chat agent:**
 
-Chat agents expect `messages` at the top level and return `messages` (array):
+Chat agents (template `chat` or `thread`) expect `messages` at the top level. Messages are OpenAI-style: `role` (`user` | `assistant` | `system` | `tool`), `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the `Message` and `ToolCall` types from `@reminix/runtime` in your handler. Chat returns a string; thread returns an array of messages.
 
 ```bash
 curl -X POST http://localhost:8080/agents/assistant/invoke \
@@ -135,15 +135,10 @@ curl -X POST http://localhost:8080/agents/assistant/invoke \
   }'
 ```
 
-**Response:**
+**Response (chat):**
 ```json
 {
-  "messages": [
-    {
-      "role": "assistant",
-      "content": "You said: Hello!"
-    }
-  ]
+  "content": "You said: Hello!"
 }
 ```
 
@@ -168,9 +163,38 @@ curl -X POST http://localhost:8080/tools/get_weather/call \
 
 Agents handle requests via the `/agents/{name}/invoke` endpoint.
 
+### Agent templates
+
+You can use a **template** to get standard input/output schemas without defining them yourself. Pass `template` when creating an agent:
+
+| Template | Input | Output | Use case |
+|----------|--------|--------|----------|
+| `prompt` (default) | `{ prompt: string }` | `string` | Single prompt in, text out |
+| `chat` | `{ messages: Message[] }` | `string` | Multi-turn chat, final reply as string |
+| `task` | `{ task: string, ... }` | JSON | Task name + params, structured result |
+| `rag` | `{ query: string, messages?: Message[], collectionIds?: string[] }` | `string` | RAG query, optional history and collections |
+| `thread` | `{ messages: Message[] }` | `Message[]` | Multi-turn with tool calls; returns updated thread |
+
+Messages are OpenAI-style: `role`, `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the exported types `Message` and `ToolCall` from `@reminix/runtime` for type-safe handlers.
+
+```typescript
+import { agent, serve, type Message, type ToolCall } from '@reminix/runtime';
+
+const assistant = agent('assistant', {
+  template: 'chat',
+  description: 'Helpful assistant',
+  handler: async ({ messages }) => {
+    const last = (messages as Message[]).slice(-1)[0];
+    return last?.role === 'user' ? `You said: ${last.content}` : 'Hello!';
+  },
+});
+
+serve({ agents: [assistant], port: 8080 });
+```
+
 ### Task-Oriented Agent
 
-Use `agent()` for task-oriented agents that take structured input and return output:
+Use `agent()` for task-oriented agents that take structured input and return output (or omit `template` / use `template: 'prompt'` or `template: 'task'` for standard shapes):
 
 ```typescript
 import { agent, serve } from '@reminix/runtime';
@@ -342,14 +366,15 @@ const app = createApp({ agents: [myAgent], tools: [myTool] });
 
 ### `agent(name, options)`
 
-Factory function to create a task-oriented agent.
+Factory function to create an agent. Use `template` for standard I/O shapes, or provide custom `input`/`output` schemas.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | `string` | Unique identifier for the agent |
+| `options.template` | `'prompt' \| 'chat' \| 'task' \| 'rag' \| 'thread'` | Optional. Standard input/output schema (default: `prompt` when no custom input/output). |
 | `options.description` | `string` | Human-readable description |
-| `options.input` | `object` | JSON Schema for input |
-| `options.output` | `object` | Optional JSON Schema for output |
+| `options.input` | `object` | JSON Schema for input (ignored if `template` is set) |
+| `options.output` | `object` | Optional JSON Schema for output (ignored if `template` is set) |
 | `options.handler` | `function` | Async function or async generator |
 
 ```typescript
