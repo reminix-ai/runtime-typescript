@@ -2,7 +2,7 @@
  * Reminix Runtime Tool definitions
  */
 
-import type { InvokeRequest, InvokeResponse, JSONSchema, Capabilities } from './types.js';
+import type { ToolCallRequest, ToolCallResponse, JSONSchema, Capabilities } from './types.js';
 
 /**
  * Default output schema for tools.
@@ -56,8 +56,8 @@ export abstract class ToolBase {
     return meta;
   }
 
-  /** Execute the tool with the given request */
-  abstract execute(request: InvokeRequest): Promise<InvokeResponse>;
+  /** Call the tool with the given request */
+  abstract call(request: ToolCallRequest): Promise<ToolCallResponse>;
 }
 
 /** Options for creating a tool */
@@ -108,12 +108,12 @@ export class Tool extends ToolBase {
   }
 
   /**
-   * Execute the tool by calling the handler function.
+   * Call the tool by invoking the handler function.
    *
    * Exceptions are not caught here - they propagate to the server
    * which returns appropriate HTTP error codes.
    */
-  async execute(request: InvokeRequest): Promise<InvokeResponse> {
+  async call(request: ToolCallRequest): Promise<ToolCallResponse> {
     const result = await this._handler(request.input, request.context);
     return { output: result };
   }

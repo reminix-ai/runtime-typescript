@@ -15,8 +15,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type InvokeRequest,
-  type InvokeResponse,
+  type AgentInvokeRequest,
+  type AgentInvokeResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -72,7 +72,7 @@ export class LangChainAgentAdapter extends AgentAdapter {
   /**
    * Build LangChain input from invoke request.
    */
-  private buildLangChainInput(request: InvokeRequest): unknown {
+  private buildLangChainInput(request: AgentInvokeRequest): unknown {
     const input = request.input as Record<string, unknown>;
 
     if ('messages' in input) {
@@ -94,7 +94,7 @@ export class LangChainAgentAdapter extends AgentAdapter {
    * @param request - The invoke request with input data.
    * @returns The invoke response with the output.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
     const invokeInput = this.buildLangChainInput(request);
 
     const response = await this.agent.invoke(invokeInput);
@@ -118,7 +118,7 @@ export class LangChainAgentAdapter extends AgentAdapter {
    * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: AgentInvokeRequest): AsyncGenerator<string, void, unknown> {
     const streamInput = this.buildLangChainInput(request);
 
     // Stream from the runnable

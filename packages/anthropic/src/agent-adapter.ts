@@ -8,8 +8,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type InvokeRequest,
-  type InvokeResponse,
+  type AgentInvokeRequest,
+  type AgentInvokeResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -103,7 +103,7 @@ export class AnthropicAgentAdapter extends AgentAdapter {
   /**
    * Build Message list from invoke request input.
    */
-  private buildMessagesFromInput(request: InvokeRequest): Message[] {
+  private buildMessagesFromInput(request: AgentInvokeRequest): Message[] {
     const input = request.input as Record<string, unknown>;
 
     if ('messages' in input) {
@@ -124,7 +124,7 @@ export class AnthropicAgentAdapter extends AgentAdapter {
    * @param request - The invoke request with input data.
    * @returns The invoke response with the output.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
     const messages = this.buildMessagesFromInput(request);
 
     // Extract system message and convert messages
@@ -150,7 +150,7 @@ export class AnthropicAgentAdapter extends AgentAdapter {
    * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: AgentInvokeRequest): AsyncGenerator<string, void, unknown> {
     const messages = this.buildMessagesFromInput(request);
 
     // Extract system message and convert messages

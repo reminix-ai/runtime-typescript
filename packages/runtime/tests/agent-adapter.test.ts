@@ -3,7 +3,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { AgentAdapter, type InvokeRequest, type InvokeResponse } from '../src/index.js';
+import {
+  AgentAdapter,
+  type AgentAgentInvokeRequest,
+  type AgentAgentInvokeResponse,
+} from '../src/index.js';
 
 /**
  * Create a minimal concrete adapter for testing.
@@ -13,7 +17,7 @@ class TestAdapter extends AgentAdapter {
     return 'test-agent';
   }
 
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
     // Check if it's a chat-style request (has messages)
     const messages = (request.input as { messages?: { content: string }[] }).messages;
     if (messages) {
@@ -45,9 +49,9 @@ describe('Concrete Adapter', () => {
     expect(adapter.name).toBe('test-agent');
   });
 
-  it('should return InvokeResponse from invoke', async () => {
+  it('should return AgentInvokeResponse from invoke', async () => {
     const adapter = new TestAdapter();
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: { task: 'summarize' },
     };
 
@@ -56,9 +60,9 @@ describe('Concrete Adapter', () => {
     expect(response.output).toBe('Completed: summarize');
   });
 
-  it('should return InvokeResponse from invoke with messages input', async () => {
+  it('should return AgentInvokeResponse from invoke with messages input', async () => {
     const adapter = new TestAdapter();
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: { messages: [{ role: 'user', content: 'hello' }] },
     };
 
@@ -69,7 +73,7 @@ describe('Concrete Adapter', () => {
 
   it('should throw from invokeStream by default', async () => {
     const adapter = new TestAdapter();
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: { task: 'test' },
     };
 

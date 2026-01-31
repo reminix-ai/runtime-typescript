@@ -184,7 +184,7 @@ export function createApp(options: CreateAppOptions): Hono {
     };
 
     try {
-      const result = await tool.execute(request);
+      const result = await tool.call(request);
       return c.json(result);
     } catch (error) {
       // Determine error type and status code

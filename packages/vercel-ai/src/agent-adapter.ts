@@ -11,8 +11,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type InvokeRequest,
-  type InvokeResponse,
+  type AgentInvokeRequest,
+  type AgentInvokeResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -95,7 +95,7 @@ export class VercelAIAgentAdapter extends AgentAdapter {
   /**
    * Build prompt or messages from invoke request.
    */
-  private buildInputFromRequest(request: InvokeRequest): {
+  private buildInputFromRequest(request: AgentInvokeRequest): {
     prompt?: string;
     messages?: ModelMessage[];
   } {
@@ -120,7 +120,7 @@ export class VercelAIAgentAdapter extends AgentAdapter {
    * @param request - The invoke request with input data.
    * @returns The invoke response with the output.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
     const { prompt, messages } = this.buildInputFromRequest(request);
 
     let output: string;
@@ -151,7 +151,7 @@ export class VercelAIAgentAdapter extends AgentAdapter {
    * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: AgentInvokeRequest): AsyncGenerator<string, void, unknown> {
     const { prompt, messages } = this.buildInputFromRequest(request);
 
     if (this.isAgent) {

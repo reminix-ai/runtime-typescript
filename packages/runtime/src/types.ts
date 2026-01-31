@@ -24,18 +24,32 @@ export interface Message {
 
 // === Request Types ===
 
+/** Base request type for invoke/call operations */
 export interface InvokeRequest {
   input: Record<string, unknown>;
   stream?: boolean;
   context?: Record<string, unknown>;
 }
 
+/** Request type for agent invoke operations */
+export type AgentInvokeRequest = InvokeRequest;
+
+/** Request type for tool call operations */
+export type ToolCallRequest = InvokeRequest;
+
 // === Response Types ===
 
+/** Base response type for invoke/call operations */
 export interface InvokeResponse {
   output: unknown;
   metadata?: Record<string, unknown>;
 }
+
+/** Response type for agent invoke operations */
+export type AgentInvokeResponse = InvokeResponse;
+
+/** Response type for tool call operations */
+export type ToolCallResponse = InvokeResponse;
 
 // === Schema Types ===
 

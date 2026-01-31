@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { tool, Tool, ToolBase, type InvokeRequest } from '../src/index.js';
+import { tool, Tool, ToolBase, type ToolCallRequest } from '../src/index.js';
 
 describe('Tool Creation', () => {
   it('should create a tool with tool() factory', () => {
@@ -132,7 +132,7 @@ describe('Tool Execute', () => {
       }),
     });
 
-    const response = await greet.execute({ input: { name: 'World' } });
+    const response = await greet.call({ input: { name: 'World' } });
 
     expect(response.output).toEqual({ message: 'Hello, World!' });
   });
@@ -151,7 +151,7 @@ describe('Tool Execute', () => {
       handler: (input) => (input.a as number) + (input.b as number),
     });
 
-    const response = await add.execute({ input: { a: 2, b: 3 } });
+    const response = await add.call({ input: { a: 2, b: 3 } });
 
     expect(response.output).toBe(5);
   });
@@ -168,7 +168,7 @@ describe('Tool Execute', () => {
       },
     });
 
-    await myTool.execute({
+    await myTool.call({
       input: {},
       context: { user_id: '123' },
     });
@@ -197,7 +197,7 @@ describe('Tool Execute', () => {
       }),
     });
 
-    const response = await createUser.execute({
+    const response = await createUser.call({
       input: { name: 'Alice', age: 30, active: false },
     });
 
@@ -217,7 +217,7 @@ describe('Tool Error Handling', () => {
       },
     });
 
-    await expect(failingTool.execute({ input: {} })).rejects.toThrow('Something went wrong');
+    await expect(failingTool.call({ input: {} })).rejects.toThrow('Something went wrong');
   });
 
   it('should propagate non-Error exceptions to caller', async () => {
@@ -229,7 +229,7 @@ describe('Tool Error Handling', () => {
       },
     });
 
-    await expect(failingTool.execute({ input: {} })).rejects.toBe('string error');
+    await expect(failingTool.call({ input: {} })).rejects.toBe('string error');
   });
 });
 
@@ -274,7 +274,7 @@ describe('Tool with Complex Schema', () => {
       }),
     });
 
-    const response = await complexTool.execute({
+    const response = await complexTool.call({
       input: {
         user: { name: 'Alice', email: 'alice@example.com' },
         options: { notify: true },
@@ -306,7 +306,7 @@ describe('Tool with Complex Schema', () => {
       }),
     });
 
-    const response = await arrayTool.execute({
+    const response = await arrayTool.call({
       input: { items: ['a', 'b', 'c'] },
     });
 

@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
-import type { InvokeRequest } from '@reminix/runtime';
+import type { AgentAgentInvokeRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, LangGraphAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -49,7 +49,7 @@ describe('LangGraphAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: InvokeRequest = { input: { query: 'What is AI?' } };
+    const request: AgentInvokeRequest = { input: { query: 'What is AI?' } };
 
     await adapter.invoke(request);
 
@@ -64,7 +64,7 @@ describe('LangGraphAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: InvokeRequest = { input: { messages: [] } };
+    const request: AgentInvokeRequest = { input: { messages: [] } };
 
     const response = await adapter.invoke(request);
 
@@ -77,7 +77,7 @@ describe('LangGraphAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: InvokeRequest = { input: { task: 'compute' } };
+    const request: AgentInvokeRequest = { input: { task: 'compute' } };
 
     const response = await adapter.invoke(request);
 
@@ -90,7 +90,7 @@ describe('LangGraphAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
 
@@ -114,7 +114,7 @@ describe('LangGraphAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },

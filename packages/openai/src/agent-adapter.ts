@@ -8,8 +8,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type InvokeRequest,
-  type InvokeResponse,
+  type AgentInvokeRequest,
+  type AgentInvokeResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -66,7 +66,9 @@ export class OpenAIAgentAdapter extends AgentAdapter {
   /**
    * Build OpenAI messages from invoke request input.
    */
-  private buildOpenAIMessages(request: InvokeRequest): OpenAI.Chat.ChatCompletionMessageParam[] {
+  private buildOpenAIMessages(
+    request: AgentInvokeRequest
+  ): OpenAI.Chat.ChatCompletionMessageParam[] {
     const input = request.input as Record<string, unknown>;
 
     if ('messages' in input) {
@@ -88,7 +90,7 @@ export class OpenAIAgentAdapter extends AgentAdapter {
    * @param request - The invoke request with input data.
    * @returns The invoke response with the output.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
     const messages = this.buildOpenAIMessages(request);
 
     // Call OpenAI API
@@ -109,7 +111,7 @@ export class OpenAIAgentAdapter extends AgentAdapter {
    * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: AgentInvokeRequest): AsyncGenerator<string, void, unknown> {
     const messages = this.buildOpenAIMessages(request);
 
     // Stream from OpenAI API

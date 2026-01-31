@@ -7,8 +7,8 @@ import {
   Agent,
   agent,
   chatAgent,
-  type InvokeRequest,
-  type InvokeResponse,
+  type AgentInvokeRequest,
+  type AgentInvokeResponse,
   type Message,
 } from '../src/index.js';
 

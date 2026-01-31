@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { InvokeRequest } from '@reminix/runtime';
+import type { AgentAgentInvokeRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, VercelAIAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -50,7 +50,7 @@ describe('VercelAIAgentAdapter.invoke', () => {
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello!' });
     (adapter as any)._generateText = mockGenerateText;
 
-    const request: InvokeRequest = { input: { prompt: 'Hi' } };
+    const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
     await adapter.invoke(request);
 
     expect(mockGenerateText).toHaveBeenCalledWith({
@@ -66,7 +66,7 @@ describe('VercelAIAgentAdapter.invoke', () => {
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello from Vercel AI!' });
     (adapter as any)._generateText = mockGenerateText;
 
-    const request: InvokeRequest = { input: { prompt: 'Hi' } };
+    const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
     const response = await adapter.invoke(request);
 
     expect(response.output).toBe('Hello from Vercel AI!');
@@ -79,7 +79,7 @@ describe('VercelAIAgentAdapter.invoke', () => {
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
     (adapter as any)._generateText = mockGenerateText;
 
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
     await adapter.invoke(request);
@@ -98,7 +98,7 @@ describe('VercelAIAgentAdapter.invoke', () => {
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
     (adapter as any)._generateText = mockGenerateText;
 
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },

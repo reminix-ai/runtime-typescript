@@ -7,8 +7,8 @@ import {
   AgentAdapter,
   VERSION,
   tool,
-  type InvokeRequest,
-  type InvokeResponse,
+  type AgentAgentInvokeRequest,
+  type AgentAgentInvokeResponse,
 } from '../src/index.js';
 import { createApp } from '../src/server.js';
 
@@ -29,7 +29,7 @@ class MockTaskAdapter extends AgentAdapter {
     return this._name;
   }
 
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
     const task = (request.input as Record<string, unknown>).task || 'unknown';
     return { output: `Completed task: ${task}` };
   }
@@ -52,7 +52,7 @@ class MockChatAdapter extends AgentAdapter {
     return this._name;
   }
 
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
     const messages = (request.input as { messages?: { content: string }[] }).messages ?? [];
     const userMessage = messages[messages.length - 1]?.content ?? '';
     return {

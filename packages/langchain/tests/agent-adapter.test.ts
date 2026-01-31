@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
-import type { InvokeRequest } from '@reminix/runtime';
+import type { AgentAgentInvokeRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, LangChainAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -49,7 +49,7 @@ describe('LangChainAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockRunnable as any);
-    const request: InvokeRequest = { input: { query: 'What is AI?' } };
+    const request: AgentInvokeRequest = { input: { query: 'What is AI?' } };
 
     await adapter.invoke(request);
 
@@ -62,7 +62,7 @@ describe('LangChainAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockRunnable as any);
-    const request: InvokeRequest = { input: { query: 'Hi' } };
+    const request: AgentInvokeRequest = { input: { query: 'Hi' } };
 
     const response = await adapter.invoke(request);
 
@@ -75,7 +75,7 @@ describe('LangChainAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockRunnable as any);
-    const request: InvokeRequest = { input: { task: 'compute' } };
+    const request: AgentInvokeRequest = { input: { task: 'compute' } };
 
     const response = await adapter.invoke(request);
 
@@ -88,7 +88,7 @@ describe('LangChainAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockRunnable as any);
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },

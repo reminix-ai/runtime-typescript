@@ -2,7 +2,13 @@
  * Agent classes for Reminix Runtime.
  */
 
-import type { InvokeRequest, InvokeResponse, Message, JSONSchema, Capabilities } from './types.js';
+import type {
+  AgentInvokeRequest,
+  AgentInvokeResponse,
+  Message,
+  JSONSchema,
+  Capabilities,
+} from './types.js';
 import { VERSION } from './version.js';
 
 /**
@@ -118,12 +124,14 @@ export interface AgentMetadata {
 /**
  * Handler type for invoke requests.
  */
-export type InvokeHandler = (request: InvokeRequest) => Promise<InvokeResponse>;
+export type InvokeHandler = (request: AgentInvokeRequest) => Promise<AgentInvokeResponse>;
 
 /**
  * Handler type for streaming invoke requests.
  */
-export type InvokeStreamHandler = (request: InvokeRequest) => AsyncGenerator<string, void, unknown>;
+export type InvokeStreamHandler = (
+  request: AgentInvokeRequest
+) => AsyncGenerator<string, void, unknown>;
 
 /**
  * Abstract base class defining the agent interface.
@@ -153,13 +161,13 @@ export abstract class AgentBase {
   /**
    * Handle an invoke request.
    */
-  abstract invoke(request: InvokeRequest): Promise<InvokeResponse>;
+  abstract invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse>;
 
   /**
    * Handle a streaming invoke request.
    */
   // eslint-disable-next-line require-yield
-  async *invokeStream(_request: InvokeRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(_request: AgentInvokeRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this agent');
   }
 
@@ -236,9 +244,9 @@ export abstract class AgentBase {
             );
           }
 
-          const body = (await request.json()) as InvokeRequest;
+          const body = (await request.json()) as AgentInvokeRequest;
 
-          const invokeRequest: InvokeRequest = {
+          const invokeRequest: AgentInvokeRequest = {
             input: body.input ?? {},
             stream: body.stream === true,
             context: body.context,
@@ -387,7 +395,7 @@ export class Agent extends AgentBase {
   /**
    * Handle an invoke request.
    */
-  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
     if (this._invokeHandler === null) {
       throw new Error(`No invoke handler registered for agent '${this._name}'`);
     }
@@ -397,7 +405,7 @@ export class Agent extends AgentBase {
   /**
    * Handle a streaming invoke request.
    */
-  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: AgentInvokeRequest): AsyncGenerator<string, void, unknown> {
     if (this._invokeStreamHandler === null) {
       throw new Error(`No streaming invoke handler registered for agent '${this._name}'`);
     }
@@ -529,12 +537,12 @@ export function agent(name: string, options: AgentOptions): Agent {
     ) => AsyncGenerator<string, void, unknown>;
 
     // Register streaming handler
-    agentInstance.streamHandler(async function* (request: InvokeRequest) {
+    agentInstance.streamHandler(async function* (request: AgentInvokeRequest) {
       yield* streamFn(request.input, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
-    agentInstance.handler(async (request: InvokeRequest): Promise<InvokeResponse> => {
+    agentInstance.handler(async (request: AgentInvokeRequest): Promise<AgentInvokeResponse> => {
       const chunks: string[] = [];
       for await (const chunk of streamFn(request.input, request.context)) {
         chunks.push(chunk);
@@ -547,7 +555,7 @@ export function agent(name: string, options: AgentOptions): Agent {
       context?: Record<string, unknown>
     ) => Promise<unknown>;
 
-    agentInstance.handler(async (request: InvokeRequest): Promise<InvokeResponse> => {
+    agentInstance.handler(async (request: AgentInvokeRequest): Promise<AgentInvokeResponse> => {
       const result = await regularHandler(request.input, request.context);
       return { output: result };
     });
@@ -606,13 +614,13 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     ) => AsyncGenerator<string, void, unknown>;
 
     // Register streaming handler
-    agentInstance.streamHandler(async function* (request: InvokeRequest) {
+    agentInstance.streamHandler(async function* (request: AgentInvokeRequest) {
       const rawMessages = (request.input.messages ?? []) as Message[];
       yield* streamFn(rawMessages, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
-    agentInstance.handler(async (request: InvokeRequest): Promise<InvokeResponse> => {
+    agentInstance.handler(async (request: AgentInvokeRequest): Promise<AgentInvokeResponse> => {
       const rawMessages = (request.input.messages ?? []) as Message[];
       const chunks: string[] = [];
       for await (const chunk of streamFn(rawMessages, request.context)) {
@@ -630,7 +638,7 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
       context?: Record<string, unknown>
     ) => Promise<Message[]>;
 
-    agentInstance.handler(async (request: InvokeRequest): Promise<InvokeResponse> => {
+    agentInstance.handler(async (request: AgentInvokeRequest): Promise<AgentInvokeResponse> => {
       const rawMessages = (request.input.messages ?? []) as Message[];
       const result = await regularHandler(rawMessages, request.context);
 

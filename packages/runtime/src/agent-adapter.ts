@@ -2,7 +2,7 @@
  * Base agent adapter class for framework integrations.
  */
 
-import type { InvokeRequest, JSONSchema } from './types.js';
+import type { AgentInvokeRequest, JSONSchema } from './types.js';
 import { AgentBase, type AgentMetadata } from './agent.js';
 
 /**
@@ -54,7 +54,7 @@ export abstract class AgentAdapter extends AgentBase {
    * Handle a streaming invoke request.
    */
   // eslint-disable-next-line require-yield
-  async *invokeStream(_request: InvokeRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(_request: AgentInvokeRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this adapter');
   }
 }

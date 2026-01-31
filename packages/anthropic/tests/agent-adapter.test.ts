@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { InvokeRequest } from '@reminix/runtime';
+import type { AgentAgentInvokeRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, AnthropicAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -57,7 +57,7 @@ describe('AnthropicAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: InvokeRequest = { input: { prompt: 'Hi' } };
+    const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
 
     await adapter.invoke(request);
 
@@ -74,7 +74,7 @@ describe('AnthropicAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: InvokeRequest = { input: { prompt: 'Hi' } };
+    const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
 
     const response = await adapter.invoke(request);
 
@@ -91,7 +91,7 @@ describe('AnthropicAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
 
@@ -110,7 +110,7 @@ describe('AnthropicAgentAdapter.invoke', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: InvokeRequest = {
+    const request: AgentInvokeRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },
