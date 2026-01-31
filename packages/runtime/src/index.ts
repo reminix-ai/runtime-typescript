@@ -4,6 +4,7 @@ export { VERSION } from './version.js';
 export type {
   Role,
   Message,
+  ToolCall,
   InvokeRequest,
   InvokeResponse,
   AgentInvokeRequest,

@@ -14,11 +14,37 @@ export type AgentTemplate = 'prompt' | 'chat' | 'task' | 'rag' | 'thread';
 /** Default template when none specified and no custom input/output. */
 const DEFAULT_AGENT_TEMPLATE: AgentTemplate = 'prompt';
 
+/** JSON schema for a single tool call (OpenAI-style). */
+const TOOL_CALL_ITEM_SCHEMA: JSONSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', description: 'Tool call id' },
+    type: { type: 'string', enum: ['function'], description: 'Tool call type' },
+    function: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Function/tool name' },
+        arguments: { type: 'string', description: 'JSON string of arguments' },
+      },
+      required: ['name', 'arguments'],
+    },
+  },
+  required: ['id', 'type', 'function'],
+};
+
+/** JSON schema for a message item (OpenAI-style; supports tool_calls and tool results). */
 const CHAT_INPUT_MESSAGE_ITEMS: JSONSchema = {
   type: 'object',
   properties: {
-    role: { type: 'string', description: 'Message role (user, assistant, system)' },
+    role: { type: 'string', description: 'Message role (user, assistant, system, tool)' },
     content: { type: 'string', description: 'Message content', nullable: true },
+    tool_calls: {
+      type: 'array',
+      description: 'Tool calls requested by the model (assistant messages)',
+      items: TOOL_CALL_ITEM_SCHEMA,
+    },
+    tool_call_id: { type: 'string', description: 'Id of the tool call this message is a result for (tool messages)' },
+    name: { type: 'string', description: 'Tool name (tool messages)' },
   },
 };
 
