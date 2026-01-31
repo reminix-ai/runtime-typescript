@@ -7,8 +7,38 @@ import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
 import type { AgentBase } from './agent.js';
 import type { ToolBase } from './tool.js';
-import type { ExecuteRequest, ToolExecuteRequest } from './types.js';
+import type { ExecuteRequest, ToolExecuteRequest, RuntimeErrorResponse } from './types.js';
 import { VERSION } from './version.js';
+
+/**
+ * Enable debug mode via environment variable to include stack traces in error responses
+ */
+const REMINIX_CLOUD = ['true', '1', 'yes'].includes(
+  (process.env.REMINIX_CLOUD || '').toLowerCase()
+);
+
+/**
+ * Create a structured error response
+ */
+function createErrorResponse(
+  error: unknown,
+  errorType: string = 'ExecutionError'
+): RuntimeErrorResponse {
+  const message = error instanceof Error ? error.message : String(error);
+  const response: RuntimeErrorResponse = {
+    error: {
+      type: errorType,
+      message,
+    },
+  };
+
+  // Include stack trace in debug mode
+  if (REMINIX_CLOUD && error instanceof Error && error.stack) {
+    response.error.stack = error.stack;
+  }
+
+  return response;
+}
 
 export interface ServeOptions {
   port?: number;
@@ -112,14 +142,36 @@ export function createApp(options: CreateAppOptions): Hono {
           }
           await stream.writeSSE({ data: '[DONE]' });
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Unknown error';
-          await stream.writeSSE({ data: JSON.stringify({ error: message }) });
+          const errorResponse = createErrorResponse(
+            error,
+            error instanceof Error ? error.constructor.name : 'ExecutionError'
+          );
+          await stream.writeSSE({ data: JSON.stringify(errorResponse) });
         }
       });
     }
 
-    const response = await agent.execute(request);
-    return c.json(response);
+    // Non-streaming: catch errors and return structured response
+    try {
+      const response = await agent.execute(request);
+      return c.json(response);
+    } catch (error) {
+      // Determine error type and status code
+      let statusCode = 500;
+      let errorType = error instanceof Error ? error.constructor.name : 'ExecutionError';
+
+      if (error instanceof Error) {
+        if (error.message.includes('not implemented') || error.name === 'NotImplementedError') {
+          statusCode = 501;
+          errorType = 'NotImplementedError';
+        } else if (error.name === 'ValidationError' || error.message.includes('validation')) {
+          statusCode = 400;
+          errorType = 'ValidationError';
+        }
+      }
+
+      return c.json(createErrorResponse(error, errorType), statusCode);
+    }
   });
 
   // Tool call endpoint
@@ -133,8 +185,23 @@ export function createApp(options: CreateAppOptions): Hono {
 
     const body = await c.req.json<ToolExecuteRequest>();
 
-    const response = await tool.execute(body);
-    return c.json(response);
+    try {
+      const result = await tool.execute(body);
+      return c.json(result);
+    } catch (error) {
+      // Determine error type and status code
+      let statusCode = 500;
+      let errorType = error instanceof Error ? error.constructor.name : 'ExecutionError';
+
+      if (error instanceof Error) {
+        if (error.name === 'ValidationError' || error.message.includes('validation')) {
+          statusCode = 400;
+          errorType = 'ValidationError';
+        }
+      }
+
+      return c.json(createErrorResponse(error, errorType), statusCode);
+    }
   });
 
   return app;

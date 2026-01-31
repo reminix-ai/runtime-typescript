@@ -100,14 +100,15 @@ export class Tool extends ToolBase {
     return this._output;
   }
 
+  /**
+   * Execute the tool by calling the handler function.
+   * 
+   * Exceptions are not caught here - they propagate to the server
+   * which returns appropriate HTTP error codes.
+   */
   async execute(request: ToolExecuteRequest): Promise<ToolExecuteResponse> {
-    try {
-      const result = await this._executeHandler(request.input, request.context);
-      return { output: result };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      return { output: null, error: message };
-    }
+    const result = await this._executeHandler(request.input, request.context);
+    return { output: result };
   }
 }
 

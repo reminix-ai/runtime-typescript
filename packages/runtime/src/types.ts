@@ -53,3 +53,22 @@ export interface ToolExecuteResponse {
   output: unknown;
   error?: string | null;
 }
+
+/**
+ * Structured runtime error information
+ */
+export interface RuntimeError {
+  /** Error type/category (e.g., 'ValidationError', 'ExecutionError') */
+  type: string;
+  /** Human-readable error message */
+  message: string;
+  /** Stack trace (only included when REMINIX_CLOUD is enabled) */
+  stack?: string;
+}
+
+/**
+ * Error response from runtime endpoints
+ */
+export interface RuntimeErrorResponse {
+  error: RuntimeError;
+}
