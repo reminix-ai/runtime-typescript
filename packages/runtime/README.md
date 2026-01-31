@@ -22,7 +22,7 @@ import { agent, chatAgent, serve } from '@reminix/runtime';
 // Create an agent for task-oriented operations
 const calculator = agent('calculator', {
   description: 'Add two numbers',
-  parameters: {
+  input: {
     type: 'object',
     properties: { a: { type: 'number' }, b: { type: 'number' } },
     required: ['a', 'b'],
@@ -80,7 +80,7 @@ Returns runtime information, available agents, and tools:
       "name": "calculator",
       "type": "agent",
       "description": "Add two numbers",
-      "parameters": {
+      "input": {
         "type": "object",
         "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
         "required": ["a", "b"]
@@ -98,7 +98,7 @@ Returns runtime information, available agents, and tools:
       "name": "assistant",
       "type": "chat_agent",
       "description": "A helpful assistant",
-      "parameters": {
+      "input": {
         "type": "object",
         "properties": {
           "messages": {
@@ -135,7 +135,7 @@ Returns runtime information, available agents, and tools:
       "name": "get_weather",
       "type": "tool",
       "description": "Get current weather for a location",
-      "parameters": { ... },
+      "input": { ... },
       "output": { ... }
     }
   ]
@@ -146,7 +146,7 @@ Returns runtime information, available agents, and tools:
 
 `POST /agents/{name}/invoke` - Invoke an agent.
 
-Request keys are defined by the agent's `parameters` schema. For example, a calculator agent with `parameters: { properties: { a, b } }` expects `a` and `b` at the top level:
+Request keys are defined by the agent's input schema. For example, a calculator agent with input schema `{ properties: { a, b } }` expects `a` and `b` at the top level:
 
 **Task-oriented agent:**
 ```bash
@@ -218,7 +218,7 @@ import { agent, serve } from '@reminix/runtime';
 
 const calculator = agent('calculator', {
   description: 'Add two numbers',
-  parameters: {
+  input: {
     type: 'object',
     properties: {
       a: { type: 'number' },
@@ -231,7 +231,7 @@ const calculator = agent('calculator', {
 
 const textProcessor = agent('text-processor', {
   description: 'Process text in various ways',
-  parameters: {
+  input: {
     type: 'object',
     properties: {
       text: { type: 'string' },
@@ -285,7 +285,7 @@ import { agent, chatAgent, serve } from '@reminix/runtime';
 // Streaming task agent
 const streamer = agent('streamer', {
   description: 'Stream text word by word',
-  parameters: {
+  input: {
     type: 'object',
     properties: { text: { type: 'string' } },
     required: ['text'],
@@ -328,7 +328,7 @@ import { tool, serve } from '@reminix/runtime';
 
 const getWeather = tool('get_weather', {
   description: 'Get current weather for a location',
-  parameters: {
+  input: {
     type: 'object',
     properties: {
       location: { type: 'string', description: 'City name' },
@@ -361,7 +361,7 @@ import { agent, tool, serve } from '@reminix/runtime';
 
 const summarizer = agent('summarizer', {
   description: 'Summarize text',
-  parameters: {
+  input: {
     type: 'object',
     properties: { text: { type: 'string' } },
     required: ['text'],
@@ -371,7 +371,7 @@ const summarizer = agent('summarizer', {
 
 const calculator = tool('calculate', {
   description: 'Perform basic math operations',
-  parameters: {
+  input: {
     type: 'object',
     properties: { expression: { type: 'string' } },
     required: ['expression'],
@@ -428,7 +428,7 @@ Factory function to create a task-oriented agent.
 |-----------|------|-------------|
 | `name` | `string` | Unique identifier for the agent |
 | `options.description` | `string` | Human-readable description |
-| `options.parameters` | `object` | JSON Schema for input parameters |
+| `options.input` | `object` | JSON Schema for input |
 | `options.output` | `object` | Optional JSON Schema for output |
 | `options.handler` | `function` | Async function or async generator |
 
@@ -438,7 +438,7 @@ import { agent } from '@reminix/runtime';
 // Regular agent
 const myAgent = agent('my-agent', {
   description: 'Does something useful',
-  parameters: {
+  input: {
     type: 'object',
     properties: { input: { type: 'string' } },
     required: ['input'],
@@ -449,7 +449,7 @@ const myAgent = agent('my-agent', {
 // Streaming agent
 const streamingAgent = agent('streaming-agent', {
   description: 'Streams output',
-  parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
+  input: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
   handler: async function* ({ text }) {
     for (const word of (text as string).split(' ')) {
       yield word + ' ';
@@ -499,7 +499,7 @@ Factory function to create a tool.
 |-----------|------|-------------|
 | `name` | `string` | Unique identifier for the tool |
 | `options.description` | `string` | Human-readable description |
-| `options.parameters` | `object` | JSON Schema for input parameters |
+| `options.input` | `object` | JSON Schema for input |
 | `options.output` | `object` | Optional JSON Schema for output |
 | `options.handler` | `function` | Async function to call when invoked |
 
@@ -508,7 +508,7 @@ import { tool } from '@reminix/runtime';
 
 const myTool = tool('my_tool', {
   description: 'Does something useful',
-  parameters: {
+  input: {
     type: 'object',
     properties: { input: { type: 'string' } },
     required: ['input'],
@@ -520,11 +520,11 @@ const myTool = tool('my_tool', {
 ### Request/Response Types
 
 ```typescript
-// Request: top-level keys based on agent's requestKeys (derived from parameters)
-// For a calculator agent with parameters { a: number, b: number }:
+// Request: top-level keys based on agent's requestKeys (derived from input schema)
+// For a calculator agent with input schema { a: number, b: number }:
 interface CalculatorRequest {
-  a: number;                          // Top-level key from parameters
-  b: number;                          // Top-level key from parameters
+  a: number;                          // Top-level key from input schema
+  b: number;                          // Top-level key from input schema
   stream?: boolean;                   // Whether to stream the response
   context?: Record<string, unknown>;  // Optional metadata
 }
@@ -581,7 +581,7 @@ import { Tool, serve } from '@reminix/runtime';
 
 const myTool = new Tool('get_weather', {
   description: 'Get weather for a location',
-  parameters: {
+  input: {
     type: 'object',
     properties: { location: { type: 'string' } },
     required: ['location'],
