@@ -220,7 +220,7 @@ describe('Tool Execute', () => {
 });
 
 describe('Tool Error Handling', () => {
-  it('should catch exceptions and return error', async () => {
+  it('should propagate exceptions to caller', async () => {
     const failingTool = tool('failing', {
       description: 'A tool that fails',
       parameters: { type: 'object', properties: {} },
@@ -229,13 +229,10 @@ describe('Tool Error Handling', () => {
       },
     });
 
-    const response = await failingTool.execute({ input: {} });
-
-    expect(response.output).toBeNull();
-    expect(response.error).toBe('Something went wrong');
+    await expect(failingTool.execute({ input: {} })).rejects.toThrow('Something went wrong');
   });
 
-  it('should handle non-Error exceptions', async () => {
+  it('should propagate non-Error exceptions to caller', async () => {
     const failingTool = tool('failing', {
       description: 'A tool that throws non-Error',
       parameters: { type: 'object', properties: {} },
@@ -244,10 +241,7 @@ describe('Tool Error Handling', () => {
       },
     });
 
-    const response = await failingTool.execute({ input: {} });
-
-    expect(response.output).toBeNull();
-    expect(response.error).toBe('Unknown error');
+    await expect(failingTool.execute({ input: {} })).rejects.toBe('string error');
   });
 });
 

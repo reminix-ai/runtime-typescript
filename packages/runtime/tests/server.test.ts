@@ -261,10 +261,11 @@ describe('Tool Execute Endpoint', () => {
       body: JSON.stringify({ input: {} }),
     });
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(500); // Tool errors return proper HTTP error codes
     const data = await response.json();
-    expect(data.output).toBeNull();
-    expect(data.error).toBe('Something went wrong');
+    expect(data.error).toBeDefined();
+    expect(data.error.message).toBe('Something went wrong');
+    expect(data.error.type).toBe('Error');
   });
 });
 

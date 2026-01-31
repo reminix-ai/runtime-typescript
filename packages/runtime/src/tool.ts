@@ -102,7 +102,7 @@ export class Tool extends ToolBase {
 
   /**
    * Execute the tool by calling the handler function.
-   * 
+   *
    * Exceptions are not caught here - they propagate to the server
    * which returns appropriate HTTP error codes.
    */

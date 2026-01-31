@@ -170,7 +170,7 @@ export function createApp(options: CreateAppOptions): Hono {
         }
       }
 
-      return c.json(createErrorResponse(error, errorType), statusCode);
+      return c.json(createErrorResponse(error, errorType), statusCode as 400 | 500 | 501);
     }
   });
 
@@ -200,7 +200,7 @@ export function createApp(options: CreateAppOptions): Hono {
         }
       }
 
-      return c.json(createErrorResponse(error, errorType), statusCode);
+      return c.json(createErrorResponse(error, errorType), statusCode as 400 | 500);
     }
   });
 
