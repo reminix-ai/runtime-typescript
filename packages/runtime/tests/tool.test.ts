@@ -3,13 +3,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { tool, Tool, ToolBase, type ToolExecuteRequest } from '../src/index.js';
+import { tool, Tool, ToolBase, type InvokeRequest } from '../src/index.js';
 
 describe('Tool Creation', () => {
   it('should create a tool with tool() factory', () => {
     const myTool = tool('my-tool', {
       description: 'A test tool',
-      parameters: {
+      input: {
         type: 'object',
         properties: {
           name: { type: 'string' },
@@ -26,7 +26,7 @@ describe('Tool Creation', () => {
   it('should set description correctly', () => {
     const myTool = tool('my-tool', {
       description: 'Get the current weather',
-      parameters: {
+      input: {
         type: 'object',
         properties: {},
       },
@@ -36,8 +36,8 @@ describe('Tool Creation', () => {
     expect(myTool.description).toBe('Get the current weather');
   });
 
-  it('should set parameters correctly', () => {
-    const params = {
+  it('should set input correctly', () => {
+    const inputSchema = {
       type: 'object' as const,
       properties: {
         location: { type: 'string', description: 'City name' },
@@ -48,37 +48,27 @@ describe('Tool Creation', () => {
 
     const myTool = tool('weather', {
       description: 'Get weather',
-      parameters: params,
+      input: inputSchema,
       handler: async () => ({}),
     });
 
-    expect(myTool.parameters).toEqual(params);
+    expect(myTool.input).toEqual(inputSchema);
   });
 });
 
 describe('Tool Metadata', () => {
-  it('should include type: tool in metadata', () => {
-    const myTool = tool('my-tool', {
-      description: 'Test tool',
-      parameters: { type: 'object', properties: {} },
-      handler: async () => ({}),
-    });
-
-    expect(myTool.metadata.type).toBe('tool');
-  });
-
   it('should include description in metadata', () => {
     const myTool = tool('my-tool', {
       description: 'My tool description',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async () => ({}),
     });
 
     expect(myTool.metadata.description).toBe('My tool description');
   });
 
-  it('should include parameters in metadata', () => {
-    const params = {
+  it('should include input in metadata', () => {
+    const inputSchema = {
       type: 'object' as const,
       properties: {
         name: { type: 'string' },
@@ -88,11 +78,11 @@ describe('Tool Metadata', () => {
 
     const myTool = tool('my-tool', {
       description: 'Test',
-      parameters: params,
+      input: inputSchema,
       handler: async () => ({}),
     });
 
-    expect(myTool.metadata.parameters).toEqual(params);
+    expect(myTool.metadata.input).toEqual(inputSchema);
   });
 
   it('should include output in metadata when provided', () => {
@@ -106,7 +96,7 @@ describe('Tool Metadata', () => {
 
     const myTool = tool('my-tool', {
       description: 'Test',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       output: outputSchema,
       handler: async () => ({ result: 'ok', count: 42 }),
     });
@@ -115,15 +105,14 @@ describe('Tool Metadata', () => {
     expect(myTool.output).toEqual(outputSchema);
   });
 
-  it('should not include output in metadata when not provided', () => {
+  it('should have default output schema when not provided', () => {
     const myTool = tool('my-tool', {
       description: 'Test',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async () => ({}),
     });
 
-    expect(myTool.metadata.output).toBeUndefined();
-    expect(myTool.output).toBeUndefined();
+    expect(myTool.output).toEqual({ type: 'string' });
   });
 });
 
@@ -131,7 +120,7 @@ describe('Tool Execute', () => {
   it('should call execute handler with input', async () => {
     const greet = tool('greet', {
       description: 'Greet someone',
-      parameters: {
+      input: {
         type: 'object',
         properties: {
           name: { type: 'string' },
@@ -146,13 +135,12 @@ describe('Tool Execute', () => {
     const response = await greet.execute({ input: { name: 'World' } });
 
     expect(response.output).toEqual({ message: 'Hello, World!' });
-    expect(response.error).toBeUndefined();
   });
 
   it('should handle sync execute functions', async () => {
     const add = tool('add', {
       description: 'Add two numbers',
-      parameters: {
+      input: {
         type: 'object',
         properties: {
           a: { type: 'number' },
@@ -173,7 +161,7 @@ describe('Tool Execute', () => {
 
     const myTool = tool('my-tool', {
       description: 'Test',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async (input, context) => {
         receivedContext = context;
         return { done: true };
@@ -191,7 +179,7 @@ describe('Tool Execute', () => {
   it('should handle multiple parameters', async () => {
     const createUser = tool('create-user', {
       description: 'Create a user',
-      parameters: {
+      input: {
         type: 'object',
         properties: {
           name: { type: 'string' },
@@ -223,7 +211,7 @@ describe('Tool Error Handling', () => {
   it('should propagate exceptions to caller', async () => {
     const failingTool = tool('failing', {
       description: 'A tool that fails',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async () => {
         throw new Error('Something went wrong');
       },
@@ -235,7 +223,7 @@ describe('Tool Error Handling', () => {
   it('should propagate non-Error exceptions to caller', async () => {
     const failingTool = tool('failing', {
       description: 'A tool that throws non-Error',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async () => {
         throw 'string error';
       },
@@ -249,7 +237,7 @@ describe('Tool Inheritance', () => {
   it('should inherit from ToolBase', () => {
     const myTool = tool('my-tool', {
       description: 'Test',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async () => ({}),
     });
 
@@ -261,7 +249,7 @@ describe('Tool with Complex Schema', () => {
   it('should handle nested object properties', async () => {
     const complexTool = tool('complex', {
       description: 'Tool with complex schema',
-      parameters: {
+      input: {
         type: 'object',
         properties: {
           user: {
@@ -302,7 +290,7 @@ describe('Tool with Complex Schema', () => {
   it('should handle array properties', async () => {
     const arrayTool = tool('array-tool', {
       description: 'Tool with array input',
-      parameters: {
+      input: {
         type: 'object',
         properties: {
           items: {

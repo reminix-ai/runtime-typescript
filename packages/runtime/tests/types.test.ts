@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { Message, ExecuteRequest, ExecuteResponse, ToolCall } from '../src/types.js';
+import type { Message, InvokeRequest, InvokeResponse, ToolCall } from '../src/types.js';
 
 describe('Message', () => {
   it('should have role and content properties', () => {
@@ -43,16 +43,16 @@ describe('Message', () => {
   });
 });
 
-describe('ExecuteRequest', () => {
+describe('InvokeRequest', () => {
   it('should have input property', () => {
-    const req: ExecuteRequest = {
+    const req: InvokeRequest = {
       input: { task: 'summarize', text: 'hello world' },
     };
     expect(req.input.task).toBe('summarize');
   });
 
   it('should accept optional stream flag', () => {
-    const req: ExecuteRequest = {
+    const req: InvokeRequest = {
       input: { task: 'test' },
       stream: true,
     };
@@ -60,7 +60,7 @@ describe('ExecuteRequest', () => {
   });
 
   it('should accept optional context', () => {
-    const req: ExecuteRequest = {
+    const req: InvokeRequest = {
       input: { task: 'test' },
       context: { user_id: '123' },
     };
@@ -68,7 +68,7 @@ describe('ExecuteRequest', () => {
   });
 
   it('should accept messages in input for chat-style agents', () => {
-    const req: ExecuteRequest = {
+    const req: InvokeRequest = {
       input: {
         messages: [
           { role: 'user', content: 'hello' },
@@ -80,25 +80,26 @@ describe('ExecuteRequest', () => {
   });
 });
 
-describe('ExecuteResponse', () => {
+describe('InvokeResponse', () => {
   it('should have output property', () => {
-    const resp: ExecuteResponse = {
+    const resp: InvokeResponse = {
       output: 'Result of the task',
     };
     expect(resp.output).toBe('Result of the task');
   });
 
   it('should accept any type of output', () => {
-    const resp: ExecuteResponse = {
+    const resp: InvokeResponse = {
       output: { result: 42, status: 'ok' },
     };
     expect(resp.output).toEqual({ result: 42, status: 'ok' });
   });
 
-  it('should accept string output for chat-style responses', () => {
-    const resp: ExecuteResponse = {
-      output: "I'm doing well!",
+  it('should accept optional metadata', () => {
+    const resp: InvokeResponse = {
+      output: 'result',
+      metadata: { model: 'gpt-4', latency_ms: 100 },
     };
-    expect(resp.output).toBe("I'm doing well!");
+    expect(resp.metadata).toEqual({ model: 'gpt-4', latency_ms: 100 });
   });
 });

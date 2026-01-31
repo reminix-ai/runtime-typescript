@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { ExecuteRequest } from '@reminix/runtime';
+import type { InvokeRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, AnthropicAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -46,7 +46,7 @@ describe('wrap', () => {
   });
 });
 
-describe('AnthropicAgentAdapter.execute', () => {
+describe('AnthropicAgentAdapter.invoke', () => {
   it('should call the client', async () => {
     const mockClient = {
       messages: {
@@ -57,9 +57,9 @@ describe('AnthropicAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: ExecuteRequest = { input: { prompt: 'Hi' } };
+    const request: InvokeRequest = { input: { prompt: 'Hi' } };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     expect(mockClient.messages.create).toHaveBeenCalled();
   });
@@ -74,9 +74,9 @@ describe('AnthropicAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: ExecuteRequest = { input: { prompt: 'Hi' } };
+    const request: InvokeRequest = { input: { prompt: 'Hi' } };
 
-    const response = await adapter.execute(request);
+    const response = await adapter.invoke(request);
 
     expect(response.output).toBe('Hello from Anthropic!');
   });
@@ -91,11 +91,11 @@ describe('AnthropicAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: ExecuteRequest = {
+    const request: InvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     expect(mockClient.messages.create).toHaveBeenCalled();
   });
@@ -110,7 +110,7 @@ describe('AnthropicAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: ExecuteRequest = {
+    const request: InvokeRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },
@@ -119,7 +119,7 @@ describe('AnthropicAgentAdapter.execute', () => {
       },
     };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     const callArg = mockClient.messages.create.mock.calls[0][0];
     expect(callArg.system).toBe('You are helpful');

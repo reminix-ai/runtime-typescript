@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
-import type { ExecuteRequest } from '@reminix/runtime';
+import type { InvokeRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, LangGraphAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -42,16 +42,16 @@ describe('wrap', () => {
   });
 });
 
-describe('LangGraphAgentAdapter.execute', () => {
+describe('LangGraphAgentAdapter.invoke', () => {
   it('should call the graph with the input', async () => {
     const mockGraph = {
       invoke: vi.fn().mockResolvedValue({ messages: [new AIMessage({ content: 'Hello!' })] }),
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: ExecuteRequest = { input: { query: 'What is AI?' } };
+    const request: InvokeRequest = { input: { query: 'What is AI?' } };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     expect(mockGraph.invoke).toHaveBeenCalledWith({ query: 'What is AI?' });
   });
@@ -64,9 +64,9 @@ describe('LangGraphAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: ExecuteRequest = { input: { messages: [] } };
+    const request: InvokeRequest = { input: { messages: [] } };
 
-    const response = await adapter.execute(request);
+    const response = await adapter.invoke(request);
 
     expect(response.output).toBe('Hi there!');
   });
@@ -77,9 +77,9 @@ describe('LangGraphAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: ExecuteRequest = { input: { task: 'compute' } };
+    const request: InvokeRequest = { input: { task: 'compute' } };
 
-    const response = await adapter.execute(request);
+    const response = await adapter.invoke(request);
 
     expect(response.output).toEqual({ result: 'success' });
   });
@@ -90,11 +90,11 @@ describe('LangGraphAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: ExecuteRequest = {
+    const request: InvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     const callArg = mockGraph.invoke.mock.calls[0][0];
     expect(callArg).toHaveProperty('messages');
@@ -114,7 +114,7 @@ describe('LangGraphAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockGraph as any);
-    const request: ExecuteRequest = {
+    const request: InvokeRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },
@@ -123,7 +123,7 @@ describe('LangGraphAgentAdapter.execute', () => {
       },
     };
 
-    const response = await adapter.execute(request);
+    const response = await adapter.invoke(request);
 
     // Output should be extracted from last AI message
     expect(response.output).toBe('Hi!');

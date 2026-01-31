@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { ExecuteRequest } from '@reminix/runtime';
+import type { InvokeRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, OpenAIAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -43,7 +43,7 @@ describe('wrap', () => {
   });
 });
 
-describe('OpenAIAgentAdapter.execute', () => {
+describe('OpenAIAgentAdapter.invoke', () => {
   it('should call the client', async () => {
     const mockClient = {
       chat: {
@@ -56,9 +56,9 @@ describe('OpenAIAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: ExecuteRequest = { input: { prompt: 'Hi' } };
+    const request: InvokeRequest = { input: { prompt: 'Hi' } };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     expect(mockClient.chat.completions.create).toHaveBeenCalled();
   });
@@ -75,9 +75,9 @@ describe('OpenAIAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: ExecuteRequest = { input: { prompt: 'Hi' } };
+    const request: InvokeRequest = { input: { prompt: 'Hi' } };
 
-    const response = await adapter.execute(request);
+    const response = await adapter.invoke(request);
 
     expect(response.output).toBe('Hello from OpenAI!');
   });
@@ -94,11 +94,11 @@ describe('OpenAIAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockClient as any);
-    const request: ExecuteRequest = {
+    const request: InvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     const callArg = mockClient.chat.completions.create.mock.calls[0][0];
     expect(callArg.messages[0].role).toBe('user');
@@ -117,11 +117,11 @@ describe('OpenAIAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockClient as any, { model: 'gpt-4o' });
-    const request: ExecuteRequest = {
+    const request: InvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     const callArg = mockClient.chat.completions.create.mock.calls[0][0];
     expect(callArg.model).toBe('gpt-4o');

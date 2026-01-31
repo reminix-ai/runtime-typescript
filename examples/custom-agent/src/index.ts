@@ -98,7 +98,7 @@ agent.streamHandler(async function* (request) {
 console.log('Custom Agent Example');
 console.log('='.repeat(40));
 console.log(`Agent: ${agent.name}`);
-console.log(`Streaming: ${agent.streaming}`);
+console.log(`Streaming: ${agent.metadata.capabilities.streaming}`);
 console.log();
 console.log('Server running on http://localhost:8080');
 console.log();

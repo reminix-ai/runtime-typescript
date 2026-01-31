@@ -516,7 +516,6 @@ export function agent(name: string, options: AgentOptions): Agent {
       description: options.description,
       input: inputSchema,
       output: outputSchema,
-      capabilities: { streaming: false },
     },
   });
 
@@ -594,7 +593,6 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
       description: options.description,
       input: CHAT_AGENT_INPUT,
       output: CHAT_AGENT_OUTPUT,
-      capabilities: { streaming: false },
     },
   });
 

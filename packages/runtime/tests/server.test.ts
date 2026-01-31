@@ -7,8 +7,8 @@ import {
   AgentAdapter,
   VERSION,
   tool,
-  type ExecuteRequest,
-  type ExecuteResponse,
+  type InvokeRequest,
+  type InvokeResponse,
 } from '../src/index.js';
 import { createApp } from '../src/server.js';
 
@@ -29,15 +29,7 @@ class MockTaskAdapter extends AgentAdapter {
     return this._name;
   }
 
-  override get metadata() {
-    return {
-      ...super.metadata,
-      requestKeys: ['task'],
-      responseKeys: ['output'],
-    };
-  }
-
-  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
     const task = (request.input as Record<string, unknown>).task || 'unknown';
     return { output: `Completed task: ${task}` };
   }
@@ -60,18 +52,12 @@ class MockChatAdapter extends AgentAdapter {
     return this._name;
   }
 
-  override get metadata() {
-    return {
-      ...super.metadata,
-      requestKeys: ['messages'],
-      responseKeys: ['messages'],
-    };
-  }
-
-  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
     const messages = (request.input as { messages?: { content: string }[] }).messages ?? [];
     const userMessage = messages[messages.length - 1]?.content ?? '';
-    return { messages: [{ role: 'assistant', content: `Chat response to: ${userMessage}` }] };
+    return {
+      output: { messages: [{ role: 'assistant', content: `Chat response to: ${userMessage}` }] },
+    };
   }
 }
 
@@ -116,20 +102,19 @@ describe('Info Endpoint', () => {
     // Check agents
     expect(data.agents).toHaveLength(2);
     expect(data.agents[0].name).toBe('agent-one');
-    expect(data.agents[0].type).toBe('adapter');
     expect(data.agents[0].adapter).toBe('mock');
-    expect(data.agents[0].streaming).toBe(true);
+    expect(data.agents[0].capabilities.streaming).toBe(true);
   });
 });
 
-describe('Execute Endpoint', () => {
-  it('POST /agents/{agent}/invoke should return execute response', async () => {
+describe('Invoke Endpoint', () => {
+  it('POST /agents/{agent}/invoke should return invoke response', async () => {
     const app = createApp({ agents: [new MockTaskAdapter('my-agent')] });
-    // Request body has top-level keys matching requestKeys: ['task']
+    // New API uses { input: { ... } }
     const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ task: 'summarize' }),
+      body: JSON.stringify({ input: { task: 'summarize' } }),
     });
 
     expect(response.status).toBe(200);
@@ -143,7 +128,7 @@ describe('Execute Endpoint', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        task: 'test',
+        input: { task: 'test' },
         context: { user_id: '123' },
       }),
     });
@@ -156,37 +141,36 @@ describe('Execute Endpoint', () => {
     const response = await app.request('/agents/unknown-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ task: 'test' }),
+      body: JSON.stringify({ input: { task: 'test' } }),
     });
 
     expect(response.status).toBe(404);
     const data = await response.json();
-    expect(data.error.toLowerCase()).toContain('not found');
+    expect(data.error.message.toLowerCase()).toContain('not found');
   });
 
   it('POST /agents/{agent}/invoke should handle chat-style input', async () => {
     const app = createApp({ agents: [new MockChatAdapter('my-agent')] });
-    // Request body has top-level keys matching requestKeys: ['messages']
     const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: 'hi there' }] }),
+      body: JSON.stringify({ input: { messages: [{ role: 'user', content: 'hi there' }] } }),
     });
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.messages[0]).toEqual({
+    expect(data.output.messages[0]).toEqual({
       role: 'assistant',
       content: 'Chat response to: hi there',
     });
   });
 });
 
-describe('Tool Execute Endpoint', () => {
+describe('Tool Call Endpoint', () => {
   it('POST /tools/{tool}/call should return tool response', async () => {
     const greetTool = tool('greet', {
       description: 'Greet someone',
-      parameters: {
+      input: {
         type: 'object',
         properties: { name: { type: 'string' } },
         required: ['name'],
@@ -211,7 +195,7 @@ describe('Tool Execute Endpoint', () => {
 
     const myTool = tool('my-tool', {
       description: 'Test tool',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async (input, context) => {
         receivedContext = context;
         return { done: true };
@@ -231,7 +215,7 @@ describe('Tool Execute Endpoint', () => {
   it('POST /tools/{tool}/call should return 404 for unknown tool', async () => {
     const myTool = tool('my-tool', {
       description: 'Test tool',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async () => ({}),
     });
 
@@ -248,7 +232,7 @@ describe('Tool Execute Endpoint', () => {
   it('POST /tools/{tool}/call should return error on exception', async () => {
     const failingTool = tool('failing', {
       description: 'A tool that fails',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async () => {
         throw new Error('Something went wrong');
       },
@@ -261,7 +245,7 @@ describe('Tool Execute Endpoint', () => {
       body: JSON.stringify({ input: {} }),
     });
 
-    expect(response.status).toBe(500); // Tool errors return proper HTTP error codes
+    expect(response.status).toBe(500);
     const data = await response.json();
     expect(data.error).toBeDefined();
     expect(data.error.message).toBe('Something went wrong');
@@ -273,7 +257,7 @@ describe('Info Endpoint with Tools', () => {
   it('GET /info should include tools', async () => {
     const myTool = tool('my-tool', {
       description: 'My tool description',
-      parameters: {
+      input: {
         type: 'object',
         properties: { param: { type: 'string' } },
         required: ['param'],
@@ -289,15 +273,14 @@ describe('Info Endpoint with Tools', () => {
 
     expect(data.tools).toHaveLength(1);
     expect(data.tools[0].name).toBe('my-tool');
-    expect(data.tools[0].type).toBe('tool');
     expect(data.tools[0].description).toBe('My tool description');
-    expect(data.tools[0].parameters).toBeDefined();
+    expect(data.tools[0].input).toBeDefined();
   });
 
   it('GET /info should include both agents and tools', async () => {
     const myTool = tool('my-tool', {
       description: 'Test tool',
-      parameters: { type: 'object', properties: {} },
+      input: { type: 'object', properties: {} },
       handler: async () => ({}),
     });
 

@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
-import type { ExecuteRequest } from '@reminix/runtime';
+import type { InvokeRequest } from '@reminix/runtime';
 import { wrapAgent, serveAgent, LangChainAgentAdapter } from '../src/agent-adapter.js';
 
 // Mock @reminix/runtime serve function
@@ -42,16 +42,16 @@ describe('wrap', () => {
   });
 });
 
-describe('LangChainAgentAdapter.execute', () => {
+describe('LangChainAgentAdapter.invoke', () => {
   it('should call the runnable with the input', async () => {
     const mockRunnable = {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
     };
 
     const adapter = wrapAgent(mockRunnable as any);
-    const request: ExecuteRequest = { input: { query: 'What is AI?' } };
+    const request: InvokeRequest = { input: { query: 'What is AI?' } };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     expect(mockRunnable.invoke).toHaveBeenCalledWith({ query: 'What is AI?' });
   });
@@ -62,9 +62,9 @@ describe('LangChainAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockRunnable as any);
-    const request: ExecuteRequest = { input: { query: 'Hi' } };
+    const request: InvokeRequest = { input: { query: 'Hi' } };
 
-    const response = await adapter.execute(request);
+    const response = await adapter.invoke(request);
 
     expect(response.output).toBe('Hello from LangChain!');
   });
@@ -75,9 +75,9 @@ describe('LangChainAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockRunnable as any);
-    const request: ExecuteRequest = { input: { task: 'compute' } };
+    const request: InvokeRequest = { input: { task: 'compute' } };
 
-    const response = await adapter.execute(request);
+    const response = await adapter.invoke(request);
 
     expect(response.output).toEqual({ result: 'success', value: 42 });
   });
@@ -88,7 +88,7 @@ describe('LangChainAgentAdapter.execute', () => {
     };
 
     const adapter = wrapAgent(mockRunnable as any);
-    const request: ExecuteRequest = {
+    const request: InvokeRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },
@@ -99,7 +99,7 @@ describe('LangChainAgentAdapter.execute', () => {
       },
     };
 
-    await adapter.execute(request);
+    await adapter.invoke(request);
 
     const callArg = mockRunnable.invoke.mock.calls[0][0];
     expect(callArg).toHaveLength(4);

@@ -40,7 +40,7 @@ const weatherData: Record<string, { temp: number; condition: string }> = {
 // Tool 1: Get weather for a location (with output schema)
 const getWeather = tool('get_weather', {
   description: 'Get the current weather for a city',
-  parameters: {
+  input: {
     type: 'object',
     properties: {
       location: {
@@ -95,7 +95,7 @@ const getWeather = tool('get_weather', {
 // Tool 2: Simple calculator
 const calculate = tool('calculate', {
   description: 'Perform basic math operations',
-  parameters: {
+  input: {
     type: 'object',
     properties: {
       a: { type: 'number', description: 'First operand' },
@@ -141,7 +141,7 @@ const calculate = tool('calculate', {
 // Tool 3: String utilities
 const stringUtils = tool('string_utils', {
   description: 'Perform string operations',
-  parameters: {
+  input: {
     type: 'object',
     properties: {
       text: { type: 'string', description: 'Input text' },

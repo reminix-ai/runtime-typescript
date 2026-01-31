@@ -7,141 +7,139 @@ import {
   Agent,
   agent,
   chatAgent,
-  type ExecuteRequest,
-  type ExecuteResponse,
+  type InvokeRequest,
+  type InvokeResponse,
   type Message,
 } from '../src/index.js';
 
 describe('Agent Creation', () => {
   it('should be instantiated with a name', () => {
-    const agent = new Agent('my-agent');
-    expect(agent.name).toBe('my-agent');
+    const testAgent = new Agent('my-agent');
+    expect(testAgent.name).toBe('my-agent');
   });
 
   it('should accept custom metadata', () => {
-    const agent = new Agent('my-agent', {
+    const testAgent = new Agent('my-agent', {
       metadata: { version: '1.0', author: 'test' },
     });
-    expect(agent.metadata.type).toBe('agent');
-    expect(agent.metadata.version).toBe('1.0');
-    expect(agent.metadata.author).toBe('test');
+    expect(testAgent.metadata.version).toBe('1.0');
+    expect(testAgent.metadata.author).toBe('test');
   });
 
-  it('should have default metadata with type, parameters, and keys', () => {
-    const agent = new Agent('my-agent');
-    expect(agent.metadata.type).toBe('agent');
-    expect(agent.metadata.requestKeys).toEqual(['prompt']);
-    expect(agent.metadata.responseKeys).toEqual(['content']);
-    expect(agent.metadata.parameters).toEqual({
+  it('should have default metadata with capabilities and input/output', () => {
+    const testAgent = new Agent('my-agent');
+    expect(testAgent.metadata.capabilities).toBeDefined();
+    expect(testAgent.metadata.input).toEqual({
       type: 'object',
       properties: {
         prompt: { type: 'string', description: 'The prompt or task for the agent' },
       },
       required: ['prompt'],
     });
+    expect(testAgent.metadata.output).toEqual({ type: 'string' });
   });
 });
 
 describe('Agent Handler Registration', () => {
-  it('should register execute handler with onExecute', async () => {
-    const agent = new Agent('test-agent');
+  it('should register invoke handler with handler()', async () => {
+    const testAgent = new Agent('test-agent');
 
-    agent.handler(async (request) => {
-      return { content: 'test' };
+    testAgent.handler(async (request) => {
+      return { output: 'test' };
     });
 
-    // Handler should be registered (we can test this by calling execute)
-    await expect(agent.execute({ input: { task: 'test' } })).resolves.toEqual({
-      content: 'test',
+    // Handler should be registered (we can test this by calling invoke)
+    await expect(testAgent.invoke({ input: { task: 'test' } })).resolves.toEqual({
+      output: 'test',
     });
   });
 
   it('should return this for method chaining', () => {
-    const agent = new Agent('test-agent');
+    const testAgent = new Agent('test-agent');
 
-    const result = agent.handler(async () => ({ content: 'execute' }));
+    const result = testAgent.handler(async () => ({ output: 'invoke' }));
 
-    expect(result).toBe(agent);
+    expect(result).toBe(testAgent);
   });
 });
 
 describe('Agent Streaming Flags', () => {
   it('should have streaming false by default', () => {
-    const agent = new Agent('test-agent');
-    expect(agent.streaming).toBe(false);
+    const testAgent = new Agent('test-agent');
+    expect(testAgent.metadata.capabilities.streaming).toBe(false);
   });
 
-  it('should have streaming true when handler registered', () => {
-    const agent = new Agent('test-agent');
+  it('should have streaming true when stream handler registered', () => {
+    const testAgent = new Agent('test-agent');
 
-    agent.streamHandler(async function* () {
-      yield '{"chunk": "test"}';
+    testAgent.streamHandler(async function* () {
+      yield 'test';
     });
 
-    expect(agent.streaming).toBe(true);
+    expect(testAgent.metadata.capabilities.streaming).toBe(true);
   });
 });
 
-describe('Agent Execute', () => {
-  it('should call registered execute handler', async () => {
-    const agent = new Agent('test-agent');
+describe('Agent Invoke', () => {
+  it('should call registered invoke handler', async () => {
+    const testAgent = new Agent('test-agent');
 
-    agent.handler(async (request) => {
+    testAgent.handler(async (request) => {
       const task = (request.input as Record<string, string>).task || 'unknown';
-      return { content: `Completed: ${task}` };
+      return { output: `Completed: ${task}` };
     });
 
-    const response = await agent.execute({ input: { task: 'summarize' } });
-    expect(response.content).toBe('Completed: summarize');
+    const response = await testAgent.invoke({ input: { task: 'summarize' } });
+    expect(response.output).toBe('Completed: summarize');
   });
 
-  it('should throw when no execute handler registered', async () => {
-    const agent = new Agent('test-agent');
+  it('should throw when no invoke handler registered', async () => {
+    const testAgent = new Agent('test-agent');
 
-    await expect(agent.execute({ input: { task: 'test' } })).rejects.toThrow(
-      "No execute handler registered for agent 'test-agent'"
+    await expect(testAgent.invoke({ input: { task: 'test' } })).rejects.toThrow(
+      "No invoke handler registered for agent 'test-agent'"
     );
   });
 });
 
-describe('Agent Execute Stream', () => {
-  it('should call registered execute stream handler', async () => {
-    const agent = new Agent('test-agent');
+describe('Agent Invoke Stream', () => {
+  it('should call registered invoke stream handler', async () => {
+    const testAgent = new Agent('test-agent');
 
-    agent.streamHandler(async function* (request) {
-      yield '{"chunk": "Hello"}';
-      yield '{"chunk": " world"}';
+    testAgent.streamHandler(async function* (request) {
+      yield 'Hello';
+      yield ' world';
     });
 
     const chunks: string[] = [];
-    for await (const chunk of agent.executeStream({ input: { task: 'test' } })) {
+    for await (const chunk of testAgent.invokeStream({ input: { task: 'test' } })) {
       chunks.push(chunk);
     }
 
-    expect(chunks).toEqual(['{"chunk": "Hello"}', '{"chunk": " world"}']);
+    expect(chunks).toEqual(['Hello', ' world']);
   });
 
-  it('should throw when no execute stream handler registered', async () => {
-    const agent = new Agent('test-agent');
-    const generator = agent.executeStream({ input: { task: 'test' } });
+  it('should throw when no invoke stream handler registered', async () => {
+    const testAgent = new Agent('test-agent');
+    const generator = testAgent.invokeStream({ input: { task: 'test' } });
 
     await expect(generator.next()).rejects.toThrow(
-      "No streaming execute handler registered for agent 'test-agent'"
+      "No streaming invoke handler registered for agent 'test-agent'"
     );
   });
 });
 
 describe('Agent With Context', () => {
-  it('should pass context to execute handler', async () => {
-    const agent = new Agent('test-agent');
+  it('should pass context to invoke handler', async () => {
+    const testAgent = new Agent('test-agent');
     let receivedContext: Record<string, unknown> | undefined;
 
-    agent.handler(async (request) => {
+    testAgent.handler(async (request) => {
       receivedContext = request.context;
-      return { content: 'done' };
+      return { output: 'done' };
     });
 
-    await agent.execute({
+    await testAgent.invoke({
       input: { task: 'test' },
       context: { user_id: '123', session: 'abc' },
     });
@@ -186,56 +184,29 @@ describe('Agent toHandler', () => {
     expect(body.agents[0].version).toBe('1.0');
   });
 
-  it('should handle /agents/{name}/invoke endpoint with default prompt key', async () => {
+  it('should handle /agents/{name}/invoke endpoint with input wrapper', async () => {
     const testAgent = new Agent('test-agent');
     testAgent.handler(async (req) => ({
-      content: `Received: ${(req.input as Record<string, string>).prompt}`,
+      output: `Received: ${(req.input as Record<string, string>).prompt}`,
     }));
     const handler = testAgent.toHandler();
 
-    // Default requestKeys is ['prompt'], so send { prompt: '...' }
+    // New API uses { input: { ... } }
     const request = new Request('http://localhost/agents/test-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: 'hello' }),
+      body: JSON.stringify({ input: { prompt: 'hello' } }),
     });
     const response = await handler(request);
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.content).toBe('Received: hello');
-  });
-
-  it('should handle /agents/{name}/invoke with custom requestKeys', async () => {
-    // Create agent with custom requestKeys via metadata
-    const testAgent = new Agent('test-agent', {
-      metadata: {
-        requestKeys: ['messages'],
-        responseKeys: ['content'],
-      },
-    });
-    testAgent.handler(async (req) => {
-      const messages = (req.input as { messages: Message[] }).messages;
-      return { content: `Reply to: ${messages[0].content}` };
-    });
-    const handler = testAgent.toHandler();
-
-    // Custom requestKeys: ['messages']
-    const request = new Request('http://localhost/agents/test-agent/invoke', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }),
-    });
-    const response = await handler(request);
-
-    expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body.content).toBe('Reply to: hello');
+    expect(body.output).toBe('Received: hello');
   });
 
   it('should return 404 for wrong agent name', async () => {
     const testAgent = new Agent('test-agent');
-    testAgent.handler(async () => ({ content: 'ok' }));
+    testAgent.handler(async () => ({ output: 'ok' }));
     const handler = testAgent.toHandler();
 
     const request = new Request('http://localhost/agents/wrong-agent/invoke', {
@@ -280,7 +251,7 @@ describe('agent() Factory', () => {
   it('should create an Agent instance', () => {
     const calculator = agent('calculator', {
       description: 'Add two numbers',
-      parameters: {
+      input: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
@@ -295,7 +266,7 @@ describe('agent() Factory', () => {
   it('should set description in metadata', () => {
     const calculator = agent('calculator', {
       description: 'Add two numbers',
-      parameters: {
+      input: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
@@ -306,10 +277,10 @@ describe('agent() Factory', () => {
     expect(calculator.metadata.description).toBe('Add two numbers');
   });
 
-  it('should set parameters in metadata', () => {
+  it('should set input in metadata', () => {
     const calculator = agent('calculator', {
       description: 'Add two numbers',
-      parameters: {
+      input: {
         type: 'object',
         properties: {
           a: { type: 'number' },
@@ -320,7 +291,7 @@ describe('agent() Factory', () => {
       handler: async () => 0,
     });
 
-    expect(calculator.metadata.parameters).toEqual({
+    expect(calculator.metadata.input).toEqual({
       type: 'object',
       properties: {
         a: { type: 'number' },
@@ -330,10 +301,10 @@ describe('agent() Factory', () => {
     });
   });
 
-  it('should set output in metadata when provided and wrap it', () => {
+  it('should set output in metadata when provided', () => {
     const calculator = agent('calculator', {
       description: 'Add two numbers',
-      parameters: {
+      input: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
@@ -342,16 +313,12 @@ describe('agent() Factory', () => {
       handler: async () => 0,
     });
 
-    expect(calculator.metadata.output).toEqual({
-      type: 'object',
-      properties: { content: { type: 'number' } },
-      required: ['content'],
-    });
+    expect(calculator.metadata.output).toEqual({ type: 'number' });
   });
 
-  it('should not include output in metadata when not provided', () => {
+  it('should have default output schema when not provided', () => {
     const calculator = agent('calculator', {
-      parameters: {
+      input: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
@@ -359,26 +326,12 @@ describe('agent() Factory', () => {
       handler: async () => 0,
     });
 
-    expect(calculator.metadata.output).toBeUndefined();
+    expect(calculator.metadata.output).toEqual({ type: 'string' });
   });
 
-  it('should derive requestKeys from parameters.properties', () => {
+  it('should handle invoke requests', async () => {
     const calculator = agent('calculator', {
-      parameters: {
-        type: 'object',
-        properties: { a: { type: 'number' }, b: { type: 'number' } },
-        required: ['a', 'b'],
-      },
-      handler: async () => 0,
-    });
-
-    expect(calculator.metadata.requestKeys).toEqual(['a', 'b']);
-    expect(calculator.metadata.responseKeys).toEqual(['content']);
-  });
-
-  it('should handle execute requests', async () => {
-    const calculator = agent('calculator', {
-      parameters: {
+      input: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
@@ -386,16 +339,15 @@ describe('agent() Factory', () => {
       handler: async ({ a, b }) => (a as number) + (b as number),
     });
 
-    // input contains the extracted keys from request body
-    const response = await calculator.execute({ input: { a: 3, b: 4 } });
-    expect(response.content).toBe(7);
+    const response = await calculator.invoke({ input: { a: 3, b: 4 } });
+    expect(response.output).toBe(7);
   });
 
-  it('should pass context to execute handler', async () => {
+  it('should pass context to invoke handler', async () => {
     let receivedContext: Record<string, unknown> | undefined;
 
     const myAgent = agent('my-agent', {
-      parameters: {
+      input: {
         type: 'object',
         properties: { task: { type: 'string' } },
         required: ['task'],
@@ -406,7 +358,7 @@ describe('agent() Factory', () => {
       },
     });
 
-    await myAgent.execute({
+    await myAgent.invoke({
       input: { task: 'test' },
       context: { user_id: '123' },
     });
@@ -416,7 +368,7 @@ describe('agent() Factory', () => {
 
   it('should handle streaming with async generator', async () => {
     const streamer = agent('streamer', {
-      parameters: {
+      input: {
         type: 'object',
         properties: { text: { type: 'string' } },
         required: ['text'],
@@ -429,11 +381,11 @@ describe('agent() Factory', () => {
     });
 
     // Should have streaming enabled
-    expect(streamer.streaming).toBe(true);
+    expect(streamer.metadata.capabilities.streaming).toBe(true);
 
     // Test streaming
     const chunks: string[] = [];
-    for await (const chunk of streamer.executeStream({ input: { text: 'hello world' } })) {
+    for await (const chunk of streamer.invokeStream({ input: { text: 'hello world' } })) {
       chunks.push(chunk);
     }
 
@@ -442,7 +394,7 @@ describe('agent() Factory', () => {
 
   it('should collect chunks for non-streaming requests', async () => {
     const streamer = agent('streamer', {
-      parameters: {
+      input: {
         type: 'object',
         properties: { text: { type: 'string' } },
         required: ['text'],
@@ -454,8 +406,8 @@ describe('agent() Factory', () => {
       },
     });
 
-    const response = await streamer.execute({ input: { text: 'hello world' } });
-    expect(response.content).toBe('hello world ');
+    const response = await streamer.invoke({ input: { text: 'hello world' } });
+    expect(response.output).toBe('hello world ');
   });
 });
 
@@ -483,72 +435,29 @@ describe('chatAgent() Factory', () => {
     expect(bot.metadata.description).toBe('A helpful assistant');
   });
 
-  it('should set standard parameters schema in metadata', () => {
+  it('should set standard input schema in metadata', () => {
     const bot = chatAgent('bot', {
       handler: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
-    const params = bot.metadata.parameters as Record<string, unknown>;
-    expect(params.type).toBe('object');
-    expect(params.properties).toHaveProperty('messages');
-    expect(params.required).toContain('messages');
+    const input = bot.metadata.input as Record<string, unknown>;
+    expect(input.type).toBe('object');
+    expect(input.properties).toHaveProperty('messages');
+    expect(input.required).toContain('messages');
   });
 
-  it('should set standard output schema in metadata wrapped for response structure', () => {
+  it('should set standard output schema in metadata', () => {
     const bot = chatAgent('bot', {
       handler: async () => [{ role: 'assistant', content: 'Hello!' }],
     });
 
-    expect(bot.metadata.output).toEqual({
-      type: 'object',
-      properties: {
-        messages: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              role: {
-                type: 'string',
-                enum: ['system', 'user', 'assistant', 'tool'],
-              },
-              content: {
-                type: ['string', 'null'],
-              },
-              name: {
-                type: 'string',
-              },
-              tool_call_id: {
-                type: 'string',
-              },
-              tool_calls: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    type: { type: 'string', enum: ['function'] },
-                    function: {
-                      type: 'object',
-                      properties: {
-                        name: { type: 'string' },
-                        arguments: { type: 'string' },
-                      },
-                      required: ['name', 'arguments'],
-                    },
-                  },
-                  required: ['id', 'type', 'function'],
-                },
-              },
-            },
-            required: ['role'],
-          },
-        },
-      },
-      required: ['messages'],
-    });
+    const output = bot.metadata.output as Record<string, unknown>;
+    expect(output.type).toBe('object');
+    expect(output.properties).toHaveProperty('messages');
+    expect(output.required).toContain('messages');
   });
 
-  it('should handle execute requests with messages input', async () => {
+  it('should handle invoke requests with messages input', async () => {
     const echoBot = chatAgent('echo-bot', {
       handler: async (messages) => {
         const lastMsg = messages.at(-1)?.content ?? '';
@@ -556,17 +465,18 @@ describe('chatAgent() Factory', () => {
       },
     });
 
-    const response = await echoBot.execute({
+    const response = await echoBot.invoke({
       input: { messages: [{ role: 'user', content: 'hello' }] },
     });
 
-    expect((response.messages as Array<{ role: string; content: string }>)[0]).toEqual({
+    const output = response.output as { messages: Array<{ role: string; content: string }> };
+    expect(output.messages[0]).toEqual({
       role: 'assistant',
       content: 'You said: hello',
     });
   });
 
-  it('should pass context to execute handler', async () => {
+  it('should pass context to invoke handler', async () => {
     let receivedContext: Record<string, unknown> | undefined;
 
     const bot = chatAgent('bot', {
@@ -576,7 +486,7 @@ describe('chatAgent() Factory', () => {
       },
     });
 
-    await bot.execute({
+    await bot.invoke({
       input: { messages: [{ role: 'user', content: 'hi' }] },
       context: { user_id: '456' },
     });
@@ -594,11 +504,11 @@ describe('chatAgent() Factory', () => {
     });
 
     // Should have streaming enabled
-    expect(streamingBot.streaming).toBe(true);
+    expect(streamingBot.metadata.capabilities.streaming).toBe(true);
 
     // Test streaming
     const chunks: string[] = [];
-    for await (const chunk of streamingBot.executeStream({
+    for await (const chunk of streamingBot.invokeStream({
       input: { messages: [{ role: 'user', content: 'hi' }] },
     })) {
       chunks.push(chunk);
@@ -616,11 +526,12 @@ describe('chatAgent() Factory', () => {
       },
     });
 
-    const response = await streamingBot.execute({
+    const response = await streamingBot.invoke({
       input: { messages: [{ role: 'user', content: 'hi' }] },
     });
 
-    expect((response.messages as Array<{ role: string; content: string }>)[0]).toEqual({
+    const output = response.output as { messages: Array<{ role: string; content: string }> };
+    expect(output.messages[0]).toEqual({
       role: 'assistant',
       content: 'Hello world!',
     });
