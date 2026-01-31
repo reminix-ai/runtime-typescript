@@ -20,7 +20,7 @@ describe('Vercel AI Adapter Integration', () => {
     const getWeather = tool({
       description: 'Get the current weather for a city',
       inputSchema: z.object({ city: z.string() }),
-      handler: async ({ city }) => {
+      execute: async ({ city }) => {
         const weatherData: Record<string, string> = {
           paris: 'Sunny, 22°C',
           london: 'Cloudy, 15°C',
