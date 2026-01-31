@@ -16,14 +16,13 @@ export type {
   RuntimeErrorResponse,
 } from './types.js';
 // Agent exports
-export { AgentBase, Agent, agent, chatAgent } from './agent.js';
+export { AgentBase, Agent, agent } from './agent.js';
 export type {
   AgentMetadata,
   InvokeHandler,
   InvokeStreamHandler,
   FetchHandler,
   AgentOptions,
-  ChatAgentOptions,
 } from './agent.js';
 // Adapter exports
 export { AgentAdapter } from './agent-adapter.js';

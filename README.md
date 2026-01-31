@@ -17,7 +17,7 @@ A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framewor
 
 | Package | Description |
 |---------|-------------|
-| [`@reminix/runtime`](./packages/runtime) | Core runtime with `agent()`, `chatAgent()`, and `tool()` factories |
+| [`@reminix/runtime`](./packages/runtime) | Core runtime with `agent()` and `tool()` factories |
 | [`@reminix/langchain`](./packages/langchain) | LangChain adapter |
 | [`@reminix/langgraph`](./packages/langgraph) | LangGraph adapter |
 | [`@reminix/openai`](./packages/openai) | OpenAI Agents adapter |
@@ -48,11 +48,11 @@ serve({ agents: [wrapAgent(agent, 'my-agent')], port: 8080 });
 ### With Factory Functions (No Framework)
 
 ```typescript
-import { agent, chatAgent, serve } from '@reminix/runtime';
+import { agent, serve } from '@reminix/runtime';
 
 const calculator = agent('calculator', {
   description: 'Add two numbers',
-  parameters: {
+  input: {
     type: 'object',
     properties: { a: { type: 'number' }, b: { type: 'number' } },
     required: ['a', 'b'],
@@ -60,17 +60,11 @@ const calculator = agent('calculator', {
   handler: async ({ a, b }) => (a as number) + (b as number),
 });
 
-const assistant = chatAgent('assistant', {
-  description: 'A helpful assistant',
-  handler: async (messages) => `You said: ${messages.at(-1)?.content}`,
-});
-
-serve({ agents: [calculator, assistant], port: 8080 });
+serve({ agents: [calculator], port: 8080 });
 ```
 
-Your agents are now available at:
+Your agent is now available at:
 - `POST /agents/calculator/invoke` - Execute the calculator agent
-- `POST /agents/assistant/invoke` - Execute the assistant agent
 
 See the [runtime package docs](./packages/runtime) for tools, streaming, and advanced usage.
 

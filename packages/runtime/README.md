@@ -2,7 +2,7 @@
 
 The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `agent()`, `chatAgent()`, and `tool()` factory functions for building and serving AI agents.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `agent()` and `tool()` factory functions for building and serving AI agents.
 
 Built on [Hono](https://hono.dev) for portability across Node.js, Deno, Bun, and edge runtimes.
 
@@ -17,7 +17,7 @@ npm install @reminix/runtime
 ## Quick Start
 
 ```typescript
-import { agent, chatAgent, serve } from '@reminix/runtime';
+import { agent, serve } from '@reminix/runtime';
 
 // Create an agent for task-oriented operations
 const calculator = agent('calculator', {
@@ -30,14 +30,8 @@ const calculator = agent('calculator', {
   handler: async ({ a, b }) => (a as number) + (b as number),
 });
 
-// Create a chat agent for conversational interactions
-const assistant = chatAgent('assistant', {
-  description: 'A helpful assistant',
-  handler: async (messages) => `You said: ${messages.at(-1)?.content}`,
-});
-
-// Serve the agents
-serve({ agents: [calculator, assistant], port: 8080 });
+// Serve the agent
+serve({ agents: [calculator], port: 8080 });
 ```
 
 ## How It Works
@@ -92,41 +86,6 @@ Returns runtime information, available agents, and tools:
       },
       "requestKeys": ["a", "b"],
       "responseKeys": ["content"],
-      "streaming": false
-    },
-    {
-      "name": "assistant",
-      "type": "chat_agent",
-      "description": "A helpful assistant",
-      "input": {
-        "type": "object",
-        "properties": {
-          "messages": {
-            "type": "array",
-            "items": { "type": "object", "properties": { "role": { "type": "string" }, "content": { "type": "string" } }, "required": ["role", "content"] }
-          }
-        },
-        "required": ["messages"]
-      },
-      "output": {
-        "type": "object",
-        "properties": {
-          "messages": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "role": { "type": "string" },
-                "content": { "type": "string" }
-              },
-              "required": ["role", "content"]
-            }
-          }
-        },
-        "required": ["messages"]
-      },
-      "requestKeys": ["messages"],
-      "responseKeys": ["messages"],
       "streaming": false
     }
   ],
@@ -248,41 +207,13 @@ const textProcessor = agent('text-processor', {
 serve({ agents: [calculator, textProcessor], port: 8080 });
 ```
 
-### Chat Agent
-
-Use `chatAgent()` for conversational agents that handle message history:
-
-```typescript
-import { chatAgent, serve } from '@reminix/runtime';
-
-const assistant = chatAgent('assistant', {
-  description: 'A helpful assistant',
-  handler: async (messages) => {
-    const lastMsg = messages.at(-1)?.content ?? '';
-    return `You said: ${lastMsg}`;
-  },
-});
-
-// With context support
-const contextualBot = chatAgent('contextual-bot', {
-  description: 'Bot with context awareness',
-  handler: async (messages, context) => {
-    const userId = context?.user_id ?? 'unknown';
-    return `Hello user ${userId}!`;
-  },
-});
-
-serve({ agents: [assistant, contextualBot], port: 8080 });
-```
-
 ### Streaming
 
-Both factories support streaming via async generators. When you use an async generator function, the agent automatically supports streaming:
+Agents support streaming via async generators. When you use an async generator function, the agent automatically supports streaming:
 
 ```typescript
-import { agent, chatAgent, serve } from '@reminix/runtime';
+import { agent, serve } from '@reminix/runtime';
 
-// Streaming task agent
 const streamer = agent('streamer', {
   description: 'Stream text word by word',
   input: {
@@ -297,18 +228,7 @@ const streamer = agent('streamer', {
   },
 });
 
-// Streaming chat agent
-const streamingAssistant = chatAgent('streaming-assistant', {
-  description: 'Stream responses token by token',
-  handler: async function* (messages) {
-    const response = `You said: ${messages.at(-1)?.content}`;
-    for (const char of response) {
-      yield char;
-    }
-  },
-});
-
-serve({ agents: [streamer, streamingAssistant], port: 8080 });
+serve({ agents: [streamer], port: 8080 });
 ```
 
 For streaming agents:
@@ -458,39 +378,6 @@ const streamingAgent = agent('streaming-agent', {
 });
 ```
 
-### `chatAgent(name, options)`
-
-Factory function to create a chat agent.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `name` | `string` | Unique identifier for the agent |
-| `options.description` | `string` | Human-readable description |
-| `options.handler` | `function` | Async function or async generator receiving messages |
-
-```typescript
-import { chatAgent } from '@reminix/runtime';
-
-// Regular chat agent
-const bot = chatAgent('bot', {
-  description: 'A simple bot',
-  handler: async (messages) => `You said: ${messages.at(-1)?.content}`,
-});
-
-// With context
-const contextBot = chatAgent('context-bot', {
-  handler: async (messages, context) => `Hello ${context?.user_id}!`,
-});
-
-// Streaming chat agent
-const streamingBot = chatAgent('streaming-bot', {
-  handler: async function* (messages) {
-    yield 'Hello';
-    yield ' world!';
-  },
-});
-```
-
 ### `tool(name, options)`
 
 Factory function to create a tool.
@@ -520,7 +407,7 @@ const myTool = tool('my_tool', {
 ### Request/Response Types
 
 ```typescript
-// Request: top-level keys based on agent's requestKeys (derived from input schema)
+// Request: top-level keys based on agent's input schema
 // For a calculator agent with input schema { a: number, b: number }:
 interface CalculatorRequest {
   a: number;                          // Top-level key from input schema
@@ -529,22 +416,9 @@ interface CalculatorRequest {
   context?: Record<string, unknown>;  // Optional metadata
 }
 
-// For a chat agent:
-interface ChatRequest {
-  messages: Message[];                // Top-level key (requestKeys: ['messages'])
-  stream?: boolean;
-  context?: Record<string, unknown>;
-}
-
-// Response: keys based on agent's responseKeys
-// Regular agent (responseKeys: ['content']):
+// Response: keys based on agent's output schema
 interface AgentResponse {
   content: unknown;
-}
-
-// Chat agent (responseKeys: ['messages']):
-interface ChatResponse {
-  messages: Array<{ role: string; content: string }>;
 }
 ```
 

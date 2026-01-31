@@ -2,13 +2,7 @@
  * Agent classes for Reminix Runtime.
  */
 
-import type {
-  AgentInvokeRequest,
-  AgentInvokeResponse,
-  Message,
-  JSONSchema,
-  Capabilities,
-} from './types.js';
+import type { AgentInvokeRequest, AgentInvokeResponse, JSONSchema, Capabilities } from './types.js';
 import { VERSION } from './version.js';
 
 /**
@@ -29,80 +23,6 @@ const DEFAULT_AGENT_INPUT: JSONSchema = {
  */
 const DEFAULT_AGENT_OUTPUT: JSONSchema = {
   type: 'string',
-};
-
-/**
- * Chat agent input schema.
- * Request: { input: { messages: [...] } }
- */
-const CHAT_AGENT_INPUT: JSONSchema = {
-  type: 'object',
-  properties: {
-    messages: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          role: {
-            type: 'string',
-            enum: ['system', 'user', 'assistant', 'tool'],
-          },
-          content: {
-            type: ['string', 'null'],
-          },
-          name: {
-            type: 'string',
-          },
-          tool_call_id: {
-            type: 'string',
-          },
-          tool_calls: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'string' },
-                type: { type: 'string', enum: ['function'] },
-                function: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string' },
-                    arguments: { type: 'string' },
-                  },
-                  required: ['name', 'arguments'],
-                },
-              },
-              required: ['id', 'type', 'function'],
-            },
-          },
-        },
-        required: ['role'],
-      },
-    },
-  },
-  required: ['messages'],
-};
-
-/**
- * Chat agent output schema.
- * Response: { output: { messages: [...] } }
- */
-const CHAT_AGENT_OUTPUT: JSONSchema = {
-  type: 'object',
-  properties: {
-    messages: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          role: { type: 'string' },
-          content: { type: ['string', 'null'] },
-        },
-        required: ['role'],
-      },
-    },
-  },
-  required: ['messages'],
 };
 
 /**
@@ -445,26 +365,6 @@ export interface AgentOptions {
 }
 
 /**
- * Options for creating a chat agent with the chatAgent() factory.
- */
-export interface ChatAgentOptions {
-  /** Human-readable description of what the agent does */
-  description?: string;
-  /**
-   * Handler function - can be a regular async function or an async generator for streaming.
-   *
-   * Regular function: Returns a list of Message objects
-   * Async generator: Yields string chunks (automatically collected for non-streaming requests)
-   */
-  handler:
-    | ((messages: Message[], context?: Record<string, unknown>) => Promise<Message[]>)
-    | ((
-        messages: Message[],
-        context?: Record<string, unknown>
-      ) => AsyncGenerator<string, void, unknown>);
-}
-
-/**
  * Detect if a function is an async generator function.
  */
 function isAsyncGeneratorFunction(
@@ -558,96 +458,6 @@ export function agent(name: string, options: AgentOptions): Agent {
     agentInstance.handler(async (request: AgentInvokeRequest): Promise<AgentInvokeResponse> => {
       const result = await regularHandler(request.input, request.context);
       return { output: result };
-    });
-  }
-
-  return agentInstance;
-}
-
-/**
- * Create a chat agent from a configuration object.
- *
- * This is a convenience factory that creates an agent with a standard chat
- * interface (messages in, messages out).
- *
- * Request: `{ input: { messages: [...] } }`
- * Response: `{ output: { messages: [{ role: 'assistant', content: '...' }, ...] } }`
- *
- * @example
- * ```typescript
- * // Non-streaming chat agent
- * const bot = chatAgent('bot', {
- *   description: 'A simple chatbot',
- *   handler: async (messages) => {
- *     const lastMsg = messages.at(-1)?.content ?? '';
- *     return [{ role: 'assistant', content: `You said: ${lastMsg}` }];
- *   },
- * });
- *
- * // Streaming chat agent (async generator)
- * const streamingBot = chatAgent('streaming-bot', {
- *   description: 'A streaming chatbot',
- *   handler: async function* (messages) {
- *     yield 'Hello';
- *     yield ' ';
- *     yield 'world!';
- *   },
- * });
- * ```
- */
-export function chatAgent(name: string, options: ChatAgentOptions): Agent {
-  const agentInstance = new Agent(name, {
-    metadata: {
-      description: options.description,
-      input: CHAT_AGENT_INPUT,
-      output: CHAT_AGENT_OUTPUT,
-    },
-  });
-
-  // Detect if handler is an async generator function
-  const isStreaming = isAsyncGeneratorFunction(options.handler);
-
-  if (isStreaming) {
-    const streamFn = options.handler as (
-      messages: Message[],
-      context?: Record<string, unknown>
-    ) => AsyncGenerator<string, void, unknown>;
-
-    // Register streaming handler
-    agentInstance.streamHandler(async function* (request: AgentInvokeRequest) {
-      const rawMessages = (request.input.messages ?? []) as Message[];
-      yield* streamFn(rawMessages, request.context);
-    });
-
-    // Also register non-streaming handler that collects chunks
-    agentInstance.handler(async (request: AgentInvokeRequest): Promise<AgentInvokeResponse> => {
-      const rawMessages = (request.input.messages ?? []) as Message[];
-      const chunks: string[] = [];
-      for await (const chunk of streamFn(rawMessages, request.context)) {
-        chunks.push(chunk);
-      }
-      return {
-        output: {
-          messages: [{ role: 'assistant', content: chunks.join('') }],
-        },
-      };
-    });
-  } else {
-    const regularHandler = options.handler as (
-      messages: Message[],
-      context?: Record<string, unknown>
-    ) => Promise<Message[]>;
-
-    agentInstance.handler(async (request: AgentInvokeRequest): Promise<AgentInvokeResponse> => {
-      const rawMessages = (request.input.messages ?? []) as Message[];
-      const result = await regularHandler(rawMessages, request.context);
-
-      // Convert list of Message objects to list of dicts
-      const messagesList = Array.isArray(result)
-        ? result.map((m) => ({ role: m.role, content: m.content }))
-        : [{ role: (result as Message).role, content: (result as Message).content }];
-
-      return { output: { messages: messagesList } };
     });
   }
 
