@@ -519,14 +519,19 @@ describe('Agent Templates', () => {
         const inputMessages = messages as Array<{ role: string; content: string | null }>;
         return [
           ...inputMessages,
-          { role: 'assistant' as const, content: `Reply to: ${inputMessages[inputMessages.length - 1]?.content ?? ''}` },
+          {
+            role: 'assistant' as const,
+            content: `Reply to: ${inputMessages[inputMessages.length - 1]?.content ?? ''}`,
+          },
         ];
       },
     });
 
     expect(threadAgent.metadata.template).toBe('thread');
     expect(threadAgent.metadata.input?.required).toEqual(['messages']);
-    expect((threadAgent.metadata.input?.properties as Record<string, unknown>)?.messages).toBeDefined();
+    expect(
+      (threadAgent.metadata.input?.properties as Record<string, unknown>)?.messages
+    ).toBeDefined();
     expect(threadAgent.metadata.output?.type).toBe('array');
     expect((threadAgent.metadata.output as { items?: unknown })?.items).toBeDefined();
 

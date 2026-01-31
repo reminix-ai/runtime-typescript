@@ -43,15 +43,15 @@ const CHAT_INPUT_MESSAGE_ITEMS: JSONSchema = {
       description: 'Tool calls requested by the model (assistant messages)',
       items: TOOL_CALL_ITEM_SCHEMA,
     },
-    tool_call_id: { type: 'string', description: 'Id of the tool call this message is a result for (tool messages)' },
+    tool_call_id: {
+      type: 'string',
+      description: 'Id of the tool call this message is a result for (tool messages)',
+    },
     name: { type: 'string', description: 'Tool name (tool messages)' },
   },
 };
 
-const AGENT_TEMPLATES: Record<
-  AgentTemplate,
-  { input: JSONSchema; output: JSONSchema }
-> = {
+const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output: JSONSchema }> = {
   prompt: {
     input: {
       type: 'object',
@@ -125,7 +125,8 @@ const AGENT_TEMPLATES: Record<
     },
     output: {
       type: 'array',
-      description: 'Updated message thread (OpenAI-style, may include assistant message and tool_calls)',
+      description:
+        'Updated message thread (OpenAI-style, may include assistant message and tool_calls)',
       items: CHAT_INPUT_MESSAGE_ITEMS,
     },
   },
@@ -542,14 +543,10 @@ export function agent(name: string, options: AgentOptions): Agent {
 
   const inputSchema =
     options.input ??
-    (effectiveTemplate
-      ? AGENT_TEMPLATES[effectiveTemplate].input
-      : DEFAULT_AGENT_INPUT);
+    (effectiveTemplate ? AGENT_TEMPLATES[effectiveTemplate].input : DEFAULT_AGENT_INPUT);
   const outputSchema =
     options.output ??
-    (effectiveTemplate
-      ? AGENT_TEMPLATES[effectiveTemplate].output
-      : DEFAULT_AGENT_OUTPUT);
+    (effectiveTemplate ? AGENT_TEMPLATES[effectiveTemplate].output : DEFAULT_AGENT_OUTPUT);
 
   const agentInstance = new Agent(name, {
     metadata: {
