@@ -24,7 +24,7 @@ describe('OpenAI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt: "Say 'hello' and nothing else.",
+        input: { prompt: "Say 'hello' and nothing else." },
       }),
     });
 
@@ -39,7 +39,7 @@ describe('OpenAI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: "Say 'test' and nothing else." }],
+        input: { messages: [{ role: 'user', content: "Say 'test' and nothing else." }] },
       }),
     });
 
@@ -54,7 +54,7 @@ describe('OpenAI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: "Say 'hi' and nothing else." }],
+        input: { messages: [{ role: 'user', content: "Say 'hi' and nothing else." }] },
       }),
     });
 
@@ -68,7 +68,7 @@ describe('OpenAI Adapter Integration', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt: "Say 'stream' and nothing else.",
+        input: { prompt: "Say 'stream' and nothing else." },
         stream: true,
       }),
     });
