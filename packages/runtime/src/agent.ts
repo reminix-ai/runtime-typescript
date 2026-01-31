@@ -2,19 +2,101 @@
  * Agent classes for Reminix Runtime.
  */
 
-import type { ExecuteRequest, ExecuteResponse, Message } from './types.js';
+import type { InvokeRequest, InvokeResponse, Message, JSONSchema, Capabilities } from './types.js';
 import { VERSION } from './version.js';
 
 /**
- * Default parameters schema for agents.
- * Request: { prompt: '...' }
+ * Default input schema for agents.
+ * Request: { input: { prompt: '...' } }
  */
-const DEFAULT_AGENT_PARAMETERS = {
-  type: 'object' as const,
+const DEFAULT_AGENT_INPUT: JSONSchema = {
+  type: 'object',
   properties: {
     prompt: { type: 'string', description: 'The prompt or task for the agent' },
   },
   required: ['prompt'],
+};
+
+/**
+ * Default output schema for agents.
+ * Response: { output: '...' }
+ */
+const DEFAULT_AGENT_OUTPUT: JSONSchema = {
+  type: 'string',
+};
+
+/**
+ * Chat agent input schema.
+ * Request: { input: { messages: [...] } }
+ */
+const CHAT_AGENT_INPUT: JSONSchema = {
+  type: 'object',
+  properties: {
+    messages: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          role: {
+            type: 'string',
+            enum: ['system', 'user', 'assistant', 'tool'],
+          },
+          content: {
+            type: ['string', 'null'],
+          },
+          name: {
+            type: 'string',
+          },
+          tool_call_id: {
+            type: 'string',
+          },
+          tool_calls: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                type: { type: 'string', enum: ['function'] },
+                function: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    arguments: { type: 'string' },
+                  },
+                  required: ['name', 'arguments'],
+                },
+              },
+              required: ['id', 'type', 'function'],
+            },
+          },
+        },
+        required: ['role'],
+      },
+    },
+  },
+  required: ['messages'],
+};
+
+/**
+ * Chat agent output schema.
+ * Response: { output: { messages: [...] } }
+ */
+const CHAT_AGENT_OUTPUT: JSONSchema = {
+  type: 'object',
+  properties: {
+    messages: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          role: { type: 'string' },
+          content: { type: ['string', 'null'] },
+        },
+        required: ['role'],
+      },
+    },
+  },
+  required: ['messages'],
 };
 
 /**
@@ -26,26 +108,22 @@ export type FetchHandler = (request: Request) => Promise<Response>;
  * Metadata returned by agents for discovery.
  */
 export interface AgentMetadata {
-  type: 'agent' | 'chat_agent' | 'adapter';
-  adapter?: string;
-  /** Top-level keys expected in request body (besides stream, context) */
-  requestKeys?: string[];
-  /** Top-level keys returned in response */
-  responseKeys?: string[];
+  description?: string;
+  capabilities: Capabilities;
+  input: JSONSchema;
+  output?: JSONSchema;
   [key: string]: unknown;
 }
 
 /**
- * Handler type for execute requests.
+ * Handler type for invoke requests.
  */
-export type ExecuteHandler = (request: ExecuteRequest) => Promise<ExecuteResponse>;
+export type InvokeHandler = (request: InvokeRequest) => Promise<InvokeResponse>;
 
 /**
- * Handler type for streaming execute requests.
+ * Handler type for streaming invoke requests.
  */
-export type ExecuteStreamHandler = (
-  request: ExecuteRequest
-) => AsyncGenerator<string, void, unknown>;
+export type InvokeStreamHandler = (request: InvokeRequest) => AsyncGenerator<string, void, unknown>;
 
 /**
  * Abstract base class defining the agent interface.
@@ -55,13 +133,6 @@ export type ExecuteStreamHandler = (
  * `AgentAdapter` for framework adapters.
  */
 export abstract class AgentBase {
-  /**
-   * Whether execute supports streaming. Override to enable.
-   */
-  get streaming(): boolean {
-    return false;
-  }
-
   /**
    * Return the agent name.
    */
@@ -73,23 +144,22 @@ export abstract class AgentBase {
    */
   get metadata(): AgentMetadata {
     return {
-      type: 'agent',
-      parameters: DEFAULT_AGENT_PARAMETERS,
-      requestKeys: ['prompt'],
-      responseKeys: ['content'],
+      capabilities: { streaming: false },
+      input: DEFAULT_AGENT_INPUT,
+      output: DEFAULT_AGENT_OUTPUT,
     };
   }
 
   /**
-   * Handle an execute request.
+   * Handle an invoke request.
    */
-  abstract execute(request: ExecuteRequest): Promise<ExecuteResponse>;
+  abstract invoke(request: InvokeRequest): Promise<InvokeResponse>;
 
   /**
-   * Handle a streaming execute request.
+   * Handle a streaming invoke request.
    */
   // eslint-disable-next-line require-yield
-  async *executeStream(_request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(_request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     throw new Error('Streaming not implemented for this agent');
   }
 
@@ -148,7 +218,6 @@ export abstract class AgentBase {
                 {
                   name: this.name,
                   ...this.metadata,
-                  streaming: this.streaming,
                 },
               ],
             },
@@ -162,45 +231,39 @@ export abstract class AgentBase {
           const agentName = invokeMatch[1];
           if (agentName !== this.name) {
             return Response.json(
-              { error: `Agent '${agentName}' not found` },
+              { error: { type: 'NotFoundError', message: `Agent '${agentName}' not found` } },
               { status: 404, headers: corsHeaders }
             );
           }
 
-          const body = (await request.json()) as Record<string, unknown>;
+          const body = (await request.json()) as InvokeRequest;
 
-          // Get requestKeys from agent metadata (all agents have defaults)
-          const requestKeys = (this.metadata.requestKeys as string[]) ?? [];
-
-          // Extract declared keys from body into input object
-          // e.g., requestKeys: ['prompt'] with body { prompt: '...' } -> input = { prompt: '...' }
-          const input: Record<string, unknown> = {};
-          for (const key of requestKeys) {
-            if (key in body) {
-              input[key] = body[key];
-            }
-          }
-
-          const executeRequest: ExecuteRequest = {
-            input,
+          const invokeRequest: InvokeRequest = {
+            input: body.input ?? {},
             stream: body.stream === true,
-            context: body.context as Record<string, unknown> | undefined,
+            context: body.context,
           };
 
           // Handle streaming
-          if (executeRequest.stream) {
+          if (invokeRequest.stream) {
             const stream = new ReadableStream({
               start: async (controller) => {
                 const encoder = new TextEncoder();
                 try {
-                  for await (const chunk of this.executeStream(executeRequest)) {
-                    controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+                  for await (const chunk of this.invokeStream(invokeRequest)) {
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({ delta: chunk })}\n\n`)
+                    );
                   }
-                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
                 } catch (error) {
                   const message = error instanceof Error ? error.message : 'Unknown error';
+                  const errorType =
+                    error instanceof Error ? error.constructor.name : 'ExecutionError';
                   controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ error: message })}\n\n`)
+                    encoder.encode(
+                      `data: ${JSON.stringify({ error: { type: errorType, message } })}\n\n`
+                    )
                   );
                 }
                 controller.close();
@@ -217,15 +280,22 @@ export abstract class AgentBase {
             });
           }
 
-          const response = await this.execute(executeRequest);
+          const response = await this.invoke(invokeRequest);
           return Response.json(response, { headers: corsHeaders });
         }
 
         // Not found
-        return Response.json({ error: 'Not found' }, { status: 404, headers: corsHeaders });
+        return Response.json(
+          { error: { type: 'NotFoundError', message: 'Not found' } },
+          { status: 404, headers: corsHeaders }
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
-        return Response.json({ error: message }, { status: 500, headers: corsHeaders });
+        const errorType = error instanceof Error ? error.constructor.name : 'ExecutionError';
+        return Response.json(
+          { error: { type: errorType, message } },
+          { status: 500, headers: corsHeaders }
+        );
       }
     };
   }
@@ -248,10 +318,10 @@ export abstract class AgentBase {
  */
 export class Agent extends AgentBase {
   private readonly _name: string;
-  private readonly _metadata: Record<string, unknown>;
+  private readonly _metadata: Partial<AgentMetadata>;
 
-  private _executeHandler: ExecuteHandler | null = null;
-  private _executeStreamHandler: ExecuteStreamHandler | null = null;
+  private _invokeHandler: InvokeHandler | null = null;
+  private _invokeStreamHandler: InvokeStreamHandler | null = null;
 
   /**
    * Create a new agent.
@@ -259,7 +329,7 @@ export class Agent extends AgentBase {
    * @param name - The agent name (used in URLs like /agents/{name}/invoke)
    * @param options - Optional configuration
    */
-  constructor(name: string, options?: { metadata?: Record<string, unknown> }) {
+  constructor(name: string, options?: { metadata?: Partial<AgentMetadata> }) {
     super();
     this._name = name;
     this._metadata = options?.metadata ?? {};
@@ -277,19 +347,14 @@ export class Agent extends AgentBase {
    */
   get metadata(): AgentMetadata {
     return {
-      type: 'agent',
-      parameters: DEFAULT_AGENT_PARAMETERS,
-      requestKeys: ['prompt'],
-      responseKeys: ['content'],
+      capabilities: {
+        streaming: this._invokeStreamHandler !== null,
+        ...this._metadata.capabilities,
+      },
+      input: this._metadata.input ?? DEFAULT_AGENT_INPUT,
+      output: this._metadata.output ?? DEFAULT_AGENT_OUTPUT,
       ...this._metadata,
     };
-  }
-
-  /**
-   * Whether execute supports streaming.
-   */
-  override get streaming(): boolean {
-    return this._executeStreamHandler !== null;
   }
 
   /**
@@ -300,8 +365,8 @@ export class Agent extends AgentBase {
    *   return { output: 'Hello!' };
    * });
    */
-  handler(fn: ExecuteHandler): this {
-    this._executeHandler = fn;
+  handler(fn: InvokeHandler): this {
+    this._invokeHandler = fn;
     return this;
   }
 
@@ -310,33 +375,33 @@ export class Agent extends AgentBase {
    *
    * @example
    * agent.streamHandler(async function* (request) {
-   *   yield '{"chunk": "Hello"}';
-   *   yield '{"chunk": " world!"}';
+   *   yield 'Hello';
+   *   yield ' world!';
    * });
    */
-  streamHandler(fn: ExecuteStreamHandler): this {
-    this._executeStreamHandler = fn;
+  streamHandler(fn: InvokeStreamHandler): this {
+    this._invokeStreamHandler = fn;
     return this;
   }
 
   /**
-   * Handle an execute request.
+   * Handle an invoke request.
    */
-  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
-    if (this._executeHandler === null) {
-      throw new Error(`No execute handler registered for agent '${this._name}'`);
+  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
+    if (this._invokeHandler === null) {
+      throw new Error(`No invoke handler registered for agent '${this._name}'`);
     }
-    return this._executeHandler(request);
+    return this._invokeHandler(request);
   }
 
   /**
-   * Handle a streaming execute request.
+   * Handle a streaming invoke request.
    */
-  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
-    if (this._executeStreamHandler === null) {
-      throw new Error(`No streaming execute handler registered for agent '${this._name}'`);
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
+    if (this._invokeStreamHandler === null) {
+      throw new Error(`No streaming invoke handler registered for agent '${this._name}'`);
     }
-    yield* this._executeStreamHandler(request);
+    yield* this._invokeStreamHandler(request);
   }
 }
 
@@ -350,20 +415,13 @@ export class Agent extends AgentBase {
 export interface AgentOptions {
   /** Human-readable description of what the agent does */
   description?: string;
-  /** Optional metadata for discovery */
-  metadata?: Record<string, unknown>;
   /**
-   * JSON Schema for input parameters.
-   * The keys in `properties` become the top-level request keys.
+   * JSON Schema for input.
    * Defaults to { prompt: string } if not provided.
    */
-  parameters?: {
-    type: 'object';
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-  /** JSON Schema for output */
-  output?: Record<string, unknown>;
+  input?: JSONSchema;
+  /** JSON Schema for output. Defaults to string. */
+  output?: JSONSchema;
   /**
    * Handler function - can be a regular async function or an async generator for streaming.
    *
@@ -384,8 +442,6 @@ export interface AgentOptions {
 export interface ChatAgentOptions {
   /** Human-readable description of what the agent does */
   description?: string;
-  /** Optional metadata for discovery */
-  metadata?: Record<string, unknown>;
   /**
    * Handler function - can be a regular async function or an async generator for streaming.
    *
@@ -410,84 +466,37 @@ function isAsyncGeneratorFunction(
 }
 
 /**
- * Wrap output schema to match the full response structure based on responseKeys.
- *
- * If responseKeys = ["output"], wraps the schema as { output: <schema> }
- * If responseKeys = ["message"], wraps the schema as { message: <schema> }
- * If responseKeys = ["message", "output"], wraps as { message: <schema>, output: <schema> }
- *
- * @param outputSchema - The schema for the return value (or undefined)
- * @param responseKeys - List of top-level response keys
- * @returns Wrapped schema describing the full response object, or undefined if outputSchema is undefined
- */
-function wrapOutputSchemaForResponseKeys(
-  outputSchema: Record<string, unknown> | undefined,
-  responseKeys: string[]
-): Record<string, unknown> | undefined {
-  if (outputSchema === undefined || responseKeys.length === 0) {
-    return undefined;
-  }
-
-  // If single response key, wrap the output schema
-  if (responseKeys.length === 1) {
-    return {
-      type: 'object',
-      properties: { [responseKeys[0]]: outputSchema },
-      required: responseKeys,
-    };
-  }
-
-  // Multiple response keys - need to split the output schema
-  // For now, assume the output schema describes the first key's value
-  // and other keys are optional/unknown
-  const properties: Record<string, unknown> = { [responseKeys[0]]: outputSchema };
-  const required = [responseKeys[0]];
-
-  // For additional keys, we don't know their schema, so mark as optional
-  // Users can override via metadata if they need full schema
-  for (const key of responseKeys.slice(1)) {
-    properties[key] = { type: 'object' }; // Placeholder - should be overridden
-  }
-
-  return {
-    type: 'object',
-    properties,
-    required,
-  };
-}
-
-/**
  * Create an agent from a configuration object.
  *
- * By default, agents expect `{ prompt: string }` in the request body and
- * return `{ output: ... }`. You can customize by providing `parameters`.
+ * By default, agents expect `{ input: { prompt: string } }` in the request body and
+ * return `{ output: string }`. You can customize by providing `input` schema.
  *
  * @example
  * ```typescript
- * // Simple agent with default parameters
- * // Request: { prompt: 'Hello world' }
+ * // Simple agent with default input/output
+ * // Request: { input: { prompt: 'Hello world' } }
  * // Response: { output: 'You said: Hello world' }
  * const echo = agent('echo', {
  *   description: 'Echo the prompt',
  *   handler: async ({ prompt }) => `You said: ${prompt}`,
  * });
  *
- * // Agent with custom parameters
- * // Request: { a: 1, b: 2 }
+ * // Agent with custom input schema
+ * // Request: { input: { a: 1, b: 2 } }
  * // Response: { output: 3 }
  * const calculator = agent('calculator', {
  *   description: 'Add two numbers',
- *   parameters: {
+ *   input: {
  *     type: 'object',
  *     properties: { a: { type: 'number' }, b: { type: 'number' } },
  *     required: ['a', 'b'],
  *   },
+ *   output: { type: 'number' },
  *   handler: async ({ a, b }) => (a as number) + (b as number),
  * });
  *
  * // Streaming agent (async generator)
- * // Request: { prompt: 'hello world' }
- * // Response: { output: 'hello world ' } (streamed)
+ * // Request: { input: { prompt: 'hello world' }, stream: true }
  * const streamer = agent('streamer', {
  *   description: 'Stream text word by word',
  *   handler: async function* ({ prompt }) {
@@ -499,54 +508,20 @@ function wrapOutputSchemaForResponseKeys(
  * ```
  */
 export function agent(name: string, options: AgentOptions): Agent {
-  // Use provided parameters or default to { prompt: string }
-  const parameters = options.parameters ?? DEFAULT_AGENT_PARAMETERS;
-
-  // Derive requestKeys from parameters.properties
-  const requestKeys = Object.keys(parameters.properties);
-
-  // Default responseKeys (can be overridden via metadata)
-  const responseKeys = ['content'];
-
-  // Wrap output schema to match responseKeys structure
-  const wrappedOutput = wrapOutputSchemaForResponseKeys(options.output, responseKeys);
-
-  // Build metadata (allow metadata override to change responseKeys)
-  const baseMetadata: Record<string, unknown> = {
-    type: 'agent',
-    description: options.description,
-    parameters,
-    requestKeys,
-    responseKeys,
-  };
-
-  // If metadata override includes responseKeys, re-wrap output schema
-  const finalResponseKeys =
-    (options.metadata?.responseKeys as string[] | undefined) ?? responseKeys;
-  const finalWrappedOutput =
-    (options.metadata?.responseKeys as string[] | undefined) !== undefined
-      ? wrapOutputSchemaForResponseKeys(options.output, finalResponseKeys)
-      : wrappedOutput;
-
-  if (finalWrappedOutput !== undefined) {
-    baseMetadata.output = finalWrappedOutput;
-  }
+  const inputSchema = options.input ?? DEFAULT_AGENT_INPUT;
+  const outputSchema = options.output ?? DEFAULT_AGENT_OUTPUT;
 
   const agentInstance = new Agent(name, {
     metadata: {
-      ...baseMetadata,
-      ...options.metadata,
+      description: options.description,
+      input: inputSchema,
+      output: outputSchema,
+      capabilities: { streaming: false },
     },
   });
 
   // Detect if handler is an async generator function
   const isStreaming = isAsyncGeneratorFunction(options.handler);
-
-  // Get the response keys from the agent's metadata (allows custom override)
-  const getResponseKeys = () => {
-    const keys = agentInstance.metadata.responseKeys as string[] | undefined;
-    return keys && keys.length > 0 ? keys : ['content'];
-  };
 
   if (isStreaming) {
     const streamFn = options.handler as (
@@ -555,23 +530,17 @@ export function agent(name: string, options: AgentOptions): Agent {
     ) => AsyncGenerator<string, void, unknown>;
 
     // Register streaming handler
-    agentInstance.streamHandler(async function* (request: ExecuteRequest) {
+    agentInstance.streamHandler(async function* (request: InvokeRequest) {
       yield* streamFn(request.input, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
-    agentInstance.handler(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
+    agentInstance.handler(async (request: InvokeRequest): Promise<InvokeResponse> => {
       const chunks: string[] = [];
       for await (const chunk of streamFn(request.input, request.context)) {
         chunks.push(chunk);
       }
-      const result = chunks.join('');
-      // If result is dict, use as-is; otherwise wrap in first responseKey
-      if (typeof result === 'object' && result !== null && !Array.isArray(result)) {
-        return result as ExecuteResponse;
-      }
-      const responseKeys = getResponseKeys();
-      return { [responseKeys[0]]: result };
+      return { output: chunks.join('') };
     });
   } else {
     const regularHandler = options.handler as (
@@ -579,19 +548,9 @@ export function agent(name: string, options: AgentOptions): Agent {
       context?: Record<string, unknown>
     ) => Promise<unknown>;
 
-    agentInstance.handler(async (request: ExecuteRequest): Promise<ExecuteResponse> => {
+    agentInstance.handler(async (request: InvokeRequest): Promise<InvokeResponse> => {
       const result = await regularHandler(request.input, request.context);
-      // If result is dict with all responseKeys, use as-is; otherwise wrap in first responseKey
-      const responseKeys = getResponseKeys();
-      if (
-        typeof result === 'object' &&
-        result !== null &&
-        !Array.isArray(result) &&
-        responseKeys.every((key) => key in result)
-      ) {
-        return result as ExecuteResponse;
-      }
-      return { [responseKeys[0]]: result };
+      return { output: result };
     });
   }
 
@@ -604,14 +563,12 @@ export function agent(name: string, options: AgentOptions): Agent {
  * This is a convenience factory that creates an agent with a standard chat
  * interface (messages in, messages out).
  *
- * Request: `{ messages: [...] }`
- * Response: `{ messages: [{ role: 'assistant', content: '...' }, ...] }`
+ * Request: `{ input: { messages: [...] } }`
+ * Response: `{ output: { messages: [{ role: 'assistant', content: '...' }, ...] } }`
  *
  * @example
  * ```typescript
  * // Non-streaming chat agent
- * // Request: { messages: [{ role: 'user', content: 'hello' }] }
- * // Response: { messages: [{ role: 'assistant', content: 'You said: hello' }] }
  * const bot = chatAgent('bot', {
  *   description: 'A simple chatbot',
  *   handler: async (messages) => {
@@ -632,107 +589,17 @@ export function agent(name: string, options: AgentOptions): Agent {
  * ```
  */
 export function chatAgent(name: string, options: ChatAgentOptions): Agent {
-  // Chat agents have default request/response keys (can be overridden via metadata)
-  const requestKeys = ['messages'];
-  const responseKeys = ['messages'];
-
-  // Message item schema (shared between parameters and output)
-  const messageItemSchema = {
-    type: 'object',
-    properties: {
-      role: {
-        type: 'string',
-        enum: ['system', 'user', 'assistant', 'tool'],
-      },
-      content: {
-        type: ['string', 'null'],
-      },
-      name: {
-        type: 'string',
-      },
-      tool_call_id: {
-        type: 'string',
-      },
-      tool_calls: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            type: { type: 'string', enum: ['function'] },
-            function: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                arguments: { type: 'string' },
-              },
-              required: ['name', 'arguments'],
-            },
-          },
-          required: ['id', 'type', 'function'],
-        },
-      },
-    },
-    required: ['role'],
-  };
-
-  // Define standard chat agent schemas
-  const parametersSchema = {
-    type: 'object',
-    properties: {
-      messages: {
-        type: 'array',
-        items: messageItemSchema,
-      },
-    },
-    required: ['messages'],
-  };
-
-  // Messages schema (array of messages, the value, not the full response)
-  const messagesSchema = {
-    type: 'array',
-    items: messageItemSchema,
-  };
-
-  // Wrap messages schema to match responseKeys structure
-  const wrappedOutput = wrapOutputSchemaForResponseKeys(messagesSchema, responseKeys);
-
-  // Build metadata (allow metadata override to change responseKeys)
-  const baseMetadata: Record<string, unknown> = {
-    type: 'chat_agent',
-    description: options.description,
-    parameters: parametersSchema,
-    requestKeys,
-    responseKeys,
-  };
-
-  // If metadata override includes responseKeys, re-wrap output schema
-  const finalResponseKeys =
-    (options.metadata?.responseKeys as string[] | undefined) ?? responseKeys;
-  const finalWrappedOutput =
-    (options.metadata?.responseKeys as string[] | undefined) !== undefined
-      ? wrapOutputSchemaForResponseKeys(messagesSchema, finalResponseKeys)
-      : wrappedOutput;
-
-  if (finalWrappedOutput !== undefined) {
-    baseMetadata.output = finalWrappedOutput;
-  }
-
   const agentInstance = new Agent(name, {
     metadata: {
-      ...baseMetadata,
-      ...options.metadata,
+      description: options.description,
+      input: CHAT_AGENT_INPUT,
+      output: CHAT_AGENT_OUTPUT,
+      capabilities: { streaming: false },
     },
   });
 
   // Detect if handler is an async generator function
   const isStreaming = isAsyncGeneratorFunction(options.handler);
-
-  // Get the response keys from the agent's metadata (allows custom override)
-  const getResponseKeys = () => {
-    const keys = agentInstance.metadata.responseKeys as string[] | undefined;
-    return keys && keys.length > 0 ? keys : ['messages'];
-  };
 
   if (isStreaming) {
     const streamFn = options.handler as (
@@ -741,22 +608,23 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
     ) => AsyncGenerator<string, void, unknown>;
 
     // Register streaming handler
-    agentInstance.streamHandler(async function* (request: ExecuteRequest) {
+    agentInstance.streamHandler(async function* (request: InvokeRequest) {
       const rawMessages = (request.input.messages ?? []) as Message[];
       yield* streamFn(rawMessages, request.context);
     });
 
     // Also register non-streaming handler that collects chunks
-    agentInstance.handler(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
+    agentInstance.handler(async (request: InvokeRequest): Promise<InvokeResponse> => {
       const rawMessages = (request.input.messages ?? []) as Message[];
       const chunks: string[] = [];
       for await (const chunk of streamFn(rawMessages, request.context)) {
         chunks.push(chunk);
       }
-      const result = [{ role: 'assistant', content: chunks.join('') }];
-      // For chat agents, always wrap in first responseKey (typically "messages")
-      const responseKeys = getResponseKeys();
-      return { [responseKeys[0]]: result };
+      return {
+        output: {
+          messages: [{ role: 'assistant', content: chunks.join('') }],
+        },
+      };
     });
   } else {
     const regularHandler = options.handler as (
@@ -764,28 +632,16 @@ export function chatAgent(name: string, options: ChatAgentOptions): Agent {
       context?: Record<string, unknown>
     ) => Promise<Message[]>;
 
-    agentInstance.handler(async (request: ExecuteRequest): Promise<Record<string, unknown>> => {
+    agentInstance.handler(async (request: InvokeRequest): Promise<InvokeResponse> => {
       const rawMessages = (request.input.messages ?? []) as Message[];
       const result = await regularHandler(rawMessages, request.context);
-      const responseKeys = getResponseKeys();
-
-      // Check if result is already a full response dict with all responseKeys
-      // (This handles cases where responseKeys are overridden and function returns a dict)
-      if (
-        typeof result === 'object' &&
-        result !== null &&
-        !Array.isArray(result) &&
-        responseKeys.every((key) => key in (result as Record<string, unknown>))
-      ) {
-        return result as Record<string, unknown>;
-      }
 
       // Convert list of Message objects to list of dicts
       const messagesList = Array.isArray(result)
         ? result.map((m) => ({ role: m.role, content: m.content }))
         : [{ role: (result as Message).role, content: (result as Message).content }];
 
-      return { [responseKeys[0]]: messagesList };
+      return { output: { messages: messagesList } };
     });
   }
 

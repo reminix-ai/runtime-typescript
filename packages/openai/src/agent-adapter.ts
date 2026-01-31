@@ -8,8 +8,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type ExecuteRequest,
-  type ExecuteResponse,
+  type InvokeRequest,
+  type InvokeResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -64,9 +64,9 @@ export class OpenAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Build OpenAI messages from execute request input.
+   * Build OpenAI messages from invoke request input.
    */
-  private buildOpenAIMessages(request: ExecuteRequest): OpenAI.Chat.ChatCompletionMessageParam[] {
+  private buildOpenAIMessages(request: InvokeRequest): OpenAI.Chat.ChatCompletionMessageParam[] {
     const input = request.input as Record<string, unknown>;
 
     if ('messages' in input) {
@@ -80,15 +80,15 @@ export class OpenAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle an execute request.
+   * Handle an invoke request.
    *
    * For both task-oriented and chat-style operations. Expects input with 'messages' key
    * or a 'prompt' key for simple text generation.
    *
-   * @param request - The execute request with input data.
-   * @returns The execute response with the output.
+   * @param request - The invoke request with input data.
+   * @returns The invoke response with the output.
    */
-  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
     const messages = this.buildOpenAIMessages(request);
 
     // Call OpenAI API
@@ -104,12 +104,12 @@ export class OpenAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle a streaming execute request.
+   * Handle a streaming invoke request.
    *
-   * @param request - The execute request with input data.
+   * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     const messages = this.buildOpenAIMessages(request);
 
     // Stream from OpenAI API

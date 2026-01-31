@@ -22,37 +22,44 @@ export interface Message {
   name?: string;
 }
 
-export interface ExecuteRequest {
+// === Request Types ===
+
+export interface InvokeRequest {
   input: Record<string, unknown>;
   stream?: boolean;
   context?: Record<string, unknown>;
 }
 
-/**
- * Response from agent execute.
- * The shape depends on the agent's responseKeys.
- * - Regular agents: { output: unknown }
- * - Chat agents: { messages: Message[] }
- */
-export type ExecuteResponse = Record<string, unknown>;
+// === Response Types ===
 
-// Tool types
-
-export interface ToolSchema {
-  type: 'object';
-  properties: Record<string, unknown>;
-  required?: string[];
-}
-
-export interface ToolExecuteRequest {
-  input: Record<string, unknown>;
-  context?: Record<string, unknown>;
-}
-
-export interface ToolExecuteResponse {
+export interface InvokeResponse {
   output: unknown;
-  error?: string | null;
+  metadata?: Record<string, unknown>;
 }
+
+// === Schema Types ===
+
+export interface JSONSchema {
+  type: 'object' | 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'null';
+  properties?: Record<string, unknown>;
+  required?: string[];
+  items?: unknown;
+  description?: string;
+  default?: unknown;
+  [key: string]: unknown;
+}
+
+// === Capabilities ===
+
+export interface Capabilities {
+  streaming?: boolean;
+  // batch?: boolean;    // Process multiple inputs in one call
+  // async?: boolean;    // Fire-and-forget with webhook callback
+  // retry?: boolean;    // Built-in retry with backoff
+  [key: string]: unknown;
+}
+
+// === Error Types ===
 
 /**
  * Structured runtime error information

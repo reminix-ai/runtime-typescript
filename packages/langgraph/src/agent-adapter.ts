@@ -14,8 +14,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type ExecuteRequest,
-  type ExecuteResponse,
+  type InvokeRequest,
+  type InvokeResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -126,9 +126,9 @@ export class LangGraphAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Build LangGraph input from execute request.
+   * Build LangGraph input from invoke request.
    */
-  private buildGraphInput(request: ExecuteRequest): unknown {
+  private buildGraphInput(request: InvokeRequest): unknown {
     const input = request.input as Record<string, unknown>;
 
     if ('messages' in input) {
@@ -141,14 +141,14 @@ export class LangGraphAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle an execute request.
+   * Handle an invoke request.
    *
    * For both task-oriented and chat-style operations.
    *
-   * @param request - The execute request with input data.
-   * @returns The execute response with the output.
+   * @param request - The invoke request with input data.
+   * @returns The invoke response with the output.
    */
-  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
     const graphInput = this.buildGraphInput(request);
 
     // Call the graph
@@ -169,12 +169,12 @@ export class LangGraphAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle a streaming execute request.
+   * Handle a streaming invoke request.
    *
-   * @param request - The execute request with input data.
+   * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     const graphInput = this.buildGraphInput(request);
 
     // Stream from the graph (await if stream returns a promise)

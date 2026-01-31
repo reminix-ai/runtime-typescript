@@ -11,8 +11,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type ExecuteRequest,
-  type ExecuteResponse,
+  type InvokeRequest,
+  type InvokeResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -93,9 +93,9 @@ export class VercelAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Build prompt or messages from execute request.
+   * Build prompt or messages from invoke request.
    */
-  private buildInputFromRequest(request: ExecuteRequest): {
+  private buildInputFromRequest(request: InvokeRequest): {
     prompt?: string;
     messages?: ModelMessage[];
   } {
@@ -112,15 +112,15 @@ export class VercelAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle an execute request.
+   * Handle an invoke request.
    *
    * For both task-oriented and chat-style operations. Expects input with 'messages' key
    * or a 'prompt' key for simple text generation.
    *
-   * @param request - The execute request with input data.
-   * @returns The execute response with the output.
+   * @param request - The invoke request with input data.
+   * @returns The invoke response with the output.
    */
-  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
     const { prompt, messages } = this.buildInputFromRequest(request);
 
     let output: string;
@@ -146,12 +146,12 @@ export class VercelAIAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle a streaming execute request.
+   * Handle a streaming invoke request.
    *
-   * @param request - The execute request with input data.
+   * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     const { prompt, messages } = this.buildInputFromRequest(request);
 
     if (this.isAgent) {

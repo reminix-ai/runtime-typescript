@@ -7,7 +7,7 @@ import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
 import type { AgentBase } from './agent.js';
 import type { ToolBase } from './tool.js';
-import type { ExecuteRequest, ToolExecuteRequest, RuntimeErrorResponse } from './types.js';
+import type { InvokeRequest, RuntimeErrorResponse } from './types.js';
 import { VERSION } from './version.js';
 
 /**
@@ -95,7 +95,6 @@ export function createApp(options: CreateAppOptions): Hono {
       agents: agents.map((agent) => ({
         name: agent.name,
         ...agent.metadata,
-        streaming: agent.streaming,
       })),
       tools: tools.map((tool) => ({
         name: tool.name,
@@ -110,37 +109,28 @@ export function createApp(options: CreateAppOptions): Hono {
     const agent = agentMap.get(agentName);
 
     if (!agent) {
-      return c.json({ error: `Agent '${agentName}' not found` }, 404);
+      return c.json(
+        createErrorResponse(new Error(`Agent '${agentName}' not found`), 'NotFoundError'),
+        404
+      );
     }
 
-    const body = await c.req.json<Record<string, unknown>>();
+    const body = await c.req.json<InvokeRequest>();
 
-    // Get requestKeys from agent metadata (all agents have defaults)
-    const requestKeys = (agent.metadata.requestKeys as string[]) ?? [];
-
-    // Extract declared keys from body into input object
-    // e.g., requestKeys: ['prompt'] with body { prompt: '...' } -> input = { prompt: '...' }
-    const input: Record<string, unknown> = {};
-    for (const key of requestKeys) {
-      if (key in body) {
-        input[key] = body[key];
-      }
-    }
-
-    const request: ExecuteRequest = {
-      input,
+    const request: InvokeRequest = {
+      input: body.input ?? {},
       stream: body.stream === true,
-      context: body.context as Record<string, unknown> | undefined,
+      context: body.context,
     };
 
     // Handle streaming
     if (request.stream) {
       return streamSSE(c, async (stream) => {
         try {
-          for await (const chunk of agent.executeStream(request)) {
-            await stream.writeSSE({ data: chunk });
+          for await (const chunk of agent.invokeStream(request)) {
+            await stream.writeSSE({ data: JSON.stringify({ delta: chunk }) });
           }
-          await stream.writeSSE({ data: '[DONE]' });
+          await stream.writeSSE({ data: JSON.stringify({ done: true }) });
         } catch (error) {
           const errorResponse = createErrorResponse(
             error,
@@ -153,7 +143,7 @@ export function createApp(options: CreateAppOptions): Hono {
 
     // Non-streaming: catch errors and return structured response
     try {
-      const response = await agent.execute(request);
+      const response = await agent.invoke(request);
       return c.json(response);
     } catch (error) {
       // Determine error type and status code
@@ -180,13 +170,21 @@ export function createApp(options: CreateAppOptions): Hono {
     const tool = toolMap.get(toolName);
 
     if (!tool) {
-      return c.json({ error: `Tool '${toolName}' not found` }, 404);
+      return c.json(
+        createErrorResponse(new Error(`Tool '${toolName}' not found`), 'NotFoundError'),
+        404
+      );
     }
 
-    const body = await c.req.json<ToolExecuteRequest>();
+    const body = await c.req.json<InvokeRequest>();
+
+    const request: InvokeRequest = {
+      input: body.input ?? {},
+      context: body.context,
+    };
 
     try {
-      const result = await tool.execute(body);
+      const result = await tool.execute(request);
       return c.json(result);
     } catch (error) {
       // Determine error type and status code

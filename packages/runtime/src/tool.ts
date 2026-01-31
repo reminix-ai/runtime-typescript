@@ -2,18 +2,26 @@
  * Reminix Runtime Tool definitions
  */
 
-import type { ToolSchema, ToolExecuteRequest, ToolExecuteResponse } from './types.js';
+import type { InvokeRequest, InvokeResponse, JSONSchema, Capabilities } from './types.js';
+
+/**
+ * Default output schema for tools.
+ * Response: { output: '...' }
+ */
+const DEFAULT_TOOL_OUTPUT: JSONSchema = {
+  type: 'string',
+};
 
 /** Metadata for a tool */
 export interface ToolMetadata {
-  type: 'tool';
   description: string;
-  parameters: ToolSchema;
-  output?: ToolSchema;
+  capabilities?: Capabilities;
+  input: JSONSchema;
+  output?: JSONSchema;
 }
 
-/** Execute handler function type */
-export type ExecuteHandler = (
+/** Handler function type */
+export type ToolHandler = (
   input: Record<string, unknown>,
   context?: Record<string, unknown>
 ) => Promise<unknown> | unknown;
@@ -28,20 +36,19 @@ export abstract class ToolBase {
   /** Human-readable description */
   abstract get description(): string;
 
-  /** JSON Schema for input parameters */
-  abstract get parameters(): ToolSchema;
+  /** JSON Schema for input */
+  abstract get input(): JSONSchema;
 
   /** Optional JSON Schema for output */
-  get output(): ToolSchema | undefined {
+  get output(): JSONSchema | undefined {
     return undefined;
   }
 
   /** Metadata for runtime discovery */
   get metadata(): ToolMetadata {
     const meta: ToolMetadata = {
-      type: 'tool',
       description: this.description,
-      parameters: this.parameters,
+      input: this.input,
     };
     if (this.output) {
       meta.output = this.output;
@@ -49,20 +56,20 @@ export abstract class ToolBase {
     return meta;
   }
 
-  /** Execute the tool with the given input */
-  abstract execute(request: ToolExecuteRequest): Promise<ToolExecuteResponse>;
+  /** Execute the tool with the given request */
+  abstract execute(request: InvokeRequest): Promise<InvokeResponse>;
 }
 
 /** Options for creating a tool */
 export interface ToolOptions {
   /** Human-readable description of what the tool does */
   description: string;
-  /** JSON Schema for input parameters */
-  parameters: ToolSchema;
-  /** Optional JSON Schema for output (for documentation and type inference) */
-  output?: ToolSchema;
+  /** JSON Schema for input */
+  input: JSONSchema;
+  /** Optional JSON Schema for output (defaults to string) */
+  output?: JSONSchema;
   /** Handler function to execute when the tool is called */
-  handler: ExecuteHandler;
+  handler: ToolHandler;
 }
 
 /**
@@ -71,17 +78,17 @@ export interface ToolOptions {
 export class Tool extends ToolBase {
   private _name: string;
   private _description: string;
-  private _parameters: ToolSchema;
-  private _output?: ToolSchema;
-  private _executeHandler: ExecuteHandler;
+  private _input: JSONSchema;
+  private _output?: JSONSchema;
+  private _handler: ToolHandler;
 
   constructor(name: string, options: ToolOptions) {
     super();
     this._name = name;
     this._description = options.description;
-    this._parameters = options.parameters;
+    this._input = options.input;
     this._output = options.output;
-    this._executeHandler = options.handler;
+    this._handler = options.handler;
   }
 
   get name(): string {
@@ -92,12 +99,12 @@ export class Tool extends ToolBase {
     return this._description;
   }
 
-  get parameters(): ToolSchema {
-    return this._parameters;
+  get input(): JSONSchema {
+    return this._input;
   }
 
-  get output(): ToolSchema | undefined {
-    return this._output;
+  get output(): JSONSchema | undefined {
+    return this._output ?? DEFAULT_TOOL_OUTPUT;
   }
 
   /**
@@ -106,8 +113,8 @@ export class Tool extends ToolBase {
    * Exceptions are not caught here - they propagate to the server
    * which returns appropriate HTTP error codes.
    */
-  async execute(request: ToolExecuteRequest): Promise<ToolExecuteResponse> {
-    const result = await this._executeHandler(request.input, request.context);
+  async execute(request: InvokeRequest): Promise<InvokeResponse> {
+    const result = await this._handler(request.input, request.context);
     return { output: result };
   }
 }
@@ -121,7 +128,7 @@ export class Tool extends ToolBase {
  *
  * const getWeather = tool('get_weather', {
  *   description: 'Get current weather for a location',
- *   parameters: {
+ *   input: {
  *     type: 'object',
  *     properties: {
  *       location: { type: 'string', description: 'City name' },

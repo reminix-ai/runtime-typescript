@@ -15,8 +15,8 @@ import {
   AgentAdapter,
   serve,
   type ServeOptions,
-  type ExecuteRequest,
-  type ExecuteResponse,
+  type InvokeRequest,
+  type InvokeResponse,
   type Message,
 } from '@reminix/runtime';
 
@@ -70,9 +70,9 @@ export class LangChainAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Build LangChain input from execute request.
+   * Build LangChain input from invoke request.
    */
-  private buildLangChainInput(request: ExecuteRequest): unknown {
+  private buildLangChainInput(request: InvokeRequest): unknown {
     const input = request.input as Record<string, unknown>;
 
     if ('messages' in input) {
@@ -86,15 +86,15 @@ export class LangChainAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle an execute request.
+   * Handle an invoke request.
    *
    * For both task-oriented and chat-style operations. Expects input with 'messages' key
    * or a 'prompt' key for simple text generation.
    *
-   * @param request - The execute request with input data.
-   * @returns The execute response with the output.
+   * @param request - The invoke request with input data.
+   * @returns The invoke response with the output.
    */
-  async execute(request: ExecuteRequest): Promise<ExecuteResponse> {
+  async invoke(request: InvokeRequest): Promise<InvokeResponse> {
     const invokeInput = this.buildLangChainInput(request);
 
     const response = await this.agent.invoke(invokeInput);
@@ -113,12 +113,12 @@ export class LangChainAgentAdapter extends AgentAdapter {
   }
 
   /**
-   * Handle a streaming execute request.
+   * Handle a streaming invoke request.
    *
-   * @param request - The execute request with input data.
+   * @param request - The invoke request with input data.
    * @yields JSON-encoded chunks from the stream.
    */
-  async *executeStream(request: ExecuteRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: InvokeRequest): AsyncGenerator<string, void, unknown> {
     const streamInput = this.buildLangChainInput(request);
 
     // Stream from the runnable
