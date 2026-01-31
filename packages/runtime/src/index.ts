@@ -19,6 +19,7 @@ export type {
 export { AgentBase, Agent, agent } from './agent.js';
 export type {
   AgentMetadata,
+  AgentTemplate,
   InvokeHandler,
   InvokeStreamHandler,
   FetchHandler,

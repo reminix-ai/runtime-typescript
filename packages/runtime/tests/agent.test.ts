@@ -403,3 +403,95 @@ describe('agent() Factory', () => {
     expect(response.output).toBe('hello world ');
   });
 });
+
+describe('Agent Templates', () => {
+  it('template prompt: metadata and invoke', async () => {
+    const echo = agent('echo', {
+      template: 'prompt',
+      description: 'Echo the prompt',
+      handler: async ({ prompt }) => `You said: ${prompt}`,
+    });
+
+    expect(echo.metadata.template).toBe('prompt');
+    expect(echo.metadata.input).toEqual({
+      type: 'object',
+      properties: {
+        prompt: { type: 'string', description: 'The prompt or task for the agent' },
+      },
+      required: ['prompt'],
+    });
+    expect(echo.metadata.output).toEqual({ type: 'string' });
+
+    const response = await echo.invoke({ input: { prompt: 'hello' } });
+    expect(response.output).toBe('You said: hello');
+  });
+
+  it('template chat: metadata and invoke', async () => {
+    const chat = agent('chat', {
+      template: 'chat',
+      description: 'Reply to messages',
+      handler: async ({ messages }) => {
+        const last = (messages as Array<{ role: string; content: string }>)[
+          (messages as Array<unknown>).length - 1
+        ];
+        return `Reply to: ${last?.content ?? ''}`;
+      },
+    });
+
+    expect(chat.metadata.template).toBe('chat');
+    expect(chat.metadata.input?.type).toBe('object');
+    expect(chat.metadata.input?.required).toEqual(['messages']);
+    expect((chat.metadata.input?.properties as Record<string, unknown>)?.messages).toBeDefined();
+    expect(chat.metadata.output).toEqual({ type: 'string' });
+
+    const response = await chat.invoke({
+      input: {
+        messages: [{ role: 'user', content: 'Hi' }],
+      },
+    });
+    expect(response.output).toBe('Reply to: Hi');
+  });
+
+  it('template task: metadata and invoke', async () => {
+    const taskAgent = agent('summarizer', {
+      template: 'task',
+      description: 'Run a task',
+      handler: async ({ task, text }) => `Task "${task}" on: ${(text as string) ?? '—'}`,
+    });
+
+    expect(taskAgent.metadata.template).toBe('task');
+    expect(taskAgent.metadata.input?.type).toBe('object');
+    expect(taskAgent.metadata.input?.required).toEqual(['task']);
+    expect((taskAgent.metadata.input?.properties as Record<string, unknown>)?.task).toBeDefined();
+    expect(taskAgent.metadata.output?.description).toContain('Structured JSON');
+
+    const response = await taskAgent.invoke({
+      input: { task: 'summarize', text: 'Some content' },
+    });
+    expect(response.output).toBe('Task "summarize" on: Some content');
+  });
+
+  it('explicit input overrides template', () => {
+    const custom = agent('custom', {
+      template: 'prompt',
+      input: {
+        type: 'object',
+        properties: { q: { type: 'string' } },
+        required: ['q'],
+      },
+      handler: async () => 'ok',
+    });
+
+    expect(custom.metadata.template).toBe('prompt');
+    expect(custom.metadata.input?.required).toEqual(['q']);
+  });
+
+  it('no template or input/output uses default prompt template', () => {
+    const def = agent('def', {
+      handler: async ({ prompt }) => String(prompt),
+    });
+
+    expect(def.metadata.template).toBe('prompt');
+    expect(def.metadata.input?.required).toEqual(['prompt']);
+  });
+});

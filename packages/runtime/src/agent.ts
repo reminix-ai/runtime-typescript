@@ -6,24 +6,70 @@ import type { AgentInvokeRequest, AgentInvokeResponse, JSONSchema, Capabilities 
 import { VERSION } from './version.js';
 
 /**
- * Default input schema for agents.
- * Request: { input: { prompt: '...' } }
+ * Named agent templates with predefined input/output schemas.
+ * The default template is 'prompt'; use it when no template or input/output is provided.
  */
-const DEFAULT_AGENT_INPUT: JSONSchema = {
+export type AgentTemplate = 'prompt' | 'chat' | 'task';
+
+/** Default template when none specified and no custom input/output. */
+const DEFAULT_AGENT_TEMPLATE: AgentTemplate = 'prompt';
+
+const CHAT_INPUT_MESSAGE_ITEMS: JSONSchema = {
   type: 'object',
   properties: {
-    prompt: { type: 'string', description: 'The prompt or task for the agent' },
+    role: { type: 'string', description: 'Message role (user, assistant, system)' },
+    content: { type: 'string', description: 'Message content', nullable: true },
   },
-  required: ['prompt'],
 };
 
-/**
- * Default output schema for agents.
- * Response: { output: '...' }
- */
-const DEFAULT_AGENT_OUTPUT: JSONSchema = {
-  type: 'string',
+const AGENT_TEMPLATES: Record<
+  AgentTemplate,
+  { input: JSONSchema; output: JSONSchema }
+> = {
+  prompt: {
+    input: {
+      type: 'object',
+      properties: {
+        prompt: { type: 'string', description: 'The prompt or task for the agent' },
+      },
+      required: ['prompt'],
+    },
+    output: { type: 'string' },
+  },
+  chat: {
+    input: {
+      type: 'object',
+      properties: {
+        messages: {
+          type: 'array',
+          description: 'Chat messages (OpenAI-style)',
+          items: CHAT_INPUT_MESSAGE_ITEMS,
+        },
+      },
+      required: ['messages'],
+    },
+    output: { type: 'string' },
+  },
+  task: {
+    input: {
+      type: 'object',
+      properties: {
+        task: { type: 'string', description: 'Task name or description' },
+      },
+      required: ['task'],
+      additionalProperties: true,
+    },
+    output: {
+      description: 'Structured JSON result (object, array, string, number, boolean, or null)',
+      type: 'object',
+      additionalProperties: true,
+    },
+  },
 };
+
+/** Default input/output schemas (same as prompt template). Used by AgentBase and custom agents. */
+const DEFAULT_AGENT_INPUT = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE].input;
+const DEFAULT_AGENT_OUTPUT = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE].output;
 
 /**
  * Web-standard fetch handler type.
@@ -38,6 +84,8 @@ export interface AgentMetadata {
   capabilities: Capabilities;
   input: JSONSchema;
   output?: JSONSchema;
+  /** Named template (prompt, chat, task) when agent uses a template. */
+  template?: AgentTemplate;
   [key: string]: unknown;
 }
 
@@ -344,11 +392,16 @@ export interface AgentOptions {
   /** Human-readable description of what the agent does */
   description?: string;
   /**
+   * Named template (prompt, chat, task). When set, input/output default to the template's schemas
+   * unless overridden by explicit input/output.
+   */
+  template?: AgentTemplate;
+  /**
    * JSON Schema for input.
-   * Defaults to { prompt: string } if not provided.
+   * Defaults to template schema if template is set, else { prompt: string }.
    */
   input?: JSONSchema;
-  /** JSON Schema for output. Defaults to string. */
+  /** JSON Schema for output. Defaults to template schema if set, else string. */
   output?: JSONSchema;
   /**
    * Handler function - can be a regular async function or an async generator for streaming.
@@ -416,14 +469,30 @@ function isAsyncGeneratorFunction(
  * ```
  */
 export function agent(name: string, options: AgentOptions): Agent {
-  const inputSchema = options.input ?? DEFAULT_AGENT_INPUT;
-  const outputSchema = options.output ?? DEFAULT_AGENT_OUTPUT;
+  // Default template is 'prompt' when no template and no custom input/output
+  const effectiveTemplate: AgentTemplate | undefined =
+    options.template ??
+    (options.input === undefined && options.output === undefined
+      ? DEFAULT_AGENT_TEMPLATE
+      : undefined);
+
+  const inputSchema =
+    options.input ??
+    (effectiveTemplate
+      ? AGENT_TEMPLATES[effectiveTemplate].input
+      : DEFAULT_AGENT_INPUT);
+  const outputSchema =
+    options.output ??
+    (effectiveTemplate
+      ? AGENT_TEMPLATES[effectiveTemplate].output
+      : DEFAULT_AGENT_OUTPUT);
 
   const agentInstance = new Agent(name, {
     metadata: {
       description: options.description,
       input: inputSchema,
       output: outputSchema,
+      ...(effectiveTemplate !== undefined && { template: effectiveTemplate }),
     },
   });
 
