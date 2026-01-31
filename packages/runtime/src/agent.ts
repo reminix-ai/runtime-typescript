@@ -9,7 +9,7 @@ import { VERSION } from './version.js';
  * Named agent templates with predefined input/output schemas.
  * The default template is 'prompt'; use it when no template or input/output is provided.
  */
-export type AgentTemplate = 'prompt' | 'chat' | 'task';
+export type AgentTemplate = 'prompt' | 'chat' | 'task' | 'rag' | 'thread';
 
 /** Default template when none specified and no custom input/output. */
 const DEFAULT_AGENT_TEMPLATE: AgentTemplate = 'prompt';
@@ -65,6 +65,44 @@ const AGENT_TEMPLATES: Record<
       additionalProperties: true,
     },
   },
+  rag: {
+    input: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'The question to answer from documents' },
+        messages: {
+          type: 'array',
+          description: 'Optional prior conversation (chat-style RAG)',
+          items: CHAT_INPUT_MESSAGE_ITEMS,
+        },
+        collectionIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional knowledge collection IDs to scope the search',
+        },
+      },
+      required: ['query'],
+    },
+    output: { type: 'string' },
+  },
+  thread: {
+    input: {
+      type: 'object',
+      properties: {
+        messages: {
+          type: 'array',
+          description: 'Chat messages with tool_calls and tool results (OpenAI-style)',
+          items: CHAT_INPUT_MESSAGE_ITEMS,
+        },
+      },
+      required: ['messages'],
+    },
+    output: {
+      type: 'array',
+      description: 'Updated message thread (OpenAI-style, may include assistant message and tool_calls)',
+      items: CHAT_INPUT_MESSAGE_ITEMS,
+    },
+  },
 };
 
 /** Default input/output schemas (same as prompt template). Used by AgentBase and custom agents. */
@@ -84,7 +122,7 @@ export interface AgentMetadata {
   capabilities: Capabilities;
   input: JSONSchema;
   output?: JSONSchema;
-  /** Named template (prompt, chat, task) when agent uses a template. */
+  /** Named template (prompt, chat, task, rag, thread) when agent uses a template. */
   template?: AgentTemplate;
   [key: string]: unknown;
 }

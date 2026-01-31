@@ -494,4 +494,50 @@ describe('Agent Templates', () => {
     expect(def.metadata.template).toBe('prompt');
     expect(def.metadata.input?.required).toEqual(['prompt']);
   });
+
+  it('template rag: metadata and invoke', async () => {
+    const ragAgent = agent('rag', {
+      template: 'rag',
+      description: 'Answer from documents',
+      handler: async ({ query }) => `Answer for: ${query}`,
+    });
+
+    expect(ragAgent.metadata.template).toBe('rag');
+    expect(ragAgent.metadata.input?.required).toEqual(['query']);
+    expect((ragAgent.metadata.input?.properties as Record<string, unknown>)?.query).toBeDefined();
+    expect(ragAgent.metadata.output).toEqual({ type: 'string' });
+
+    const response = await ragAgent.invoke({ input: { query: 'What is X?' } });
+    expect(response.output).toBe('Answer for: What is X?');
+  });
+
+  it('template thread: metadata and invoke (output is messages)', async () => {
+    const threadAgent = agent('thread-agent', {
+      template: 'thread',
+      description: 'Message thread in, updated thread out',
+      handler: async ({ messages }) => {
+        const inputMessages = messages as Array<{ role: string; content: string | null }>;
+        return [
+          ...inputMessages,
+          { role: 'assistant' as const, content: `Reply to: ${inputMessages[inputMessages.length - 1]?.content ?? ''}` },
+        ];
+      },
+    });
+
+    expect(threadAgent.metadata.template).toBe('thread');
+    expect(threadAgent.metadata.input?.required).toEqual(['messages']);
+    expect((threadAgent.metadata.input?.properties as Record<string, unknown>)?.messages).toBeDefined();
+    expect(threadAgent.metadata.output?.type).toBe('array');
+    expect((threadAgent.metadata.output as { items?: unknown })?.items).toBeDefined();
+
+    const response = await threadAgent.invoke({
+      input: { messages: [{ role: 'user', content: 'Hello' }] },
+    });
+    const outputMessages = response.output as Array<{ role: string; content: string | null }>;
+    expect(Array.isArray(outputMessages)).toBe(true);
+    expect(outputMessages).toHaveLength(2);
+    expect(outputMessages[0]).toEqual({ role: 'user', content: 'Hello' });
+    expect(outputMessages[1]?.role).toBe('assistant');
+    expect(outputMessages[1]?.content).toBe('Reply to: Hello');
+  });
 });
