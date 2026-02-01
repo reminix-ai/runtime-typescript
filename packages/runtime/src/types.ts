@@ -2,8 +2,8 @@
  * Reminix Runtime Types
  */
 
-/** Valid message roles */
-export type Role = 'user' | 'assistant' | 'system' | 'tool';
+/** Valid message roles (OpenAI current; no legacy function role). */
+export type Role = 'developer' | 'system' | 'user' | 'assistant' | 'tool';
 
 export interface ToolCall {
   id: string;
@@ -14,9 +14,47 @@ export interface ToolCall {
   };
 }
 
+/** Content part: text */
+export interface TextContentPart {
+  type: 'text';
+  text: string;
+}
+
+/** Content part: image URL (optional detail). */
+export interface ImageUrlContentPart {
+  type: 'image_url';
+  image_url: { url: string; detail?: 'auto' | 'low' | 'high' };
+}
+
+/** Content part: input audio */
+export interface InputAudioContentPart {
+  type: 'input_audio';
+  input_audio: { data: string; format: 'wav' | 'mp3' };
+}
+
+/** Content part: file */
+export interface FileContentPart {
+  type: 'file';
+  file: { file_id?: string; filename?: string; file_data?: string };
+}
+
+/** Content part: refusal (assistant) */
+export interface RefusalContentPart {
+  type: 'refusal';
+  refusal: string;
+}
+
+/** Message content part (discriminated by type). */
+export type ContentPart =
+  | TextContentPart
+  | ImageUrlContentPart
+  | InputAudioContentPart
+  | FileContentPart
+  | RefusalContentPart;
+
 export interface Message {
   role: Role;
-  content: string | null;
+  content: string | ContentPart[] | null;
   tool_calls?: ToolCall[];
   tool_call_id?: string;
   name?: string;
@@ -54,7 +92,8 @@ export type ToolCallResponse = InvokeResponse;
 // === Schema Types ===
 
 export interface JSONSchema {
-  type: 'object' | 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'null';
+  type?: 'object' | 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'null';
+  oneOf?: unknown[];
   properties?: Record<string, unknown>;
   required?: string[];
   items?: unknown;
