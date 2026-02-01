@@ -15,7 +15,7 @@ export type AgentTemplate = 'prompt' | 'chat' | 'task' | 'rag' | 'thread';
 const DEFAULT_AGENT_TEMPLATE: AgentTemplate = 'prompt';
 
 /** JSON schema for a single tool call (OpenAI-style). */
-const TOOL_CALL_ITEM_SCHEMA: JSONSchema = {
+const TOOL_CALL_SCHEMA: JSONSchema = {
   type: 'object',
   properties: {
     id: { type: 'string', description: 'Tool call id' },
@@ -32,22 +32,94 @@ const TOOL_CALL_ITEM_SCHEMA: JSONSchema = {
   required: ['id', 'type', 'function'],
 };
 
-/** JSON schema for a message item (OpenAI-style; supports tool_calls and tool results). */
-const CHAT_INPUT_MESSAGE_ITEMS: JSONSchema = {
+/** Content part schema (text, image_url, input_audio, file, refusal). */
+const CONTENT_PART_SCHEMA: JSONSchema = {
+  oneOf: [
+    {
+      type: 'object',
+      properties: { type: { const: 'text' }, text: { type: 'string' } },
+      required: ['type', 'text'],
+    },
+    {
+      type: 'object',
+      properties: {
+        type: { const: 'image_url' },
+        image_url: {
+          type: 'object',
+          properties: {
+            url: { type: 'string' },
+            detail: { type: 'string', enum: ['auto', 'low', 'high'] },
+          },
+          required: ['url'],
+        },
+      },
+      required: ['type', 'image_url'],
+    },
+    {
+      type: 'object',
+      properties: {
+        type: { const: 'input_audio' },
+        input_audio: {
+          type: 'object',
+          properties: {
+            data: { type: 'string', description: 'Base64 encoded audio data' },
+            format: { type: 'string', enum: ['wav', 'mp3'] },
+          },
+          required: ['data', 'format'],
+        },
+      },
+      required: ['type', 'input_audio'],
+    },
+    {
+      type: 'object',
+      properties: {
+        type: { const: 'file' },
+        file: {
+          type: 'object',
+          properties: {
+            file_id: { type: 'string' },
+            filename: { type: 'string' },
+            file_data: { type: 'string', description: 'Base64 encoded file data' },
+          },
+        },
+      },
+      required: ['type', 'file'],
+    },
+    {
+      type: 'object',
+      properties: { type: { const: 'refusal' }, refusal: { type: 'string' } },
+      required: ['type', 'refusal'],
+    },
+  ],
+};
+
+/** JSON schema for a message (OpenAI-style; input and output). */
+const MESSAGE_SCHEMA: JSONSchema = {
   type: 'object',
   properties: {
-    role: { type: 'string', description: 'Message role (user, assistant, system, tool)' },
-    content: { type: 'string', description: 'Message content', nullable: true },
-    tool_calls: {
-      type: 'array',
-      description: 'Tool calls requested by the model (assistant messages)',
-      items: TOOL_CALL_ITEM_SCHEMA,
+    role: {
+      type: 'string',
+      enum: ['developer', 'system', 'user', 'assistant', 'tool'],
+      description: 'Message role',
     },
+    content: {
+      oneOf: [
+        { type: 'string' },
+        { type: 'array', items: CONTENT_PART_SCHEMA, minItems: 1 },
+        { type: 'null' },
+      ],
+      description: 'Message content: string, array of content parts, or null when tool_calls present',
+    },
+    name: { type: 'string', description: 'Optional participant name' },
     tool_call_id: {
       type: 'string',
-      description: 'Id of the tool call this message is a result for (tool messages)',
+      description: 'Tool call ID (required when role is "tool")',
     },
-    name: { type: 'string', description: 'Tool name (tool messages)' },
+    tool_calls: {
+      type: 'array',
+      description: 'Tool calls (assistant role only)',
+      items: TOOL_CALL_SCHEMA,
+    },
   },
 };
 
@@ -69,7 +141,7 @@ const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output: JSONSc
         messages: {
           type: 'array',
           description: 'Chat messages (OpenAI-style)',
-          items: CHAT_INPUT_MESSAGE_ITEMS,
+          items: MESSAGE_SCHEMA,
         },
       },
       required: ['messages'],
@@ -99,7 +171,7 @@ const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output: JSONSc
         messages: {
           type: 'array',
           description: 'Optional prior conversation (chat-style RAG)',
-          items: CHAT_INPUT_MESSAGE_ITEMS,
+          items: MESSAGE_SCHEMA,
         },
         collectionIds: {
           type: 'array',
@@ -118,7 +190,7 @@ const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output: JSONSc
         messages: {
           type: 'array',
           description: 'Chat messages with tool_calls and tool results (OpenAI-style)',
-          items: CHAT_INPUT_MESSAGE_ITEMS,
+          items: MESSAGE_SCHEMA,
         },
       },
       required: ['messages'],
@@ -127,7 +199,7 @@ const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output: JSONSc
       type: 'array',
       description:
         'Updated message thread (OpenAI-style, may include assistant message and tool_calls)',
-      items: CHAT_INPUT_MESSAGE_ITEMS,
+      items: MESSAGE_SCHEMA,
     },
   },
 };
