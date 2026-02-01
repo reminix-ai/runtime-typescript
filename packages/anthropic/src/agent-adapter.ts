@@ -7,6 +7,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import {
   AgentAdapter,
   serve,
+  messageContentToText,
   type ServeOptions,
   type AgentInvokeRequest,
   type AgentInvokeResponse,
@@ -74,15 +75,17 @@ export class AnthropicAgentAdapter extends AgentAdapter {
     const anthropicMessages: AnthropicMessage[] = [];
 
     for (const message of messages) {
-      if (message.role === 'system') {
+      const text = messageContentToText(message.content);
+      if (message.role === 'system' || message.role === 'developer') {
         // Anthropic only supports one system message, use the last one
-        system = message.content || '';
-      } else {
+        system = text;
+      } else if (message.role === 'user' || message.role === 'assistant') {
         anthropicMessages.push({
-          role: message.role as 'user' | 'assistant',
-          content: message.content || '',
+          role: message.role,
+          content: text,
         });
       }
+      // skip 'tool' for Anthropic messages format
     }
 
     return { system, messages: anthropicMessages };

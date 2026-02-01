@@ -108,7 +108,8 @@ const MESSAGE_SCHEMA: JSONSchema = {
         { type: 'array', items: CONTENT_PART_SCHEMA, minItems: 1 },
         { type: 'null' },
       ],
-      description: 'Message content: string, array of content parts, or null when tool_calls present',
+      description:
+        'Message content: string, array of content parts, or null when tool_calls present',
     },
     name: { type: 'string', description: 'Optional participant name' },
     tool_call_id: {

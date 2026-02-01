@@ -7,6 +7,7 @@ import type OpenAI from 'openai';
 import {
   AgentAdapter,
   serve,
+  messageContentToText,
   type ServeOptions,
   type AgentInvokeRequest,
   type AgentInvokeResponse,
@@ -56,9 +57,12 @@ export class OpenAIAgentAdapter extends AgentAdapter {
    * Convert a Reminix message to OpenAI format.
    */
   private toOpenAIMessage(message: Message): OpenAI.Chat.ChatCompletionMessageParam {
+    const role = message.role === 'developer' ? 'system' : message.role;
+    if (role !== 'user' && role !== 'assistant' && role !== 'system')
+      return { role: 'user', content: messageContentToText(message.content) };
     const result: OpenAI.Chat.ChatCompletionMessageParam = {
-      role: message.role as 'user' | 'assistant' | 'system',
-      content: message.content || '',
+      role,
+      content: messageContentToText(message.content) || '',
     };
     return result;
   }

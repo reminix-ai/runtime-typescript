@@ -13,6 +13,7 @@ import {
 import {
   AgentAdapter,
   serve,
+  messageContentToText,
   type ServeOptions,
   type AgentInvokeRequest,
   type AgentInvokeResponse,
@@ -64,8 +65,8 @@ export class LangGraphAgentAdapter extends AgentAdapter {
    * Convert a Reminix message to a LangChain message.
    */
   private toLangChainMessage(message: Message): BaseMessage {
-    const { role, content } = message;
-    const contentStr = content || '';
+    const { role } = message;
+    const contentStr = messageContentToText(message.content);
 
     switch (role) {
       case 'user':
@@ -73,6 +74,7 @@ export class LangGraphAgentAdapter extends AgentAdapter {
       case 'assistant':
         return new AIMessage({ content: contentStr });
       case 'system':
+      case 'developer':
         return new SystemMessage({ content: contentStr });
       case 'tool':
         return new ToolMessage({

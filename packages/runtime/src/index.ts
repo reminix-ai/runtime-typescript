@@ -1,6 +1,7 @@
 export { serve, createApp } from './server.js';
 export type { ServeOptions, CreateAppOptions, FullServeOptions } from './server.js';
 export { VERSION } from './version.js';
+export { messageContentToText } from './content.js';
 export type {
   Role,
   Message,

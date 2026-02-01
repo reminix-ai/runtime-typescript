@@ -10,6 +10,7 @@ import { generateText, streamText, type LanguageModel, type ModelMessage } from 
 import {
   AgentAdapter,
   serve,
+  messageContentToText,
   type ServeOptions,
   type AgentInvokeRequest,
   type AgentInvokeResponse,
@@ -86,10 +87,16 @@ export class VercelAIAgentAdapter extends AgentAdapter {
    * Convert Reminix messages to Vercel AI ModelMessage format.
    */
   private toModelMessages(messages: Message[]): ModelMessage[] {
-    return messages.map((m) => ({
-      role: m.role as 'user' | 'assistant' | 'system',
-      content: m.content || '',
-    }));
+    return messages.map((m) => {
+      const role = m.role === 'developer' ? 'system' : m.role;
+      if (role !== 'user' && role !== 'assistant' && role !== 'system') {
+        return { role: 'user' as const, content: messageContentToText(m.content) };
+      }
+      return {
+        role,
+        content: messageContentToText(m.content) || '',
+      };
+    });
   }
 
   /**
