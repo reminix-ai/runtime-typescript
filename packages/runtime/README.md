@@ -403,6 +403,8 @@ const streamingAgent = agent('streaming-agent', {
 });
 ```
 
+To receive request context (e.g. `user_id` from the request body), use a handler that accepts `(input, context)`: `handler: async (input, context) => { ... }`. For full request access (e.g. `stream`), use the [Agent class](#agent-class) and a handler that receives the full request object.
+
 ### `tool(name, options)`
 
 Factory function to create a tool.
@@ -426,6 +428,20 @@ const myTool = tool('my_tool', {
     required: ['input'],
   },
   handler: async (input) => ({ result: input.input }),
+});
+
+// With context (optional second argument receives request context)
+const myToolWithContext = tool('my_tool', {
+  description: 'Example with context',
+  input: {
+    type: 'object',
+    properties: { param: { type: 'string' } },
+    required: ['param'],
+  },
+  handler: async (input, context) => ({
+    param: input.param,
+    userId: (context as Record<string, unknown>)?.user_id ?? 'anonymous',
+  }),
 });
 ```
 
