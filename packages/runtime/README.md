@@ -2,7 +2,7 @@
 
 The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `agent()` and `tool()` factory functions, agent templates (prompt, chat, task, rag, thread), and types `Message` and `ToolCall` for OpenAI-style conversations.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `agent()` and `tool()` factory functions, agent templates (prompt, chat, task, rag, thread, workflow), and types `Message` and `ToolCall` for OpenAI-style conversations.
 
 Built on [Hono](https://hono.dev) for portability across Node.js, Deno, Bun, and edge runtimes.
 
@@ -171,9 +171,10 @@ You can use a **template** to get standard input/output schemas without defining
 |----------|--------|--------|----------|
 | `prompt` (default) | `{ prompt: string }` | `string` | Single prompt in, text out |
 | `chat` | `{ messages: Message[] }` | `string` | Multi-turn chat, final reply as string |
-| `task` | `{ task: string, ... }` | JSON | Task name + params, structured result |
+| `task` | `{ task: string, ... }` | JSON | Stateless, single-shot execution with structured result |
 | `rag` | `{ query: string, messages?: Message[], collectionIds?: string[] }` | `string` | RAG query, optional history and collections |
 | `thread` | `{ messages: Message[] }` | `Message[]` | Multi-turn with tool calls; returns updated thread |
+| `workflow` | `{ task: string, steps?: Array, resume?: object, ... }` | `{ status, steps, result?, pendingAction? }` | Multi-step orchestration with branching, approvals, and parallel execution |
 
 Messages are OpenAI-style: `role`, `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the exported types `Message` and `ToolCall` from `@reminix/runtime` for type-safe handlers.
 
@@ -371,7 +372,7 @@ Factory function to create an agent. Use `template` for standard I/O shapes, or 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | `string` | Unique identifier for the agent |
-| `options.template` | `'prompt' \| 'chat' \| 'task' \| 'rag' \| 'thread'` | Optional. Standard input/output schema (default: `prompt` when no custom input/output). |
+| `options.template` | `'prompt' \| 'chat' \| 'task' \| 'rag' \| 'thread' \| 'workflow'` | Optional. Standard input/output schema (default: `prompt` when no custom input/output). |
 | `options.description` | `string` | Human-readable description |
 | `options.input` | `object` | JSON Schema for input (ignored if `template` is set) |
 | `options.output` | `object` | Optional JSON Schema for output (ignored if `template` is set) |

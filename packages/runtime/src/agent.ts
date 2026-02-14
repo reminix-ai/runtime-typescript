@@ -9,7 +9,7 @@ import { VERSION } from './version.js';
  * Named agent templates with predefined input/output schemas.
  * The default template is 'prompt'; use it when no template or input/output is provided.
  */
-export type AgentTemplate = 'prompt' | 'chat' | 'task' | 'rag' | 'thread';
+export type AgentTemplate = 'prompt' | 'chat' | 'task' | 'rag' | 'thread' | 'workflow';
 
 /** Default template when none specified and no custom input/output. */
 const DEFAULT_AGENT_TEMPLATE: AgentTemplate = 'prompt';
@@ -153,13 +153,16 @@ const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output: JSONSc
     input: {
       type: 'object',
       properties: {
-        task: { type: 'string', description: 'Task name or description' },
+        task: {
+          type: 'string',
+          description: 'Task name or description for stateless, single-shot execution',
+        },
       },
       required: ['task'],
       additionalProperties: true,
     },
     output: {
-      description: 'Structured JSON result (object, array, string, number, boolean, or null)',
+      description: 'Structured JSON result of stateless, single-shot execution',
       type: 'object',
       additionalProperties: true,
     },
@@ -203,6 +206,103 @@ const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output: JSONSc
       items: MESSAGE_SCHEMA,
     },
   },
+  workflow: {
+    input: {
+      type: 'object',
+      properties: {
+        task: {
+          type: 'string',
+          description: 'Workflow task or description',
+        },
+        steps: {
+          type: 'array',
+          description: 'Optional sequence of named steps to execute',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Step name' },
+              input: {
+                type: 'object',
+                description: 'Optional step input',
+                additionalProperties: true,
+              },
+            },
+            required: ['name'],
+          },
+        },
+        resume: {
+          type: 'object',
+          description: 'Resume a paused workflow from a specific step',
+          properties: {
+            step: { type: 'string', description: 'Step name to resume from' },
+            input: {
+              type: 'object',
+              description: 'Optional input for the resumed step',
+              additionalProperties: true,
+            },
+          },
+          required: ['step'],
+        },
+      },
+      required: ['task'],
+      additionalProperties: true,
+    },
+    output: {
+      type: 'object',
+      description: 'Workflow execution result with step-level status tracking',
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['completed', 'failed', 'paused', 'running'],
+          description: 'Overall workflow status',
+        },
+        steps: {
+          type: 'array',
+          description: 'Step-level execution results',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Step name' },
+              status: {
+                type: 'string',
+                enum: ['completed', 'failed', 'paused', 'skipped', 'pending'],
+                description: 'Step execution status',
+              },
+              output: { description: 'Step output (any JSON value)' },
+            },
+            required: ['name', 'status'],
+          },
+        },
+        result: {
+          type: 'object',
+          description: 'Final workflow result',
+          additionalProperties: true,
+        },
+        pendingAction: {
+          type: 'object',
+          description: 'Action required to continue (present when status is paused)',
+          properties: {
+            step: { type: 'string', description: 'Step awaiting action' },
+            type: {
+              type: 'string',
+              description: 'Action type (e.g. approval, input, decision)',
+            },
+            message: {
+              type: 'string',
+              description: 'Human-readable description of the required action',
+            },
+            options: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Available choices (for decision-type actions)',
+            },
+          },
+          required: ['step', 'type', 'message'],
+        },
+      },
+      required: ['status', 'steps'],
+    },
+  },
 };
 
 /** Default input/output schemas (same as prompt template). Used by AgentBase and custom agents. */
@@ -222,7 +322,7 @@ export interface AgentMetadata {
   capabilities: Capabilities;
   input: JSONSchema;
   output?: JSONSchema;
-  /** Named template (prompt, chat, task, rag, thread) when agent uses a template. */
+  /** Named template (prompt, chat, task, rag, thread, workflow) when agent uses a template. */
   template?: AgentTemplate;
   [key: string]: unknown;
 }
@@ -530,7 +630,7 @@ export interface AgentOptions {
   /** Human-readable description of what the agent does */
   description?: string;
   /**
-   * Named template (prompt, chat, task). When set, input/output default to the template's schemas
+   * Named template (prompt, chat, task, rag, thread, workflow). When set, input/output default to the template's schemas
    * unless overridden by explicit input/output.
    */
   template?: AgentTemplate;

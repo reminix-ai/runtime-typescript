@@ -463,7 +463,7 @@ describe('Agent Templates', () => {
     expect(taskAgent.metadata.input?.type).toBe('object');
     expect(taskAgent.metadata.input?.required).toEqual(['task']);
     expect((taskAgent.metadata.input?.properties as Record<string, unknown>)?.task).toBeDefined();
-    expect(taskAgent.metadata.output?.description).toContain('Structured JSON');
+    expect(taskAgent.metadata.output?.description).toContain('stateless, single-shot');
 
     const response = await taskAgent.invoke({
       input: { task: 'summarize', text: 'Some content' },
@@ -544,5 +544,61 @@ describe('Agent Templates', () => {
     expect(outputMessages[0]).toEqual({ role: 'user', content: 'Hello' });
     expect(outputMessages[1]?.role).toBe('assistant');
     expect(outputMessages[1]?.content).toBe('Reply to: Hello');
+  });
+
+  it('template workflow: metadata and invoke', async () => {
+    const workflowAgent = agent('workflow-agent', {
+      template: 'workflow',
+      description: 'Multi-step workflow',
+      handler: async ({ task, steps }) => {
+        const inputSteps = (steps as Array<{ name: string }>) || [];
+        const executed = inputSteps.map((s) => ({
+          name: s.name,
+          status: 'completed' as const,
+          output: 'ok',
+        }));
+        return {
+          status: 'completed',
+          steps: executed,
+          result: { summary: `Ran ${executed.length} steps for: ${task}` },
+        };
+      },
+    });
+
+    // Verify metadata
+    expect(workflowAgent.metadata.template).toBe('workflow');
+    const inputSchema = workflowAgent.metadata.input;
+    expect(inputSchema?.required).toEqual(['task']);
+    expect((inputSchema?.properties as Record<string, unknown>)?.task).toBeDefined();
+    expect((inputSchema?.properties as Record<string, unknown>)?.steps).toBeDefined();
+    expect((inputSchema?.properties as Record<string, unknown>)?.resume).toBeDefined();
+    expect(inputSchema?.additionalProperties).toBe(true);
+
+    const outputSchema = workflowAgent.metadata.output;
+    expect(outputSchema?.required).toEqual(['status', 'steps']);
+    expect((outputSchema?.properties as Record<string, { enum?: string[] }>)?.status?.enum).toEqual(
+      ['completed', 'failed', 'paused', 'running']
+    );
+    expect((outputSchema?.properties as Record<string, unknown>)?.steps).toBeDefined();
+    expect((outputSchema?.properties as Record<string, unknown>)?.result).toBeDefined();
+    expect((outputSchema?.properties as Record<string, unknown>)?.pendingAction).toBeDefined();
+
+    // Verify invoke
+    const response = await workflowAgent.invoke({
+      input: {
+        task: 'process-data',
+        steps: [{ name: 'fetch' }, { name: 'transform' }],
+      },
+    });
+    const output = response.output as {
+      status: string;
+      steps: Array<{ name: string; status: string; output: string }>;
+      result: { summary: string };
+    };
+    expect(output.status).toBe('completed');
+    expect(output.steps).toHaveLength(2);
+    expect(output.steps[0].name).toBe('fetch');
+    expect(output.steps[1].name).toBe('transform');
+    expect(output.result.summary).toBe('Ran 2 steps for: process-data');
   });
 });
