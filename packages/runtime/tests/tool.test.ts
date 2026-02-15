@@ -1,9 +1,9 @@
 /**
- * Tests for the tool() factory function and Tool class.
+ * Tests for the tool() factory function.
  */
 
 import { describe, it, expect } from 'vitest';
-import { tool, Tool, ToolBase, type ToolCallRequest } from '../src/index.js';
+import { tool } from '../src/index.js';
 
 describe('Tool Creation', () => {
   it('should create a tool with tool() factory', () => {
@@ -19,7 +19,6 @@ describe('Tool Creation', () => {
       handler: async (input) => ({ result: input.name }),
     });
 
-    expect(myTool).toBeInstanceOf(Tool);
     expect(myTool.name).toBe('my-tool');
   });
 
@@ -33,7 +32,7 @@ describe('Tool Creation', () => {
       handler: async () => ({}),
     });
 
-    expect(myTool.description).toBe('Get the current weather');
+    expect(myTool.metadata.description).toBe('Get the current weather');
   });
 
   it('should set input correctly', () => {
@@ -52,7 +51,7 @@ describe('Tool Creation', () => {
       handler: async () => ({}),
     });
 
-    expect(myTool.input).toEqual(inputSchema);
+    expect(myTool.metadata.input).toEqual(inputSchema);
   });
 });
 
@@ -102,7 +101,6 @@ describe('Tool Metadata', () => {
     });
 
     expect(myTool.metadata.output).toEqual(outputSchema);
-    expect(myTool.output).toEqual(outputSchema);
   });
 
   it('should have default output schema when not provided', () => {
@@ -112,7 +110,7 @@ describe('Tool Metadata', () => {
       handler: async () => ({}),
     });
 
-    expect(myTool.output).toEqual({ type: 'string' });
+    expect(myTool.metadata.output).toEqual({ type: 'string' });
   });
 });
 
@@ -230,18 +228,6 @@ describe('Tool Error Handling', () => {
     });
 
     await expect(failingTool.call({ input: {} })).rejects.toBe('string error');
-  });
-});
-
-describe('Tool Inheritance', () => {
-  it('should inherit from ToolBase', () => {
-    const myTool = tool('my-tool', {
-      description: 'Test',
-      input: { type: 'object', properties: {} },
-      handler: async () => ({}),
-    });
-
-    expect(myTool).toBeInstanceOf(ToolBase);
   });
 });
 

@@ -1,8 +1,8 @@
 /**
  * Custom Agent Example
  *
- * This example shows how to create a custom agent using the callback-based
- * Agent class from @reminix/runtime.
+ * This example shows how to create a custom agent using the agent() factory
+ * from @reminix/runtime.
  *
  * Usage:
  *     npx tsx src/index.ts
@@ -35,70 +35,60 @@
  *       -d '{"input": {"message": "Hello!"}, "stream": true}'
  */
 
-import { Agent, serve } from '@reminix/runtime';
+import { agent, serve } from '@reminix/runtime';
 
-// Create an agent with metadata
-const agent = new Agent('echo', {
-  metadata: {
-    description: 'A simple echo agent that demonstrates the callback pattern',
-    version: '1.0.0',
+// Create an agent with the agent() factory
+const echo = agent('echo', {
+  description: 'A simple echo agent that demonstrates the factory pattern',
+  input: {
+    type: 'object',
+    properties: {
+      message: { type: 'string' },
+      messages: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            role: { type: 'string' },
+            content: { type: 'string' },
+          },
+        },
+      },
+    },
   },
-});
+  stream: true,
+  handler: async function* (input, context) {
+    const messages = input.messages as Array<{ role: string; content: string }> | undefined;
 
-// Register execute handler
-agent.handler(async (request) => {
-  const input = request.input as Record<string, unknown>;
+    let response: string;
 
-  // Check if this is a chat-style request (has messages)
-  if (input.messages && Array.isArray(input.messages)) {
-    const messages = input.messages as Array<{ role: string; content: string }>;
-    const userMessage = messages.length > 0 ? messages[messages.length - 1].content : '';
-    return { output: `You said: ${userMessage}` };
-  }
+    // Check if this is a chat-style request (has messages)
+    if (messages && Array.isArray(messages)) {
+      const userMessage = messages.length > 0 ? messages[messages.length - 1].content : '';
+      response = `You said: ${userMessage}`;
+    } else {
+      const message = (input.message as string) || '';
+      const userId = context?.user_id;
+      response = `Echo: ${message}`;
+      if (userId) {
+        response += ` (from user ${userId})`;
+      }
+    }
 
-  // Otherwise treat as task-style request
-  const message = (input.message as string) || '';
-
-  // Access optional context
-  const userId = request.context?.user_id;
-
-  let output = `Echo: ${message}`;
-  if (userId) {
-    output += ` (from user ${userId})`;
-  }
-
-  return { output };
-});
-
-// Register streaming execute handler
-agent.streamHandler(async function* (request) {
-  const input = request.input as Record<string, unknown>;
-
-  let response: string;
-
-  // Check if this is a chat-style request (has messages)
-  if (input.messages && Array.isArray(input.messages)) {
-    const messages = input.messages as Array<{ role: string; content: string }>;
-    const userMessage = messages.length > 0 ? messages[messages.length - 1].content : '';
-    response = `You said: ${userMessage}`;
-  } else {
-    const message = (input.message as string) || '';
-    response = `Echo: ${message}`;
-  }
-
-  // Stream the response word by word
-  const words = response.split(' ');
-  for (let i = 0; i < words.length; i++) {
-    const chunk = i === 0 ? words[i] : ` ${words[i]}`;
-    yield JSON.stringify({ chunk });
-  }
+    // Stream the response word by word
+    const words = response.split(' ');
+    for (let i = 0; i < words.length; i++) {
+      const chunk = i === 0 ? words[i] : ` ${words[i]}`;
+      yield chunk;
+    }
+  },
 });
 
 // Start the server
 console.log('Custom Agent Example');
 console.log('='.repeat(40));
-console.log(`Agent: ${agent.name}`);
-console.log(`Streaming: ${agent.metadata.capabilities.streaming}`);
+console.log(`Agent: ${echo.name}`);
+console.log(`Streaming: ${echo.metadata.capabilities.streaming}`);
 console.log();
 console.log('Server running on http://localhost:8080');
 console.log();
@@ -108,4 +98,4 @@ console.log('  GET  /info');
 console.log('  POST /agents/echo/invoke');
 console.log();
 
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [echo], port: 8080 });

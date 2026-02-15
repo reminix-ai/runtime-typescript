@@ -3,25 +3,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  AgentAdapter,
-  VERSION,
-  tool,
-  type AgentAgentInvokeRequest,
-  type AgentAgentInvokeResponse,
-} from '../src/index.js';
+import { VERSION, tool, type AgentRequest, type AgentResponse } from '../src/index.js';
 import { createApp } from '../src/server.js';
 
 /**
  * A mock adapter for testing task-style requests.
  */
-class MockTaskAdapter extends AgentAdapter {
-  static adapterName = 'mock';
-
+class MockTaskAdapter {
   private _name: string;
 
   constructor(name: string = 'mock-agent') {
-    super();
     this._name = name;
   }
 
@@ -29,22 +20,32 @@ class MockTaskAdapter extends AgentAdapter {
     return this._name;
   }
 
-  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
+  get metadata() {
+    return {
+      capabilities: { streaming: true },
+      adapter: 'mock',
+      input: { type: 'object' as const },
+      output: { type: 'string' as const },
+    };
+  }
+
+  async invoke(request: AgentRequest): Promise<AgentResponse> {
     const task = (request.input as Record<string, unknown>).task || 'unknown';
     return { output: `Completed task: ${task}` };
+  }
+
+  async *invokeStream(_request: AgentRequest): AsyncGenerator<string> {
+    yield '';
   }
 }
 
 /**
  * A mock adapter for testing chat-style requests.
  */
-class MockChatAdapter extends AgentAdapter {
-  static adapterName = 'mock';
-
+class MockChatAdapter {
   private _name: string;
 
   constructor(name: string = 'mock-agent') {
-    super();
     this._name = name;
   }
 
@@ -52,12 +53,25 @@ class MockChatAdapter extends AgentAdapter {
     return this._name;
   }
 
-  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
+  get metadata() {
+    return {
+      capabilities: { streaming: true },
+      adapter: 'mock',
+      input: { type: 'object' as const },
+      output: { type: 'string' as const },
+    };
+  }
+
+  async invoke(request: AgentRequest): Promise<AgentResponse> {
     const messages = (request.input as { messages?: { content: string }[] }).messages ?? [];
     const userMessage = messages[messages.length - 1]?.content ?? '';
     return {
       output: { messages: [{ role: 'assistant', content: `Chat response to: ${userMessage}` }] },
     };
+  }
+
+  async *invokeStream(_request: AgentRequest): AsyncGenerator<string> {
+    yield '';
   }
 }
 

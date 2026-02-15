@@ -52,6 +52,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@reminix/langchain": "workspace:^",
     "@reminix/runtime": "workspace:^"
   },
   "peerDependencies": {

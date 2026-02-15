@@ -251,6 +251,9 @@ importers:
 
   packages/langgraph:
     dependencies:
+      '@reminix/langchain':
+        specifier: workspace:^
+        version: link:../langchain
       '@reminix/runtime':
         specifier: workspace:^
         version: link:../runtime

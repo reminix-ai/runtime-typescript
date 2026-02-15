@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { Message, InvokeRequest, InvokeResponse, ToolCall } from '../src/types.js';
+import type { Message, AgentRequest, AgentResponse, ToolCall } from '../src/types.js';
 
 describe('Message', () => {
   it('should have role and content properties', () => {
@@ -43,16 +43,16 @@ describe('Message', () => {
   });
 });
 
-describe('InvokeRequest', () => {
+describe('AgentRequest', () => {
   it('should have input property', () => {
-    const req: InvokeRequest = {
+    const req: AgentRequest = {
       input: { task: 'summarize', text: 'hello world' },
     };
     expect(req.input.task).toBe('summarize');
   });
 
   it('should accept optional stream flag', () => {
-    const req: InvokeRequest = {
+    const req: AgentRequest = {
       input: { task: 'test' },
       stream: true,
     };
@@ -60,7 +60,7 @@ describe('InvokeRequest', () => {
   });
 
   it('should accept optional context', () => {
-    const req: InvokeRequest = {
+    const req: AgentRequest = {
       input: { task: 'test' },
       context: { user_id: '123' },
     };
@@ -68,7 +68,7 @@ describe('InvokeRequest', () => {
   });
 
   it('should accept messages in input for chat-style agents', () => {
-    const req: InvokeRequest = {
+    const req: AgentRequest = {
       input: {
         messages: [
           { role: 'user', content: 'hello' },
@@ -80,23 +80,23 @@ describe('InvokeRequest', () => {
   });
 });
 
-describe('InvokeResponse', () => {
+describe('AgentResponse', () => {
   it('should have output property', () => {
-    const resp: InvokeResponse = {
+    const resp: AgentResponse = {
       output: 'Result of the task',
     };
     expect(resp.output).toBe('Result of the task');
   });
 
   it('should accept any type of output', () => {
-    const resp: InvokeResponse = {
+    const resp: AgentResponse = {
       output: { result: 42, status: 'ok' },
     };
     expect(resp.output).toEqual({ result: 42, status: 'ok' });
   });
 
   it('should accept optional metadata', () => {
-    const resp: InvokeResponse = {
+    const resp: AgentResponse = {
       output: 'result',
       metadata: { model: 'gpt-4', latency_ms: 100 },
     };
