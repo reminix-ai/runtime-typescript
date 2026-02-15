@@ -1,5 +1,5 @@
 /**
- * LangChain chat adapter for Reminix Runtime.
+ * LangChain chat agent for Reminix Runtime.
  */
 
 import {
@@ -24,7 +24,7 @@ import {
 /**
  * Convert a Reminix message to a LangChain message.
  *
- * Exported for reuse by the langgraph adapter.
+ * Exported for reuse by the langgraph agent.
  */
 export function toLangChainMessage(message: Message): BaseMessage {
   const { role } = message;
@@ -63,7 +63,7 @@ export class LangChainChatAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'langchain adapter',
+      description: 'langchain chat agent',
       capabilities: { streaming: true },
       input: AGENT_TEMPLATES['chat'].input,
       output: AGENT_TEMPLATES['chat'].output,

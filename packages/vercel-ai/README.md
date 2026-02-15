@@ -1,6 +1,6 @@
 # @reminix/vercel-ai
 
-Reminix Runtime chat agent for the [Vercel AI SDK](https://ai-sdk.dev). Serve AI agents as a REST API.
+Reminix Runtime agents for the [Vercel AI SDK](https://ai-sdk.dev). Serve AI agents as a REST API.
 
 Supports both:
 
@@ -60,6 +60,34 @@ const agent = new VercelAIChatAgent(toolAgent, { name: 'weather-agent' });
 serve({ agents: [agent] });
 ```
 
+## Quick Start with VercelAIThreadAgent
+
+For agents that need a full thread of messages (including tool call and tool result messages) in their output, use `VercelAIThreadAgent`. It accepts a `LanguageModel` and an array of Reminix `ToolLike` objects, and runs the Vercel AI SDK tool loop via `generateText` with `stopWhen`:
+
+```typescript
+import { openai } from '@ai-sdk/openai';
+import { VercelAIThreadAgent } from '@reminix/vercel-ai';
+import { tool, serve } from '@reminix/runtime';
+
+const getWeather = tool({
+  name: 'getWeather',
+  description: 'Get the current weather for a city',
+  input: {
+    type: 'object',
+    properties: { city: { type: 'string' } },
+    required: ['city'],
+  },
+  handler: async ({ city }) => ({ city, temp: 72, condition: 'sunny' }),
+});
+
+const agent = new VercelAIThreadAgent(openai('gpt-4o'), [getWeather], {
+  name: 'weather-thread',
+  maxTurns: 5,
+});
+
+serve({ agents: [agent] });
+```
+
 Your agent is now available at:
 - `POST /agents/<name>/invoke` - Execute the agent
 
@@ -75,6 +103,19 @@ Create a Vercel AI chat agent for use with Reminix Runtime.
 | `options.name` | `string` | `"vercel-ai-agent"` | Name for the agent (used in URL path) |
 
 **Returns:** `VercelAIChatAgent` - A Reminix chat agent instance
+
+### `new VercelAIThreadAgent(model, tools, options)`
+
+Create a Vercel AI thread agent for use with Reminix Runtime. The thread agent returns the full message history (including tool calls and tool results) rather than a single text output.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `model` | `LanguageModel` | required | A Vercel AI SDK language model |
+| `tools` | `ToolLike[]` | required | Array of Reminix Runtime tools |
+| `options.name` | `string` | `"vercel-ai-thread-agent"` | Name for the agent (used in URL path) |
+| `options.maxTurns` | `number` | `10` | Maximum number of tool-loop turns |
+
+**Returns:** `VercelAIThreadAgent` - A Reminix thread agent instance
 
 ## Using Different Providers
 
@@ -98,8 +139,9 @@ serve({ agents: [gpt, claude, gemini] });
 
 | Option | Use Case |
 |--------|----------|
-| **ToolLoopAgent** | Agents that need tools, multi-step reasoning, automatic tool loop |
-| **Model** | Simple completions, providers without dedicated adapters (Google, Mistral, etc.) |
+| **VercelAIChatAgent + ToolLoopAgent** | Agents that need tools, multi-step reasoning, automatic tool loop |
+| **VercelAIChatAgent + Model** | Simple completions, providers without dedicated packages (Google, Mistral, etc.) |
+| **VercelAIThreadAgent** | Agents that need full message history with tool calls and results in the output |
 
 ## Endpoint Input/Output Formats
 
@@ -123,10 +165,22 @@ Execute the agent with a prompt or messages.
 }
 ```
 
-**Response:**
+**Response (VercelAIChatAgent):**
 ```json
 {
   "output": "Hello! How can I help you today?"
+}
+```
+
+**Response (VercelAIThreadAgent):**
+```json
+{
+  "output": [
+    {"role": "user", "content": "What is the weather in Paris?"},
+    {"role": "assistant", "content": "", "tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "getWeather", "arguments": "{\"city\":\"Paris\"}"}}]},
+    {"role": "tool", "content": "{\"city\":\"Paris\",\"temp\":72,\"condition\":\"sunny\"}", "tool_call_id": "call_1"},
+    {"role": "assistant", "content": "The weather in Paris is 72F and sunny."}
+  ]
 }
 ```
 
@@ -142,6 +196,8 @@ For streaming responses, set `stream: true` in the request:
 ```
 
 The response will be sent as Server-Sent Events (SSE).
+
+> **Note:** Streaming is supported by `VercelAIChatAgent` only. `VercelAIThreadAgent` does not support streaming.
 
 ## Runtime Documentation
 

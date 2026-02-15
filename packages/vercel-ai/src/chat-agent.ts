@@ -1,5 +1,5 @@
 /**
- * Vercel AI SDK chat adapter for Reminix Runtime.
+ * Vercel AI SDK chat agent for Reminix Runtime.
  *
  * Supports both ToolLoopAgent (for agents with tools) and LanguageModel (for generateText).
  */
@@ -56,7 +56,7 @@ export class VercelAIChatAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'vercel-ai adapter',
+      description: 'vercel-ai chat agent',
       capabilities: { streaming: true },
       input: AGENT_TEMPLATES['chat'].input,
       output: AGENT_TEMPLATES['chat'].output,

@@ -21,9 +21,9 @@ A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framewor
 | [`@reminix/runtime`](./packages/runtime) | Core runtime with `agent()` and `tool()` factories and agent templates |
 | [`@reminix/langchain`](./packages/langchain) | LangChain chat agent |
 | [`@reminix/langgraph`](./packages/langgraph) | LangGraph thread and workflow agents |
-| [`@reminix/openai`](./packages/openai) | OpenAI chat agent |
-| [`@reminix/anthropic`](./packages/anthropic) | Anthropic chat agent |
-| [`@reminix/vercel-ai`](./packages/vercel-ai) | Vercel AI SDK chat agent |
+| [`@reminix/openai`](./packages/openai) | OpenAI chat, task, and thread agents |
+| [`@reminix/anthropic`](./packages/anthropic) | Anthropic chat, task, and thread agents |
+| [`@reminix/vercel-ai`](./packages/vercel-ai) | Vercel AI SDK chat and thread agents |
 
 ## Installation
 

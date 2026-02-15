@@ -1,5 +1,5 @@
 /**
- * Anthropic chat adapter for Reminix Runtime.
+ * Anthropic chat agent for Reminix Runtime.
  */
 
 import type Anthropic from '@anthropic-ai/sdk';
@@ -48,7 +48,7 @@ export class AnthropicChatAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'anthropic adapter',
+      description: 'anthropic chat agent',
       capabilities: { streaming: true },
       input: AGENT_TEMPLATES['chat'].input,
       output: AGENT_TEMPLATES['chat'].output,

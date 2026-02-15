@@ -1,5 +1,5 @@
 /**
- * Vercel AI SDK thread adapter for Reminix Runtime.
+ * Vercel AI SDK thread agent for Reminix Runtime.
  *
  * Uses generateText() with tools and stopWhen — Vercel AI SDK handles the tool loop natively.
  */
@@ -47,7 +47,7 @@ export class VercelAIThreadAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'vercel-ai thread adapter',
+      description: 'vercel-ai thread agent',
       capabilities: { streaming: false },
       input: AGENT_TEMPLATES['thread'].input,
       output: AGENT_TEMPLATES['thread'].output,

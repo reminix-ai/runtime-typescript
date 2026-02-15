@@ -1,5 +1,5 @@
 /**
- * OpenAI task adapter for Reminix Runtime.
+ * OpenAI task agent for Reminix Runtime.
  */
 
 import type OpenAI from 'openai';
@@ -43,7 +43,7 @@ export class OpenAITaskAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'openai task adapter',
+      description: 'openai task agent',
       capabilities: { streaming: false },
       input: AGENT_TEMPLATES['task'].input,
       output: AGENT_TEMPLATES['task'].output,

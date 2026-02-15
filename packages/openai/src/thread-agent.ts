@@ -1,5 +1,5 @@
 /**
- * OpenAI thread adapter for Reminix Runtime.
+ * OpenAI thread agent for Reminix Runtime.
  */
 
 import type OpenAI from 'openai';
@@ -50,7 +50,7 @@ export class OpenAIThreadAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'openai thread adapter',
+      description: 'openai thread agent',
       capabilities: { streaming: false },
       input: AGENT_TEMPLATES['thread'].input,
       output: AGENT_TEMPLATES['thread'].output,

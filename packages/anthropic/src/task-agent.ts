@@ -1,5 +1,5 @@
 /**
- * Anthropic task adapter for Reminix Runtime.
+ * Anthropic task agent for Reminix Runtime.
  */
 
 import type Anthropic from '@anthropic-ai/sdk';
@@ -46,7 +46,7 @@ export class AnthropicTaskAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'anthropic task adapter',
+      description: 'anthropic task agent',
       capabilities: { streaming: false },
       input: AGENT_TEMPLATES['task'].input,
       output: AGENT_TEMPLATES['task'].output,

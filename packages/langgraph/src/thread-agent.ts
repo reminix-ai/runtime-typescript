@@ -1,5 +1,5 @@
 /**
- * LangGraph thread adapter for Reminix Runtime.
+ * LangGraph thread agent for Reminix Runtime.
  */
 
 import { AIMessage, type BaseMessage } from '@langchain/core/messages';
@@ -38,7 +38,7 @@ export class LangGraphThreadAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'langgraph adapter',
+      description: 'langgraph thread agent',
       capabilities: { streaming: true },
       input: AGENT_TEMPLATES['thread'].input,
       output: { type: 'string' },

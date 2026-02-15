@@ -1,5 +1,5 @@
 /**
- * Anthropic thread adapter for Reminix Runtime.
+ * Anthropic thread agent for Reminix Runtime.
  */
 
 import type Anthropic from '@anthropic-ai/sdk';
@@ -53,7 +53,7 @@ export class AnthropicThreadAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'anthropic thread adapter',
+      description: 'anthropic thread agent',
       capabilities: { streaming: false },
       input: AGENT_TEMPLATES['thread'].input,
       output: AGENT_TEMPLATES['thread'].output,

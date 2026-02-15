@@ -1,5 +1,5 @@
 /**
- * LangGraph workflow adapter for Reminix Runtime.
+ * LangGraph workflow agent for Reminix Runtime.
  */
 
 import {
@@ -64,7 +64,7 @@ export class LangGraphWorkflowAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'langgraph workflow adapter',
+      description: 'langgraph workflow agent',
       capabilities: { streaming: false },
       input: AGENT_TEMPLATES['workflow'].input,
       output: AGENT_TEMPLATES['workflow'].output,

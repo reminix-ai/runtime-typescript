@@ -1,5 +1,5 @@
 /**
- * OpenAI chat adapter for Reminix Runtime.
+ * OpenAI chat agent for Reminix Runtime.
  */
 
 import type OpenAI from 'openai';
@@ -40,7 +40,7 @@ export class OpenAIChatAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'openai adapter',
+      description: 'openai chat agent',
       capabilities: { streaming: true },
       input: AGENT_TEMPLATES['chat'].input,
       output: AGENT_TEMPLATES['chat'].output,
