@@ -1,6 +1,6 @@
 # Custom Agent Example
 
-This example demonstrates how to create a custom agent using the callback-based `Agent` class from `@reminix/runtime`.
+This example demonstrates how to create a custom agent using the `agent()` factory function from `@reminix/runtime`.
 
 ## Running
 

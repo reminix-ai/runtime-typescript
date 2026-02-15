@@ -466,67 +466,27 @@ interface AgentResponse {
 
 ## Advanced
 
-### Agent Class
+### AgentLike Interface
 
-For more control, you can use the `Agent` class directly:
-
-```typescript
-import { Agent, serve } from '@reminix/runtime';
-
-const agent = new Agent('my-agent', { metadata: { version: '1.0' } });
-
-agent.handler(async (request) => {
-  return { output: 'Hello!' };
-});
-
-// Optional: streaming handler
-agent.streamHandler(async function* (request) {
-  yield 'Hello';
-  yield ' world!';
-});
-
-serve({ agents: [agent], port: 8080 });
-```
-
-### Tool Class
-
-For programmatic tool creation:
+For building framework integrations, implement the `AgentLike` interface. See the [framework adapter packages](#framework-adapters) for examples.
 
 ```typescript
-import { Tool, serve } from '@reminix/runtime';
+import type { AgentLike, AgentRequest, AgentResponse, AgentMetadata } from '@reminix/runtime';
 
-const myTool = new Tool('get_weather', {
-  description: 'Get weather for a location',
-  input: {
-    type: 'object',
-    properties: { location: { type: 'string' } },
-    required: ['location'],
-  },
-  handler: async (input) => ({ temp: 72, location: input.location }),
-});
+class MyFrameworkAdapter implements AgentLike {
+  readonly name: string;
+  readonly metadata: AgentMetadata;
 
-serve({ tools: [myTool], port: 8080 });
-```
-
-### AgentAdapter
-
-For building framework integrations. See the [framework adapter packages](#framework-adapters) for examples.
-
-```typescript
-import { AgentAdapter } from '@reminix/runtime';
-
-class MyFrameworkAdapter extends AgentAdapter {
-  static adapterName = 'my-framework';
-
-  constructor(private client: MyClient, private _name = 'my-framework') {
-    super();
+  constructor(private client: MyClient, name = 'my-framework') {
+    this.name = name;
+    this.metadata = {
+      description: 'My framework agent',
+      capabilities: {},
+      input: { type: 'object', properties: { prompt: { type: 'string' } } },
+    };
   }
 
-  get name() {
-    return this._name;
-  }
-
-  async execute(request) {
+  async invoke(request: AgentRequest): Promise<AgentResponse> {
     const result = await this.client.run(request.input);
     return { output: result };
   }
@@ -535,27 +495,26 @@ class MyFrameworkAdapter extends AgentAdapter {
 
 ### Serverless Deployment
 
-Use `toHandler()` for serverless deployments:
+Use `createApp()` for serverless deployments:
 
 ```typescript
-import { agent } from '@reminix/runtime';
+import { agent, createApp } from '@reminix/runtime';
 
 const myAgent = agent('my-agent', {
-  handler: async ({ task }) => `Completed: ${task}`,
+  handler: async ({ prompt }) => `Completed: ${prompt}`,
 });
 
+const app = createApp({ agents: [myAgent] });
+
 // Vercel Edge Function
-export const POST = myAgent.toHandler();
-export const GET = myAgent.toHandler();
+export const POST = app.fetch;
+export const GET = app.fetch;
 
 // Cloudflare Workers
-export default { fetch: myAgent.toHandler() };
-
-// Deno Deploy
-Deno.serve(myAgent.toHandler());
+export default { fetch: app.fetch };
 
 // Bun
-Bun.serve({ fetch: myAgent.toHandler() });
+Bun.serve({ fetch: app.fetch });
 ```
 
 ## Deployment
