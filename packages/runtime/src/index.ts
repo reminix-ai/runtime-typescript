@@ -23,15 +23,7 @@ export type {
 } from './types.js';
 // Schema exports
 export type { AgentTemplate } from './schemas.js';
-export {
-  AGENT_TEMPLATES,
-  DEFAULT_AGENT_TEMPLATE,
-  DEFAULT_AGENT_INPUT,
-  DEFAULT_AGENT_OUTPUT,
-  TOOL_CALL_SCHEMA,
-  CONTENT_PART_SCHEMA,
-  MESSAGE_SCHEMA,
-} from './schemas.js';
+export { AGENT_TEMPLATES } from './schemas.js';
 // Agent exports
 export { agent } from './agent.js';
 export type { AgentLike, AgentMetadata, AgentOptions } from './agent.js';
