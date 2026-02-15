@@ -19,7 +19,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { serveAgent } from '@reminix/langchain';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
-serveAgent(llm, { name: 'my-chatbot', port: 8080 });
+serveAgent(llm, { name: 'my-chatbot' });
 ```
 
 For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
@@ -31,7 +31,7 @@ import { serve } from '@reminix/runtime';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const agent = wrapAgent(llm, 'my-chatbot');
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 ```
 
 Your agent is now available at:
@@ -79,7 +79,7 @@ const chain = prompt.pipe(llm);
 
 // Wrap and serve
 const agent = wrapAgent(chain, 'my-chain');
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 ```
 
 ## Endpoint Input/Output Formats

@@ -19,7 +19,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { serveAgent } from '@reminix/anthropic';
 
 const client = new Anthropic();
-serveAgent(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514', port: 8080 });
+serveAgent(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
 ```
 
 For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
@@ -31,7 +31,7 @@ import { serve } from '@reminix/runtime';
 
 const client = new Anthropic();
 const agent = wrapAgent(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 ```
 
 Your agent is now available at:

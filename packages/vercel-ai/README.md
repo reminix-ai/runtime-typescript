@@ -24,7 +24,7 @@ import { openai } from '@ai-sdk/openai';
 import { serveAgent } from '@reminix/vercel-ai';
 
 const model = openai('gpt-4o');
-serveAgent(model, { name: 'chat-agent', port: 8080 });
+serveAgent(model, { name: 'chat-agent' });
 ```
 
 ## Quick Start with ToolLoopAgent
@@ -53,7 +53,7 @@ const agent = new ToolLoopAgent({
   tools: { getWeather: weatherTool }
 });
 
-serveAgent(agent, { name: 'weather-agent', port: 8080 });
+serveAgent(agent, { name: 'weather-agent' });
 ```
 
 For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
@@ -65,7 +65,7 @@ import { serve } from '@reminix/runtime';
 
 const model = openai('gpt-4o');
 const reminixAgent = wrapAgent(model, { name: 'chat-agent' });
-serve({ agents: [reminixAgent], port: 8080 });
+serve({ agents: [reminixAgent] });
 ```
 
 Your agent is now available at:
@@ -110,7 +110,7 @@ const gpt = wrapAgent(openai('gpt-4o'), { name: 'gpt' });
 const claude = wrapAgent(anthropic('claude-sonnet-4-20250514'), { name: 'claude' });
 const gemini = wrapAgent(google('gemini-pro'), { name: 'gemini' });
 
-serve({ agents: [gpt, claude, gemini], port: 8080 });
+serve({ agents: [gpt, claude, gemini] });
 ```
 
 ## When to Use Each Option

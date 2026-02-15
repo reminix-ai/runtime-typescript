@@ -21,7 +21,7 @@ import { serveAgent } from '@reminix/langgraph';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const graph = createReactAgent({ llm, tools: [] });
-serveAgent(graph, { name: 'my-agent', port: 8080 });
+serveAgent(graph, { name: 'my-agent' });
 ```
 
 For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
@@ -35,7 +35,7 @@ import { serve } from '@reminix/runtime';
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const graph = createReactAgent({ llm, tools: [] });
 const agent = wrapAgent(graph, 'my-agent');
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 ```
 
 Your agent is now available at:

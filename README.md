@@ -43,7 +43,7 @@ import { serve } from '@reminix/runtime';
 
 const agent = new ChatOpenAI({ model: 'gpt-4o' });
 
-serve({ agents: [wrapAgent(agent, 'my-agent')], port: 8080 });
+serve({ agents: [wrapAgent(agent, 'my-agent')] });
 ```
 
 ### With Factory Functions (No Framework)
@@ -61,7 +61,7 @@ const calculator = agent('calculator', {
   handler: async ({ a, b }) => (a as number) + (b as number),
 });
 
-serve({ agents: [calculator], port: 8080 });
+serve({ agents: [calculator] });
 ```
 
 Your agent is now available at:
