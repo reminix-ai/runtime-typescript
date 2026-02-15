@@ -1,6 +1,6 @@
 # Reminix Runtime (TypeScript)
 
-The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
+The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) -- the developer platform for AI agents.
 
 Deploy to [Reminix Cloud](https://reminix.com) for zero-config hosting, or self-host anywhere.
 
@@ -12,23 +12,23 @@ A lightweight runtime for serving AI agents via REST APIs. Wrap any LLM framewor
 - **REST API Server**: Execute endpoint powered by [Hono](https://hono.dev)
 - **Streaming Support**: Server-Sent Events (SSE) out of the box
 - **Agent Templates**: Standard patterns (prompt, chat, task, rag, thread, workflow) for common agent I/O
-- **Framework Adapters**: Pre-built integrations for Vercel AI, LangChain, LangGraph, OpenAI, Anthropic
+- **Framework Agents**: Pre-built integrations for Vercel AI, LangChain, LangGraph, OpenAI, Anthropic
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
 | [`@reminix/runtime`](./packages/runtime) | Core runtime with `agent()` and `tool()` factories and agent templates |
-| [`@reminix/langchain`](./packages/langchain) | LangChain adapter |
-| [`@reminix/langgraph`](./packages/langgraph) | LangGraph adapter |
-| [`@reminix/openai`](./packages/openai) | OpenAI Agents adapter |
-| [`@reminix/anthropic`](./packages/anthropic) | Anthropic adapter |
-| [`@reminix/vercel-ai`](./packages/vercel-ai) | Vercel AI SDK adapter |
+| [`@reminix/langchain`](./packages/langchain) | LangChain chat agent |
+| [`@reminix/langgraph`](./packages/langgraph) | LangGraph thread agent |
+| [`@reminix/openai`](./packages/openai) | OpenAI chat agent |
+| [`@reminix/anthropic`](./packages/anthropic) | Anthropic chat agent |
+| [`@reminix/vercel-ai`](./packages/vercel-ai) | Vercel AI SDK chat agent |
 
 ## Installation
 
 ```bash
-# Install the adapter for your framework (runtime is included as a peer dependency)
+# Install the agent package for your framework (runtime is included as a peer dependency)
 npm install @reminix/runtime @reminix/langchain
 ```
 
@@ -38,11 +38,12 @@ npm install @reminix/runtime @reminix/langchain
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
-import { serveAgent } from '@reminix/langchain';
+import { LangChainChat } from '@reminix/langchain';
+import { serve } from '@reminix/runtime';
 
-const agent = new ChatOpenAI({ model: 'gpt-4o' });
-
-serveAgent(agent, { name: 'my-agent' });
+const llm = new ChatOpenAI({ model: 'gpt-4o' });
+const agent = new LangChainChat(llm, { name: 'my-agent' });
+serve({ agents: [agent] });
 ```
 
 ### With Factory Functions (No Framework)

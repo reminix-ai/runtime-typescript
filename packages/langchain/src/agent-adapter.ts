@@ -1,5 +1,5 @@
 /**
- * LangChain adapter for Reminix Runtime.
+ * LangChain chat adapter for Reminix Runtime.
  */
 
 import {
@@ -12,11 +12,9 @@ import {
 import type { Runnable } from '@langchain/core/runnables';
 
 import {
-  ADAPTER_INPUT,
-  serve,
+  AGENT_TEMPLATES,
   messageContentToText,
   buildMessagesFromInput,
-  type ServeOptions,
   type AgentRequest,
   type AgentResponse,
   type AgentMetadata,
@@ -50,7 +48,7 @@ export function toLangChainMessage(message: Message): BaseMessage {
   }
 }
 
-export class LangChainAgentAdapter {
+export class LangChainChat {
   private agent: Runnable;
   private _name: string;
 
@@ -67,9 +65,10 @@ export class LangChainAgentAdapter {
     return {
       description: 'langchain adapter',
       capabilities: { streaming: true },
-      input: ADAPTER_INPUT,
-      output: { type: 'string' },
+      input: AGENT_TEMPLATES['chat'].input,
+      output: AGENT_TEMPLATES['chat'].output,
       adapter: 'langchain',
+      template: 'chat',
     };
   }
 
@@ -116,21 +115,4 @@ export class LangChainAgentAdapter {
       yield JSON.stringify({ chunk: content });
     }
   }
-}
-
-export function wrapAgent(
-  agent: Runnable,
-  name: string = 'langchain-agent'
-): LangChainAgentAdapter {
-  return new LangChainAgentAdapter(agent, name);
-}
-
-export interface WrapAndServeOptions extends ServeOptions {
-  name?: string;
-}
-
-export function serveAgent(agent: Runnable, options: WrapAndServeOptions = {}): void {
-  const { port, hostname, name } = options;
-  const wrappedAgent = wrapAgent(agent, name);
-  serve({ agents: [wrappedAgent], port, hostname });
 }

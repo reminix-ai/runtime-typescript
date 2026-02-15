@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import OpenAI from 'openai';
-import { wrapAgent } from '@reminix/openai';
+import { OpenAIChat } from '@reminix/openai';
 import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getOpenAIApiKey } from './setup.js';
@@ -15,7 +15,7 @@ describe('OpenAI Adapter Integration', () => {
   beforeAll(() => {
     const apiKey = getOpenAIApiKey();
     const client = new OpenAI({ apiKey });
-    const agent = wrapAgent(client, { name: 'test-openai', model: 'gpt-4.1-nano' });
+    const agent = new OpenAIChat(client, { name: 'test-openai', model: 'gpt-4.1-nano' });
     app = createApp({ agents: [agent] });
   });
 

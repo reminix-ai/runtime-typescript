@@ -1,6 +1,6 @@
 # @reminix/openai
 
-Reminix Runtime adapter for the [OpenAI API](https://platform.openai.com/docs). Serve OpenAI models as a REST API.
+Reminix Runtime chat agent for the [OpenAI API](https://platform.openai.com/docs). Serve OpenAI models as a REST API.
 
 > **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 
@@ -16,21 +16,11 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import OpenAI from 'openai';
-import { serveAgent } from '@reminix/openai';
-
-const client = new OpenAI();
-serveAgent(client, { name: 'my-chatbot', model: 'gpt-4o' });
-```
-
-For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
-
-```typescript
-import OpenAI from 'openai';
-import { wrapAgent } from '@reminix/openai';
+import { OpenAIChat } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
 const client = new OpenAI();
-const agent = wrapAgent(client, { name: 'my-chatbot', model: 'gpt-4o' });
+const agent = new OpenAIChat(client, { name: 'my-chatbot', model: 'gpt-4o' });
 serve({ agents: [agent] });
 ```
 
@@ -39,21 +29,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `serveAgent(client, options)`
+### `new OpenAIChat(client, options)`
 
-Wrap an OpenAI client and serve it immediately. Combines `wrapAgent` and `serve` for single-agent setups.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `client` | `OpenAI` | required | An OpenAI client |
-| `options.name` | `string` | `"openai-agent"` | Name for the agent (used in URL path) |
-| `options.model` | `string` | `"gpt-4o-mini"` | Model to use for completions |
-| `options.port` | `number` | `8080` | Port to serve on |
-| `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
-
-### `wrapAgent(client, options)`
-
-Wrap an OpenAI client for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
+Create an OpenAI chat agent for use with Reminix Runtime.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -61,13 +39,13 @@ Wrap an OpenAI client for use with Reminix Runtime. Use this with `serve` from `
 | `options.name` | `string` | `"openai-agent"` | Name for the agent (used in URL path) |
 | `options.model` | `string` | `"gpt-4o-mini"` | Model to use for completions |
 
-**Returns:** `OpenAIAgentAdapter` - A Reminix adapter instance
+**Returns:** `OpenAIChat` - A Reminix chat agent instance
 
 ### Example with Custom Configuration
 
 ```typescript
 import OpenAI from 'openai';
-import { wrapAgent } from '@reminix/openai';
+import { OpenAIChat } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
 const client = new OpenAI({
@@ -75,7 +53,7 @@ const client = new OpenAI({
   baseURL: 'https://your-proxy.com/v1', // Optional: custom endpoint
 });
 
-const agent = wrapAgent(client, {
+const agent = new OpenAIChat(client, {
   name: 'gpt4-agent',
   model: 'gpt-4o',
 });

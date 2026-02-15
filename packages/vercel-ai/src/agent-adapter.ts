@@ -1,5 +1,5 @@
 /**
- * Vercel AI SDK adapter for Reminix Runtime.
+ * Vercel AI SDK chat adapter for Reminix Runtime.
  *
  * Supports both ToolLoopAgent (for agents with tools) and LanguageModel (for generateText).
  */
@@ -8,18 +8,16 @@ import type { ToolLoopAgent } from 'ai';
 import { generateText, streamText, type LanguageModel, type ModelMessage } from 'ai';
 
 import {
-  ADAPTER_INPUT,
-  serve,
+  AGENT_TEMPLATES,
   messageContentToText,
   buildMessagesFromInput,
-  type ServeOptions,
   type AgentRequest,
   type AgentResponse,
   type AgentMetadata,
   type Message,
 } from '@reminix/runtime';
 
-export interface VercelAIAgentAdapterOptions {
+export interface VercelAIChatOptions {
   name?: string;
 }
 
@@ -35,7 +33,7 @@ function isToolLoopAgent(input: unknown): input is AnyToolLoopAgent {
   );
 }
 
-export class VercelAIAgentAdapter {
+export class VercelAIChat {
   private modelOrAgent: LanguageModel | AnyToolLoopAgent;
   private isAgent: boolean;
   private _name: string;
@@ -43,10 +41,7 @@ export class VercelAIAgentAdapter {
   protected _generateText = generateText;
   protected _streamText = streamText;
 
-  constructor(
-    modelOrAgent: LanguageModel | AnyToolLoopAgent,
-    options: VercelAIAgentAdapterOptions = {}
-  ) {
+  constructor(modelOrAgent: LanguageModel | AnyToolLoopAgent, options: VercelAIChatOptions = {}) {
     this.modelOrAgent = modelOrAgent;
     this.isAgent = isToolLoopAgent(modelOrAgent);
     this._name = options.name ?? 'vercel-ai-agent';
@@ -60,9 +55,10 @@ export class VercelAIAgentAdapter {
     return {
       description: 'vercel-ai adapter',
       capabilities: { streaming: true },
-      input: ADAPTER_INPUT,
-      output: { type: 'string' },
+      input: AGENT_TEMPLATES['chat'].input,
+      output: AGENT_TEMPLATES['chat'].output,
       adapter: 'vercel-ai',
+      template: 'chat',
     };
   }
 
@@ -137,22 +133,4 @@ export class VercelAIAgentAdapter {
       }
     }
   }
-}
-
-export function wrapAgent(
-  modelOrAgent: LanguageModel | AnyToolLoopAgent,
-  options: VercelAIAgentAdapterOptions = {}
-): VercelAIAgentAdapter {
-  return new VercelAIAgentAdapter(modelOrAgent, options);
-}
-
-export interface WrapAndServeOptions extends VercelAIAgentAdapterOptions, ServeOptions {}
-
-export function serveAgent(
-  modelOrAgent: LanguageModel | AnyToolLoopAgent,
-  options: WrapAndServeOptions = {}
-): void {
-  const { port, hostname, ...adapterOptions } = options;
-  const agent = wrapAgent(modelOrAgent, adapterOptions);
-  serve({ agents: [agent], port, hostname });
 }

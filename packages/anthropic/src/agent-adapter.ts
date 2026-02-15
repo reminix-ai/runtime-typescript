@@ -1,22 +1,20 @@
 /**
- * Anthropic adapter for Reminix Runtime.
+ * Anthropic chat adapter for Reminix Runtime.
  */
 
 import type Anthropic from '@anthropic-ai/sdk';
 
 import {
-  ADAPTER_INPUT,
-  serve,
+  AGENT_TEMPLATES,
   messageContentToText,
   buildMessagesFromInput,
-  type ServeOptions,
   type AgentRequest,
   type AgentResponse,
   type AgentMetadata,
   type Message,
 } from '@reminix/runtime';
 
-export interface AnthropicAgentAdapterOptions {
+export interface AnthropicChatOptions {
   name?: string;
   model?: string;
   maxTokens?: number;
@@ -27,13 +25,13 @@ interface AnthropicMessage {
   content: string;
 }
 
-export class AnthropicAgentAdapter {
+export class AnthropicChat {
   private client: Anthropic;
   private _name: string;
   private _model: string;
   private _maxTokens: number;
 
-  constructor(client: Anthropic, options: AnthropicAgentAdapterOptions = {}) {
+  constructor(client: Anthropic, options: AnthropicChatOptions = {}) {
     this.client = client;
     this._name = options.name ?? 'anthropic-agent';
     this._model = options.model ?? 'claude-sonnet-4-20250514';
@@ -52,9 +50,10 @@ export class AnthropicAgentAdapter {
     return {
       description: 'anthropic adapter',
       capabilities: { streaming: true },
-      input: ADAPTER_INPUT,
-      output: { type: 'string' },
+      input: AGENT_TEMPLATES['chat'].input,
+      output: AGENT_TEMPLATES['chat'].output,
       adapter: 'anthropic',
+      template: 'chat',
     };
   }
 
@@ -118,19 +117,4 @@ export class AnthropicAgentAdapter {
       }
     }
   }
-}
-
-export function wrapAgent(
-  client: Anthropic,
-  options: AnthropicAgentAdapterOptions = {}
-): AnthropicAgentAdapter {
-  return new AnthropicAgentAdapter(client, options);
-}
-
-export interface WrapAndServeOptions extends AnthropicAgentAdapterOptions, ServeOptions {}
-
-export function serveAgent(client: Anthropic, options: WrapAndServeOptions = {}): void {
-  const { port, hostname, ...adapterOptions } = options;
-  const agent = wrapAgent(client, adapterOptions);
-  serve({ agents: [agent], port, hostname });
 }

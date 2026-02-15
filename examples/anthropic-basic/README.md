@@ -1,6 +1,6 @@
 # Anthropic Basic Example
 
-A simple example showing how to serve an Anthropic Claude agent via Reminix Runtime.
+A simple example showing how to serve an Anthropic Claude chat agent via Reminix Runtime.
 
 ## Setup
 
@@ -64,9 +64,11 @@ curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
-import { serveAgent } from '@reminix/anthropic';
+import { AnthropicChat } from '@reminix/anthropic';
+import { serve } from '@reminix/runtime';
 
 const client = new Anthropic();
 
-serveAgent(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
+const agent = new AnthropicChat(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
+serve({ agents: [agent] });
 ```

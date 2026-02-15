@@ -1,2 +1,2 @@
-export { AnthropicAgentAdapter, wrapAgent, serveAgent } from './agent-adapter.js';
-export type { AnthropicAgentAdapterOptions, WrapAndServeOptions } from './agent-adapter.js';
+export { AnthropicChat } from './agent-adapter.js';
+export type { AnthropicChatOptions } from './agent-adapter.js';

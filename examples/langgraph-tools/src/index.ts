@@ -35,7 +35,8 @@ import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
-import { serveAgent } from '@reminix/langgraph';
+import { LangGraphThread } from '@reminix/langgraph';
+import { serve } from '@reminix/runtime';
 
 // Define a tool for the agent to use
 const getWeather = tool(
@@ -59,8 +60,9 @@ const getWeather = tool(
 const llm = new ChatOpenAI({ model: 'gpt-4o-mini' });
 const graph = createReactAgent({ llm, tools: [getWeather] });
 
-// Serve the agent
-serveAgent(graph, { name: 'langgraph-tools' });
+// Create and serve the agent
+const agent = new LangGraphThread(graph, 'langgraph-tools');
+serve({ agents: [agent] });
 
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');

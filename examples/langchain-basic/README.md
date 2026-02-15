@@ -1,6 +1,6 @@
 # LangChain Basic Example
 
-A simple example showing how to serve a LangChain chat model via Reminix Runtime.
+A simple example showing how to serve a LangChain chat agent via Reminix Runtime.
 
 ## Setup
 
@@ -64,9 +64,11 @@ curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
-import { serveAgent } from '@reminix/langchain';
+import { LangChainChat } from '@reminix/langchain';
+import { serve } from '@reminix/runtime';
 
 const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
 
-serveAgent(model, { name: 'langchain-basic' });
+const agent = new LangChainChat(model, { name: 'langchain-basic' });
+serve({ agents: [agent] });
 ```

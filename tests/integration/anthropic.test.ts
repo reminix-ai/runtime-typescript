@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import Anthropic from '@anthropic-ai/sdk';
-import { wrapAgent } from '@reminix/anthropic';
+import { AnthropicChat } from '@reminix/anthropic';
 import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getAnthropicApiKey } from './setup.js';
@@ -15,7 +15,7 @@ describe('Anthropic Adapter Integration', () => {
   beforeAll(() => {
     const apiKey = getAnthropicApiKey();
     const client = new Anthropic({ apiKey });
-    const agent = wrapAgent(client, {
+    const agent = new AnthropicChat(client, {
       name: 'test-anthropic',
       model: 'claude-3-haiku-20240307',
       maxTokens: 100,

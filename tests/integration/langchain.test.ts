@@ -6,7 +6,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { wrapAgent } from '@reminix/langchain';
+import { LangChainChat } from '@reminix/langchain';
 import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getOpenAIApiKey } from './setup.js';
@@ -34,7 +34,7 @@ describe('LangChain Adapter Integration', () => {
     const apiKey = getOpenAIApiKey();
     const llm = new ChatOpenAI({ model: 'gpt-4.1-nano', apiKey });
     const llmWithTools = llm.bindTools([getWeather]);
-    const agent = wrapAgent(llmWithTools, 'test-langchain');
+    const agent = new LangChainChat(llmWithTools, 'test-langchain');
     app = createApp({ agents: [agent] });
   });
 

@@ -1,57 +1,55 @@
 /**
- * Tests for the LangChain adapter.
+ * Tests for the LangChain chat adapter.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
-import type { AgentAgentInvokeRequest } from '@reminix/runtime';
-import { wrapAgent, serveAgent, LangChainAgentAdapter } from '../src/agent-adapter.js';
+import type { AgentRequest } from '@reminix/runtime';
+import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { LangChainChat } from '../src/agent-adapter.js';
 
-// Mock @reminix/runtime serve function
-vi.mock('@reminix/runtime', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...(actual as object),
-    serve: vi.fn(),
-  };
-});
-
-import { serve } from '@reminix/runtime';
-
-describe('wrap', () => {
-  it('should return a LangChainAgentAdapter', () => {
+describe('LangChainChat', () => {
+  it('should be instantiable', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const adapter = wrapAgent(mockRunnable as any);
+    const agent = new LangChainChat(mockRunnable as any);
 
-    expect(adapter).toBeInstanceOf(LangChainAgentAdapter);
+    expect(agent).toBeInstanceOf(LangChainChat);
   });
 
   it('should accept a custom name', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const adapter = wrapAgent(mockRunnable as any, 'my-custom-agent');
+    const agent = new LangChainChat(mockRunnable as any, 'my-custom-agent');
 
-    expect(adapter.name).toBe('my-custom-agent');
+    expect(agent.name).toBe('my-custom-agent');
   });
 
   it('should use default name if not provided', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const adapter = wrapAgent(mockRunnable as any);
+    const agent = new LangChainChat(mockRunnable as any);
 
-    expect(adapter.name).toBe('langchain-agent');
+    expect(agent.name).toBe('langchain-agent');
+  });
+
+  it('should have chat template metadata', () => {
+    const mockRunnable = { invoke: vi.fn() };
+    const agent = new LangChainChat(mockRunnable as any);
+
+    expect(agent.metadata.template).toBe('chat');
+    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
   });
 });
 
-describe('LangChainAgentAdapter.invoke', () => {
+describe('LangChainChat.invoke', () => {
   it('should call the runnable with the input', async () => {
     const mockRunnable = {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
     };
 
-    const adapter = wrapAgent(mockRunnable as any);
-    const request: AgentInvokeRequest = { input: { query: 'What is AI?' } };
+    const agent = new LangChainChat(mockRunnable as any);
+    const request: AgentRequest = { input: { query: 'What is AI?' } };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     expect(mockRunnable.invoke).toHaveBeenCalledWith({ query: 'What is AI?' });
   });
@@ -61,10 +59,10 @@ describe('LangChainAgentAdapter.invoke', () => {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello from LangChain!' })),
     };
 
-    const adapter = wrapAgent(mockRunnable as any);
-    const request: AgentInvokeRequest = { input: { query: 'Hi' } };
+    const agent = new LangChainChat(mockRunnable as any);
+    const request: AgentRequest = { input: { query: 'Hi' } };
 
-    const response = await adapter.invoke(request);
+    const response = await agent.invoke(request);
 
     expect(response.output).toBe('Hello from LangChain!');
   });
@@ -74,10 +72,10 @@ describe('LangChainAgentAdapter.invoke', () => {
       invoke: vi.fn().mockResolvedValue({ result: 'success', value: 42 }),
     };
 
-    const adapter = wrapAgent(mockRunnable as any);
-    const request: AgentInvokeRequest = { input: { task: 'compute' } };
+    const agent = new LangChainChat(mockRunnable as any);
+    const request: AgentRequest = { input: { task: 'compute' } };
 
-    const response = await adapter.invoke(request);
+    const response = await agent.invoke(request);
 
     expect(response.output).toEqual({ result: 'success', value: 42 });
   });
@@ -87,8 +85,8 @@ describe('LangChainAgentAdapter.invoke', () => {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Response' })),
     };
 
-    const adapter = wrapAgent(mockRunnable as any);
-    const request: AgentInvokeRequest = {
+    const agent = new LangChainChat(mockRunnable as any);
+    const request: AgentRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },
@@ -99,7 +97,7 @@ describe('LangChainAgentAdapter.invoke', () => {
       },
     };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     const callArg = mockRunnable.invoke.mock.calls[0][0];
     expect(callArg).toHaveLength(4);
@@ -107,37 +105,5 @@ describe('LangChainAgentAdapter.invoke', () => {
     expect(callArg[1]).toBeInstanceOf(HumanMessage);
     expect(callArg[2]).toBeInstanceOf(AIMessage);
     expect(callArg[3]).toBeInstanceOf(HumanMessage);
-  });
-});
-
-describe('serveAgent', () => {
-  beforeEach(() => {
-    vi.mocked(serve).mockClear();
-  });
-
-  it('should be callable', () => {
-    expect(typeof serveAgent).toBe('function');
-  });
-
-  it('should call serve with wrapped adapter', () => {
-    const mockRunnable = { invoke: vi.fn() };
-
-    serveAgent(mockRunnable as any, { name: 'test-agent' });
-
-    expect(serve).toHaveBeenCalledTimes(1);
-    const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
-    expect(serveCall.agents).toHaveLength(1);
-    expect(serveCall.agents[0]).toBeInstanceOf(LangChainAgentAdapter);
-    expect(serveCall.agents[0].name).toBe('test-agent');
-  });
-
-  it('should pass serve options', () => {
-    const mockRunnable = { invoke: vi.fn() };
-
-    serveAgent(mockRunnable as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
-
-    const serveCall = vi.mocked(serve).mock.calls[0][0] as { port?: number; hostname?: string };
-    expect(serveCall.port).toBe(3000);
-    expect(serveCall.hostname).toBe('localhost');
   });
 });

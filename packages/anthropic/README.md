@@ -1,6 +1,6 @@
 # @reminix/anthropic
 
-Reminix Runtime adapter for the [Anthropic API](https://docs.anthropic.com/). Serve Claude models as a REST API.
+Reminix Runtime chat agent for the [Anthropic API](https://docs.anthropic.com/). Serve Claude models as a REST API.
 
 > **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 
@@ -16,21 +16,11 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
-import { serveAgent } from '@reminix/anthropic';
-
-const client = new Anthropic();
-serveAgent(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
-```
-
-For more flexibility (e.g., serving multiple agents), use `wrapAgent` and `serve` separately:
-
-```typescript
-import Anthropic from '@anthropic-ai/sdk';
-import { wrapAgent } from '@reminix/anthropic';
+import { AnthropicChat } from '@reminix/anthropic';
 import { serve } from '@reminix/runtime';
 
 const client = new Anthropic();
-const agent = wrapAgent(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
+const agent = new AnthropicChat(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
 serve({ agents: [agent] });
 ```
 
@@ -39,22 +29,9 @@ Your agent is now available at:
 
 ## API Reference
 
-### `serveAgent(client, options)`
+### `new AnthropicChat(client, options)`
 
-Wrap an Anthropic client and serve it immediately. Combines `wrapAgent` and `serve` for single-agent setups.
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `client` | `Anthropic` | required | An Anthropic client |
-| `options.name` | `string` | `"anthropic-agent"` | Name for the agent (used in URL path) |
-| `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
-| `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
-| `options.port` | `number` | `8080` | Port to serve on |
-| `options.hostname` | `string` | `"0.0.0.0"` | Hostname to bind to |
-
-### `wrapAgent(client, options)`
-
-Wrap an Anthropic client for use with Reminix Runtime. Use this with `serve` from `@reminix/runtime` for multi-agent setups.
+Create an Anthropic chat agent for use with Reminix Runtime.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -63,11 +40,11 @@ Wrap an Anthropic client for use with Reminix Runtime. Use this with `serve` fro
 | `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
 
-**Returns:** `AnthropicAgentAdapter` - A Reminix adapter instance
+**Returns:** `AnthropicChat` - A Reminix chat agent instance
 
 ### System Messages
 
-The adapter automatically handles Anthropic's system message format. System messages in your request are extracted and passed as the `system` parameter to the API.
+The agent automatically handles Anthropic's system message format. System messages in your request are extracted and passed as the `system` parameter to the API.
 
 ```typescript
 // This works automatically:

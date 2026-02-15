@@ -1,57 +1,55 @@
 /**
- * Tests for the LangGraph adapter.
+ * Tests for the LangGraph thread adapter.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
-import type { AgentAgentInvokeRequest } from '@reminix/runtime';
-import { wrapAgent, serveAgent, LangGraphAgentAdapter } from '../src/agent-adapter.js';
+import type { AgentRequest } from '@reminix/runtime';
+import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { LangGraphThread } from '../src/agent-adapter.js';
 
-// Mock @reminix/runtime serve function
-vi.mock('@reminix/runtime', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...(actual as object),
-    serve: vi.fn(),
-  };
-});
-
-import { serve } from '@reminix/runtime';
-
-describe('wrap', () => {
-  it('should return a LangGraphAgentAdapter', () => {
+describe('LangGraphThread', () => {
+  it('should be instantiable', () => {
     const mockGraph = { invoke: vi.fn() };
-    const adapter = wrapAgent(mockGraph as any);
+    const agent = new LangGraphThread(mockGraph as any);
 
-    expect(adapter).toBeInstanceOf(LangGraphAgentAdapter);
+    expect(agent).toBeInstanceOf(LangGraphThread);
   });
 
   it('should accept a custom name', () => {
     const mockGraph = { invoke: vi.fn() };
-    const adapter = wrapAgent(mockGraph as any, 'my-custom-agent');
+    const agent = new LangGraphThread(mockGraph as any, 'my-custom-agent');
 
-    expect(adapter.name).toBe('my-custom-agent');
+    expect(agent.name).toBe('my-custom-agent');
   });
 
   it('should use default name if not provided', () => {
     const mockGraph = { invoke: vi.fn() };
-    const adapter = wrapAgent(mockGraph as any);
+    const agent = new LangGraphThread(mockGraph as any);
 
-    expect(adapter.name).toBe('langgraph-agent');
+    expect(agent.name).toBe('langgraph-agent');
+  });
+
+  it('should have thread template metadata', () => {
+    const mockGraph = { invoke: vi.fn() };
+    const agent = new LangGraphThread(mockGraph as any);
+
+    expect(agent.metadata.template).toBe('thread');
+    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['thread'].input);
   });
 });
 
-describe('LangGraphAgentAdapter.invoke', () => {
+describe('LangGraphThread.invoke', () => {
   it('should call the graph with the input', async () => {
     const mockGraph = {
       invoke: vi.fn().mockResolvedValue({ messages: [new AIMessage({ content: 'Hello!' })] }),
     };
 
-    const adapter = wrapAgent(mockGraph as any);
-    const request: AgentInvokeRequest = { input: { query: 'What is AI?' } };
+    const agent = new LangGraphThread(mockGraph as any);
+    const request: AgentRequest = { input: { query: 'What is AI?' } };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     expect(mockGraph.invoke).toHaveBeenCalledWith({ query: 'What is AI?' });
   });
@@ -63,10 +61,10 @@ describe('LangGraphAgentAdapter.invoke', () => {
       }),
     };
 
-    const adapter = wrapAgent(mockGraph as any);
-    const request: AgentInvokeRequest = { input: { messages: [] } };
+    const agent = new LangGraphThread(mockGraph as any);
+    const request: AgentRequest = { input: { messages: [] } };
 
-    const response = await adapter.invoke(request);
+    const response = await agent.invoke(request);
 
     expect(response.output).toBe('Hi there!');
   });
@@ -76,10 +74,10 @@ describe('LangGraphAgentAdapter.invoke', () => {
       invoke: vi.fn().mockResolvedValue({ result: 'success' }),
     };
 
-    const adapter = wrapAgent(mockGraph as any);
-    const request: AgentInvokeRequest = { input: { task: 'compute' } };
+    const agent = new LangGraphThread(mockGraph as any);
+    const request: AgentRequest = { input: { task: 'compute' } };
 
-    const response = await adapter.invoke(request);
+    const response = await agent.invoke(request);
 
     expect(response.output).toEqual({ result: 'success' });
   });
@@ -89,12 +87,12 @@ describe('LangGraphAgentAdapter.invoke', () => {
       invoke: vi.fn().mockResolvedValue({ messages: [new AIMessage({ content: 'Hello!' })] }),
     };
 
-    const adapter = wrapAgent(mockGraph as any);
-    const request: AgentInvokeRequest = {
+    const agent = new LangGraphThread(mockGraph as any);
+    const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     const callArg = mockGraph.invoke.mock.calls[0][0];
     expect(callArg).toHaveProperty('messages');
@@ -113,8 +111,8 @@ describe('LangGraphAgentAdapter.invoke', () => {
       }),
     };
 
-    const adapter = wrapAgent(mockGraph as any);
-    const request: AgentInvokeRequest = {
+    const agent = new LangGraphThread(mockGraph as any);
+    const request: AgentRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },
@@ -123,41 +121,8 @@ describe('LangGraphAgentAdapter.invoke', () => {
       },
     };
 
-    const response = await adapter.invoke(request);
+    const response = await agent.invoke(request);
 
-    // Output should be extracted from last AI message
     expect(response.output).toBe('Hi!');
-  });
-});
-
-describe('serveAgent', () => {
-  beforeEach(() => {
-    vi.mocked(serve).mockClear();
-  });
-
-  it('should be callable', () => {
-    expect(typeof serveAgent).toBe('function');
-  });
-
-  it('should call serve with wrapped adapter', () => {
-    const mockGraph = { invoke: vi.fn() };
-
-    serveAgent(mockGraph as any, { name: 'test-agent' });
-
-    expect(serve).toHaveBeenCalledTimes(1);
-    const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
-    expect(serveCall.agents).toHaveLength(1);
-    expect(serveCall.agents[0]).toBeInstanceOf(LangGraphAgentAdapter);
-    expect(serveCall.agents[0].name).toBe('test-agent');
-  });
-
-  it('should pass serve options', () => {
-    const mockGraph = { invoke: vi.fn() };
-
-    serveAgent(mockGraph as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
-
-    const serveCall = vi.mocked(serve).mock.calls[0][0] as { port?: number; hostname?: string };
-    expect(serveCall.port).toBe(3000);
-    expect(serveCall.hostname).toBe('localhost');
   });
 });

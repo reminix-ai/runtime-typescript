@@ -64,9 +64,11 @@ curl -X POST http://localhost:8080/agents/openai-basic/invoke \
 
 ```typescript
 import OpenAI from 'openai';
-import { serveAgent } from '@reminix/openai';
+import { OpenAIChat } from '@reminix/openai';
+import { serve } from '@reminix/runtime';
 
 const client = new OpenAI();
 
-serveAgent(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
+const agent = new OpenAIChat(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
+serve({ agents: [agent] });
 ```

@@ -1,49 +1,47 @@
 /**
- * Tests for the OpenAI adapter.
+ * Tests for the OpenAI chat adapter.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
-import type { AgentAgentInvokeRequest } from '@reminix/runtime';
-import { wrapAgent, serveAgent, OpenAIAgentAdapter } from '../src/agent-adapter.js';
+import type { AgentInvokeRequest } from '@reminix/runtime';
+import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { OpenAIChat } from '../src/agent-adapter.js';
 
-// Mock @reminix/runtime serve function
-vi.mock('@reminix/runtime', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...(actual as object),
-    serve: vi.fn(),
-  };
-});
-
-import { serve } from '@reminix/runtime';
-
-describe('wrap', () => {
-  it('should return an OpenAIAgentAdapter', () => {
+describe('OpenAIChat', () => {
+  it('should be instantiable', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const adapter = wrapAgent(mockClient as any);
+    const agent = new OpenAIChat(mockClient as any);
 
-    expect(adapter).toBeInstanceOf(OpenAIAgentAdapter);
+    expect(agent).toBeInstanceOf(OpenAIChat);
   });
 
   it('should accept custom options', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const adapter = wrapAgent(mockClient as any, { name: 'my-agent', model: 'gpt-4o' });
+    const agent = new OpenAIChat(mockClient as any, { name: 'my-agent', model: 'gpt-4o' });
 
-    expect(adapter.name).toBe('my-agent');
-    expect(adapter.model).toBe('gpt-4o');
+    expect(agent.name).toBe('my-agent');
+    expect(agent.model).toBe('gpt-4o');
   });
 
   it('should use default values if not provided', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const adapter = wrapAgent(mockClient as any);
+    const agent = new OpenAIChat(mockClient as any);
 
-    expect(adapter.name).toBe('openai-agent');
-    expect(adapter.model).toBe('gpt-4o-mini');
+    expect(agent.name).toBe('openai-agent');
+    expect(agent.model).toBe('gpt-4o-mini');
+  });
+
+  it('should have chat template metadata', () => {
+    const mockClient = { chat: { completions: { create: vi.fn() } } };
+    const agent = new OpenAIChat(mockClient as any);
+
+    expect(agent.metadata.template).toBe('chat');
+    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
   });
 });
 
-describe('OpenAIAgentAdapter.invoke', () => {
+describe('OpenAIChat.invoke', () => {
   it('should call the client', async () => {
     const mockClient = {
       chat: {
@@ -55,10 +53,10 @@ describe('OpenAIAgentAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrapAgent(mockClient as any);
+    const agent = new OpenAIChat(mockClient as any);
     const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     expect(mockClient.chat.completions.create).toHaveBeenCalled();
   });
@@ -74,10 +72,10 @@ describe('OpenAIAgentAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrapAgent(mockClient as any);
+    const agent = new OpenAIChat(mockClient as any);
     const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
 
-    const response = await adapter.invoke(request);
+    const response = await agent.invoke(request);
 
     expect(response.output).toBe('Hello from OpenAI!');
   });
@@ -93,12 +91,12 @@ describe('OpenAIAgentAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrapAgent(mockClient as any);
+    const agent = new OpenAIChat(mockClient as any);
     const request: AgentInvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     const callArg = mockClient.chat.completions.create.mock.calls[0][0];
     expect(callArg.messages[0].role).toBe('user');
@@ -116,46 +114,14 @@ describe('OpenAIAgentAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrapAgent(mockClient as any, { model: 'gpt-4o' });
+    const agent = new OpenAIChat(mockClient as any, { model: 'gpt-4o' });
     const request: AgentInvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     const callArg = mockClient.chat.completions.create.mock.calls[0][0];
     expect(callArg.model).toBe('gpt-4o');
-  });
-});
-
-describe('serveAgent', () => {
-  beforeEach(() => {
-    vi.mocked(serve).mockClear();
-  });
-
-  it('should be callable', () => {
-    expect(typeof serveAgent).toBe('function');
-  });
-
-  it('should call serve with wrapped adapter', () => {
-    const mockClient = { chat: { completions: { create: vi.fn() } } };
-
-    serveAgent(mockClient as any, { name: 'test-agent' });
-
-    expect(serve).toHaveBeenCalledTimes(1);
-    const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
-    expect(serveCall.agents).toHaveLength(1);
-    expect(serveCall.agents[0]).toBeInstanceOf(OpenAIAgentAdapter);
-    expect(serveCall.agents[0].name).toBe('test-agent');
-  });
-
-  it('should pass serve options', () => {
-    const mockClient = { chat: { completions: { create: vi.fn() } } };
-
-    serveAgent(mockClient as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
-
-    const serveCall = vi.mocked(serve).mock.calls[0][0] as { port?: number; hostname?: string };
-    expect(serveCall.port).toBe(3000);
-    expect(serveCall.hostname).toBe('localhost');
   });
 });

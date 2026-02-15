@@ -1,52 +1,50 @@
 /**
- * Tests for the Anthropic adapter.
+ * Tests for the Anthropic chat adapter.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
-import type { AgentAgentInvokeRequest } from '@reminix/runtime';
-import { wrapAgent, serveAgent, AnthropicAgentAdapter } from '../src/agent-adapter.js';
+import type { AgentRequest } from '@reminix/runtime';
+import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AnthropicChat } from '../src/agent-adapter.js';
 
-// Mock @reminix/runtime serve function
-vi.mock('@reminix/runtime', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...(actual as object),
-    serve: vi.fn(),
-  };
-});
-
-import { serve } from '@reminix/runtime';
-
-describe('wrap', () => {
-  it('should return an AnthropicAgentAdapter', () => {
+describe('AnthropicChat', () => {
+  it('should be instantiable', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const adapter = wrapAgent(mockClient as any);
+    const agent = new AnthropicChat(mockClient as any);
 
-    expect(adapter).toBeInstanceOf(AnthropicAgentAdapter);
+    expect(agent).toBeInstanceOf(AnthropicChat);
   });
 
   it('should accept custom options', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const adapter = wrapAgent(mockClient as any, {
+    const agent = new AnthropicChat(mockClient as any, {
       name: 'my-agent',
       model: 'claude-opus-4-20250514',
     });
 
-    expect(adapter.name).toBe('my-agent');
-    expect(adapter.model).toBe('claude-opus-4-20250514');
+    expect(agent.name).toBe('my-agent');
+    expect(agent.model).toBe('claude-opus-4-20250514');
   });
 
   it('should use default values if not provided', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const adapter = wrapAgent(mockClient as any);
+    const agent = new AnthropicChat(mockClient as any);
 
-    expect(adapter.name).toBe('anthropic-agent');
-    expect(adapter.model).toBe('claude-sonnet-4-20250514');
+    expect(agent.name).toBe('anthropic-agent');
+    expect(agent.model).toBe('claude-sonnet-4-20250514');
+  });
+
+  it('should have chat template metadata', () => {
+    const mockClient = { messages: { create: vi.fn() } };
+    const agent = new AnthropicChat(mockClient as any);
+
+    expect(agent.metadata.template).toBe('chat');
+    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
   });
 });
 
-describe('AnthropicAgentAdapter.invoke', () => {
+describe('AnthropicChat.invoke', () => {
   it('should call the client', async () => {
     const mockClient = {
       messages: {
@@ -56,10 +54,10 @@ describe('AnthropicAgentAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrapAgent(mockClient as any);
-    const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
+    const agent = new AnthropicChat(mockClient as any);
+    const request: AgentRequest = { input: { prompt: 'Hi' } };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     expect(mockClient.messages.create).toHaveBeenCalled();
   });
@@ -73,10 +71,10 @@ describe('AnthropicAgentAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrapAgent(mockClient as any);
-    const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
+    const agent = new AnthropicChat(mockClient as any);
+    const request: AgentRequest = { input: { prompt: 'Hi' } };
 
-    const response = await adapter.invoke(request);
+    const response = await agent.invoke(request);
 
     expect(response.output).toBe('Hello from Anthropic!');
   });
@@ -90,12 +88,12 @@ describe('AnthropicAgentAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrapAgent(mockClient as any);
-    const request: AgentInvokeRequest = {
+    const agent = new AnthropicChat(mockClient as any);
+    const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     expect(mockClient.messages.create).toHaveBeenCalled();
   });
@@ -109,8 +107,8 @@ describe('AnthropicAgentAdapter.invoke', () => {
       },
     };
 
-    const adapter = wrapAgent(mockClient as any);
-    const request: AgentInvokeRequest = {
+    const agent = new AnthropicChat(mockClient as any);
+    const request: AgentRequest = {
       input: {
         messages: [
           { role: 'system', content: 'You are helpful' },
@@ -119,42 +117,10 @@ describe('AnthropicAgentAdapter.invoke', () => {
       },
     };
 
-    await adapter.invoke(request);
+    await agent.invoke(request);
 
     const callArg = mockClient.messages.create.mock.calls[0][0];
     expect(callArg.system).toBe('You are helpful');
     expect(callArg.messages.every((m: any) => m.role !== 'system')).toBe(true);
-  });
-});
-
-describe('serveAgent', () => {
-  beforeEach(() => {
-    vi.mocked(serve).mockClear();
-  });
-
-  it('should be callable', () => {
-    expect(typeof serveAgent).toBe('function');
-  });
-
-  it('should call serve with wrapped adapter', () => {
-    const mockClient = { messages: { create: vi.fn() } };
-
-    serveAgent(mockClient as any, { name: 'test-agent' });
-
-    expect(serve).toHaveBeenCalledTimes(1);
-    const serveCall = vi.mocked(serve).mock.calls[0][0] as { agents: any[] };
-    expect(serveCall.agents).toHaveLength(1);
-    expect(serveCall.agents[0]).toBeInstanceOf(AnthropicAgentAdapter);
-    expect(serveCall.agents[0].name).toBe('test-agent');
-  });
-
-  it('should pass serve options', () => {
-    const mockClient = { messages: { create: vi.fn() } };
-
-    serveAgent(mockClient as any, { name: 'test-agent', port: 3000, hostname: 'localhost' });
-
-    const serveCall = vi.mocked(serve).mock.calls[0][0] as { port?: number; hostname?: string };
-    expect(serveCall.port).toBe(3000);
-    expect(serveCall.hostname).toBe('localhost');
   });
 });

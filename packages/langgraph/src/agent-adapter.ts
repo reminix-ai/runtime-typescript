@@ -1,15 +1,13 @@
 /**
- * LangGraph adapter for Reminix Runtime.
+ * LangGraph thread adapter for Reminix Runtime.
  */
 
 import { AIMessage, type BaseMessage } from '@langchain/core/messages';
 
 import { toLangChainMessage } from '@reminix/langchain';
 import {
-  ADAPTER_INPUT,
-  serve,
+  AGENT_TEMPLATES,
   buildMessagesFromInput,
-  type ServeOptions,
   type AgentRequest,
   type AgentResponse,
   type AgentMetadata,
@@ -25,7 +23,7 @@ interface LangGraphRunnable {
   stream(input: unknown): AsyncIterable<unknown> | Promise<AsyncIterable<unknown>>;
 }
 
-export class LangGraphAgentAdapter {
+export class LangGraphThread {
   private graph: LangGraphRunnable;
   private _name: string;
 
@@ -42,9 +40,10 @@ export class LangGraphAgentAdapter {
     return {
       description: 'langgraph adapter',
       capabilities: { streaming: true },
-      input: ADAPTER_INPUT,
+      input: AGENT_TEMPLATES['thread'].input,
       output: { type: 'string' },
       adapter: 'langgraph',
+      template: 'thread',
     };
   }
 
@@ -133,21 +132,4 @@ export class LangGraphAgentAdapter {
       }
     }
   }
-}
-
-export function wrapAgent(
-  graph: LangGraphRunnable,
-  name: string = 'langgraph-agent'
-): LangGraphAgentAdapter {
-  return new LangGraphAgentAdapter(graph, name);
-}
-
-export interface WrapAndServeOptions extends ServeOptions {
-  name?: string;
-}
-
-export function serveAgent(graph: LangGraphRunnable, options: WrapAndServeOptions = {}): void {
-  const { port, hostname, name } = options;
-  const agent = wrapAgent(graph, name);
-  serve({ agents: [agent], port, hostname });
 }
