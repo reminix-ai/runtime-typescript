@@ -52,7 +52,7 @@ export class AnthropicChatAgent {
       capabilities: { streaming: true },
       input: AGENT_TEMPLATES['chat'].input,
       output: AGENT_TEMPLATES['chat'].output,
-      adapter: 'anthropic',
+      framework: 'anthropic',
       template: 'chat',
     };
   }

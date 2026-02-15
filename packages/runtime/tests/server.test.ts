@@ -9,7 +9,7 @@ import { createApp } from '../src/server.js';
 /**
  * A mock agent for testing task-style requests.
  */
-class MockTaskAdapter {
+class MockTaskAgent {
   private _name: string;
 
   constructor(name: string = 'mock-agent') {
@@ -23,7 +23,7 @@ class MockTaskAdapter {
   get metadata() {
     return {
       capabilities: { streaming: true },
-      adapter: 'mock',
+      framework: 'mock',
       input: { type: 'object' as const },
       output: { type: 'string' as const },
     };
@@ -42,7 +42,7 @@ class MockTaskAdapter {
 /**
  * A mock agent for testing chat-style requests.
  */
-class MockChatAdapter {
+class MockChatAgent {
   private _name: string;
 
   constructor(name: string = 'mock-agent') {
@@ -56,7 +56,7 @@ class MockChatAdapter {
   get metadata() {
     return {
       capabilities: { streaming: true },
-      adapter: 'mock',
+      framework: 'mock',
       input: { type: 'object' as const },
       output: { type: 'string' as const },
     };
@@ -77,7 +77,7 @@ class MockChatAdapter {
 
 describe('createApp', () => {
   it('should return a Hono app', () => {
-    const app = createApp({ agents: [new MockTaskAdapter()] });
+    const app = createApp({ agents: [new MockTaskAgent()] });
     // Hono apps have a 'fetch' method
     expect(app).toHaveProperty('fetch');
   });
@@ -89,7 +89,7 @@ describe('createApp', () => {
 
 describe('Health Endpoint', () => {
   it('GET /health should return 200 OK', async () => {
-    const app = createApp({ agents: [new MockTaskAdapter()] });
+    const app = createApp({ agents: [new MockTaskAgent()] });
     const response = await app.request('/health');
 
     expect(response.status).toBe(200);
@@ -100,7 +100,7 @@ describe('Health Endpoint', () => {
 describe('Info Endpoint', () => {
   it('GET /info should return runtime info and agents', async () => {
     const app = createApp({
-      agents: [new MockTaskAdapter('agent-one'), new MockTaskAdapter('agent-two')],
+      agents: [new MockTaskAgent('agent-one'), new MockTaskAgent('agent-two')],
     });
     const response = await app.request('/info');
 
@@ -116,14 +116,14 @@ describe('Info Endpoint', () => {
     // Check agents
     expect(data.agents).toHaveLength(2);
     expect(data.agents[0].name).toBe('agent-one');
-    expect(data.agents[0].adapter).toBe('mock');
+    expect(data.agents[0].framework).toBe('mock');
     expect(data.agents[0].capabilities.streaming).toBe(true);
   });
 });
 
 describe('Invoke Endpoint', () => {
   it('POST /agents/{agent}/invoke should return invoke response', async () => {
-    const app = createApp({ agents: [new MockTaskAdapter('my-agent')] });
+    const app = createApp({ agents: [new MockTaskAgent('my-agent')] });
     // New API uses { input: { ... } }
     const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
@@ -137,7 +137,7 @@ describe('Invoke Endpoint', () => {
   });
 
   it('POST /agents/{agent}/invoke should accept context', async () => {
-    const app = createApp({ agents: [new MockTaskAdapter('my-agent')] });
+    const app = createApp({ agents: [new MockTaskAgent('my-agent')] });
     const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -151,7 +151,7 @@ describe('Invoke Endpoint', () => {
   });
 
   it('POST /agents/{agent}/invoke should return 404 for unknown agent', async () => {
-    const app = createApp({ agents: [new MockTaskAdapter('my-agent')] });
+    const app = createApp({ agents: [new MockTaskAgent('my-agent')] });
     const response = await app.request('/agents/unknown-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -164,7 +164,7 @@ describe('Invoke Endpoint', () => {
   });
 
   it('POST /agents/{agent}/invoke should handle chat-style input', async () => {
-    const app = createApp({ agents: [new MockChatAdapter('my-agent')] });
+    const app = createApp({ agents: [new MockChatAgent('my-agent')] });
     const response = await app.request('/agents/my-agent/invoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -299,7 +299,7 @@ describe('Info Endpoint with Tools', () => {
     });
 
     const app = createApp({
-      agents: [new MockTaskAdapter('my-agent')],
+      agents: [new MockTaskAgent('my-agent')],
       tools: [myTool],
     });
     const response = await app.request('/info');

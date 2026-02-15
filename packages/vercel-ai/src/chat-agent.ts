@@ -60,7 +60,7 @@ export class VercelAIChatAgent {
       capabilities: { streaming: true },
       input: AGENT_TEMPLATES['chat'].input,
       output: AGENT_TEMPLATES['chat'].output,
-      adapter: 'vercel-ai',
+      framework: 'vercel-ai',
       template: 'chat',
     };
   }

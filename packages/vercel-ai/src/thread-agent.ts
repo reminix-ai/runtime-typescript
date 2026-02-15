@@ -51,7 +51,7 @@ export class VercelAIThreadAgent {
       capabilities: { streaming: false },
       input: AGENT_TEMPLATES['thread'].input,
       output: AGENT_TEMPLATES['thread'].output,
-      adapter: 'vercel-ai',
+      framework: 'vercel-ai',
       template: 'thread',
     };
   }

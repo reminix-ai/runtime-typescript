@@ -47,7 +47,7 @@ export class OpenAITaskAgent {
       capabilities: { streaming: false },
       input: AGENT_TEMPLATES['task'].input,
       output: AGENT_TEMPLATES['task'].output,
-      adapter: 'openai',
+      framework: 'openai',
       template: 'task',
     };
   }

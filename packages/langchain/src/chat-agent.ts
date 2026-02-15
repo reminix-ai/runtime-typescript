@@ -67,7 +67,7 @@ export class LangChainChatAgent {
       capabilities: { streaming: true },
       input: AGENT_TEMPLATES['chat'].input,
       output: AGENT_TEMPLATES['chat'].output,
-      adapter: 'langchain',
+      framework: 'langchain',
       template: 'chat',
     };
   }

@@ -56,7 +56,7 @@ describe('LangGraphWorkflowAgent', () => {
     expect(agent.metadata.template).toBe('workflow');
     expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['workflow'].input);
     expect(agent.metadata.output).toEqual(AGENT_TEMPLATES['workflow'].output);
-    expect(agent.metadata.adapter).toBe('langgraph');
+    expect(agent.metadata.framework).toBe('langgraph');
   });
 });
 

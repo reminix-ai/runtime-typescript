@@ -42,7 +42,7 @@ export class LangGraphThreadAgent {
       capabilities: { streaming: true },
       input: AGENT_TEMPLATES['thread'].input,
       output: { type: 'string' },
-      adapter: 'langgraph',
+      framework: 'langgraph',
       template: 'thread',
     };
   }

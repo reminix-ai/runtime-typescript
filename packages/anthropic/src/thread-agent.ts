@@ -57,7 +57,7 @@ export class AnthropicThreadAgent {
       capabilities: { streaming: false },
       input: AGENT_TEMPLATES['thread'].input,
       output: AGENT_TEMPLATES['thread'].output,
-      adapter: 'anthropic',
+      framework: 'anthropic',
       template: 'thread',
     };
   }

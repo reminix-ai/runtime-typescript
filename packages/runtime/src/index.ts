@@ -24,7 +24,6 @@ export type {
 // Schema exports
 export type { AgentTemplate } from './schemas.js';
 export {
-  ADAPTER_INPUT,
   AGENT_TEMPLATES,
   DEFAULT_AGENT_TEMPLATE,
   DEFAULT_AGENT_INPUT,
