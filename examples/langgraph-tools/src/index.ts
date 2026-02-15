@@ -61,7 +61,7 @@ const llm = new ChatOpenAI({ model: 'gpt-4o-mini' });
 const graph = createReactAgent({ llm, tools: [getWeather] });
 
 // Create and serve the agent
-const agent = new LangGraphThreadAgent(graph, 'langgraph-tools');
+const agent = new LangGraphThreadAgent(graph, { name: 'langgraph-tools' });
 serve({ agents: [agent] });
 
 console.log('Server running on http://localhost:8080');

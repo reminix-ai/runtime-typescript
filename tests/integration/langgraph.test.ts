@@ -35,7 +35,7 @@ describe('LangGraph Agent Integration', () => {
     const apiKey = getOpenAIApiKey();
     const llm = new ChatOpenAI({ model: 'gpt-4.1-nano', apiKey });
     const graph = createReactAgent({ llm, tools: [getWeather] });
-    const agent = new LangGraphThreadAgent(graph, 'test-langgraph');
+    const agent = new LangGraphThreadAgent(graph, { name: 'test-langgraph' });
     app = createApp({ agents: [agent] });
   });
 

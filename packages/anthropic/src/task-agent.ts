@@ -15,6 +15,8 @@ export interface AnthropicTaskAgentOptions {
   name?: string;
   model?: string;
   maxTokens?: number;
+  description?: string;
+  instructions?: string;
 }
 
 export class AnthropicTaskAgent {
@@ -23,6 +25,8 @@ export class AnthropicTaskAgent {
   private _name: string;
   private _model: string;
   private _maxTokens: number;
+  private _description: string;
+  private _instructions: string | undefined;
 
   constructor(
     client: Anthropic,
@@ -34,6 +38,8 @@ export class AnthropicTaskAgent {
     this._name = options.name ?? 'anthropic-task-agent';
     this._model = options.model ?? 'claude-sonnet-4-20250514';
     this._maxTokens = options.maxTokens ?? 4096;
+    this._description = options.description ?? 'anthropic task agent';
+    this._instructions = options.instructions;
   }
 
   get name(): string {
@@ -46,7 +52,7 @@ export class AnthropicTaskAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'anthropic task agent',
+      description: this._description,
       capabilities: { streaming: false },
       input: AGENT_TYPES['task'].input,
       output: AGENT_TYPES['task'].output,
@@ -72,6 +78,7 @@ export class AnthropicTaskAgent {
       model: this._model,
       max_tokens: this._maxTokens,
       messages: [{ role: 'user', content: prompt }],
+      ...(this._instructions && { system: this._instructions }),
       tools: [
         {
           name: 'task_result',

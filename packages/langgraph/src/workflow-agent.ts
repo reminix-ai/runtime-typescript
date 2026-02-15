@@ -49,13 +49,23 @@ interface WorkflowOutput {
   error?: string;
 }
 
+export interface LangGraphWorkflowAgentOptions {
+  name?: string;
+  description?: string;
+  instructions?: string;
+}
+
 export class LangGraphWorkflowAgent {
   private graph: LangGraphStreamable;
   private _name: string;
+  private _description: string;
+  private _instructions: string | undefined;
 
-  constructor(graph: LangGraphStreamable, name: string = 'langgraph-workflow-agent') {
+  constructor(graph: LangGraphStreamable, options: LangGraphWorkflowAgentOptions = {}) {
     this.graph = graph;
-    this._name = name;
+    this._name = options.name ?? 'langgraph-workflow-agent';
+    this._description = options.description ?? 'langgraph workflow agent';
+    this._instructions = options.instructions;
   }
 
   get name(): string {
@@ -64,7 +74,7 @@ export class LangGraphWorkflowAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'langgraph workflow agent',
+      description: this._description,
       capabilities: { streaming: false },
       input: AGENT_TYPES['workflow'].input,
       output: AGENT_TYPES['workflow'].output,

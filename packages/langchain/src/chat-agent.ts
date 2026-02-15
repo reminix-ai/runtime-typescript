@@ -48,13 +48,23 @@ export function toLangChainMessage(message: Message): BaseMessage {
   }
 }
 
+export interface LangChainChatAgentOptions {
+  name?: string;
+  description?: string;
+  instructions?: string;
+}
+
 export class LangChainChatAgent {
   private agent: Runnable;
   private _name: string;
+  private _description: string;
+  private _instructions: string | undefined;
 
-  constructor(agent: Runnable, name: string = 'langchain-agent') {
+  constructor(agent: Runnable, options: LangChainChatAgentOptions = {}) {
     this.agent = agent;
-    this._name = name;
+    this._name = options.name ?? 'langchain-agent';
+    this._description = options.description ?? 'langchain chat agent';
+    this._instructions = options.instructions;
   }
 
   get name(): string {
@@ -63,7 +73,7 @@ export class LangChainChatAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'langchain chat agent',
+      description: this._description,
       capabilities: { streaming: true },
       input: AGENT_TYPES['chat'].input,
       output: AGENT_TYPES['chat'].output,
@@ -76,7 +86,11 @@ export class LangChainChatAgent {
     const messages = buildMessagesFromInput(request);
 
     if ('messages' in request.input) {
-      return messages.map((m) => toLangChainMessage(m));
+      const lcMessages = messages.map((m) => toLangChainMessage(m));
+      if (this._instructions) {
+        lcMessages.unshift(new SystemMessage({ content: this._instructions }));
+      }
+      return lcMessages;
     } else if ('prompt' in request.input) {
       return (request.input as Record<string, unknown>).prompt;
     } else {

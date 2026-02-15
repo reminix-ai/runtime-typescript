@@ -24,7 +24,7 @@ import { serve } from '@reminix/runtime';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const graph = createReactAgent({ llm, tools: [] });
-const agent = new LangGraphThreadAgent(graph, 'my-agent');
+const agent = new LangGraphThreadAgent(graph, { name: 'my-agent' });
 serve({ agents: [agent] });
 ```
 
@@ -35,7 +35,7 @@ import { LangGraphWorkflowAgent } from '@reminix/langgraph';
 import { serve } from '@reminix/runtime';
 
 const graph = buildWorkflowGraph(); // your LangGraph compiled graph
-const agent = new LangGraphWorkflowAgent(graph, 'my-workflow');
+const agent = new LangGraphWorkflowAgent(graph, { name: 'my-workflow' });
 serve({ agents: [agent] });
 ```
 
@@ -44,31 +44,36 @@ Your agent is now available at:
 
 ## API Reference
 
-### `new LangGraphThreadAgent(graph, name)`
+### `new LangGraphThreadAgent(graph, options?)`
 
 Create a LangGraph thread agent for chat-style interactions.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
-| `name` | `string` | `"langgraph-agent"` | Name for the agent (used in URL path) |
+| `options.name` | `string` | `"langgraph-agent"` | Name for the agent (used in URL path) |
+| `options.description` | `string` | `"langgraph thread agent"` | Description shown in agent metadata |
+| `options.instructions` | `string` | — | System instructions prepended to messages |
 
 **Returns:** `LangGraphThreadAgent` - A Reminix thread agent instance
 
 The thread agent:
 1. Converts incoming messages to LangChain message format
-2. Invokes the graph with `{ messages: [...] }`
-3. Extracts the last AI message from the response
-4. Returns it in the Reminix response format
+2. Prepends a `SystemMessage` if `instructions` is set
+3. Invokes the graph with `{ messages: [...] }`
+4. Extracts the last AI message from the response
+5. Returns it in the Reminix response format
 
-### `new LangGraphWorkflowAgent(graph, name)`
+### `new LangGraphWorkflowAgent(graph, options?)`
 
 Create a LangGraph workflow agent for multi-step execution with interrupt/resume support.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
-| `name` | `string` | `"langgraph-workflow-agent"` | Name for the agent (used in URL path) |
+| `options.name` | `string` | `"langgraph-workflow-agent"` | Name for the agent (used in URL path) |
+| `options.description` | `string` | `"langgraph workflow agent"` | Description shown in agent metadata |
+| `options.instructions` | `string` | — | Stored in metadata (not injected into graph execution) |
 
 **Returns:** `LangGraphWorkflowAgent` - A Reminix workflow agent instance
 

@@ -19,7 +19,7 @@ describe('LangGraphThreadAgent', () => {
 
   it('should accept a custom name', () => {
     const mockGraph = { invoke: vi.fn() };
-    const agent = new LangGraphThreadAgent(mockGraph as any, 'my-custom-agent');
+    const agent = new LangGraphThreadAgent(mockGraph as any, { name: 'my-custom-agent' });
 
     expect(agent.name).toBe('my-custom-agent');
   });

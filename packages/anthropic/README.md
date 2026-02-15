@@ -79,12 +79,14 @@ Create an Anthropic chat agent. Supports streaming.
 | `options.name` | `string` | `"anthropic-agent"` | Name for the agent (used in URL path) |
 | `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
+| `options.description` | `string` | `"anthropic chat agent"` | Description shown in agent metadata |
+| `options.instructions` | `string` | — | System instructions merged with system messages |
 
 **Returns:** `AnthropicChatAgent` - A Reminix chat agent instance
 
 The chat agent:
 1. Converts incoming messages to Anthropic format
-2. Extracts system messages and passes them as the `system` parameter
+2. Extracts system messages and merges with `instructions` as the `system` parameter
 3. Returns the assistant's text response
 4. Supports streaming via Server-Sent Events
 
@@ -99,6 +101,8 @@ Create an Anthropic task agent. Returns structured output via tool-use. Does not
 | `options.name` | `string` | `"anthropic-task-agent"` | Name for the agent (used in URL path) |
 | `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
+| `options.description` | `string` | `"anthropic task agent"` | Description shown in agent metadata |
+| `options.instructions` | `string` | — | System instructions passed as `system` parameter |
 
 **Returns:** `AnthropicTaskAgent` - A Reminix task agent instance
 
@@ -120,6 +124,8 @@ Create an Anthropic thread agent with a tool-calling loop. Does not support stre
 | `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
 | `options.maxTurns` | `number` | `10` | Maximum number of tool-calling turns |
+| `options.description` | `string` | `"anthropic thread agent"` | Description shown in agent metadata |
+| `options.instructions` | `string` | — | System instructions merged with system messages |
 
 **Returns:** `AnthropicThreadAgent` - A Reminix thread agent instance
 

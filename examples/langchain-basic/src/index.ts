@@ -46,7 +46,7 @@ import { serve } from '@reminix/runtime';
 const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
 
 // Create and serve the agent
-const agent = new LangChainChatAgent(model, 'langchain-basic');
+const agent = new LangChainChatAgent(model, { name: 'langchain-basic' });
 serve({ agents: [agent] });
 
 console.log('Server running on http://localhost:8080');

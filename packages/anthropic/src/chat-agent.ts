@@ -18,6 +18,8 @@ export interface AnthropicChatAgentOptions {
   name?: string;
   model?: string;
   maxTokens?: number;
+  description?: string;
+  instructions?: string;
 }
 
 interface AnthropicMessage {
@@ -30,12 +32,16 @@ export class AnthropicChatAgent {
   private _name: string;
   private _model: string;
   private _maxTokens: number;
+  private _description: string;
+  private _instructions: string | undefined;
 
   constructor(client: Anthropic, options: AnthropicChatAgentOptions = {}) {
     this.client = client;
     this._name = options.name ?? 'anthropic-agent';
     this._model = options.model ?? 'claude-sonnet-4-20250514';
     this._maxTokens = options.maxTokens ?? 4096;
+    this._description = options.description ?? 'anthropic chat agent';
+    this._instructions = options.instructions;
   }
 
   get name(): string {
@@ -48,7 +54,7 @@ export class AnthropicChatAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'anthropic chat agent',
+      description: this._description,
       capabilities: { streaming: true },
       input: AGENT_TYPES['chat'].input,
       output: AGENT_TYPES['chat'].output,
@@ -88,12 +94,17 @@ export class AnthropicChatAgent {
   async invoke(request: AgentRequest): Promise<AgentResponse> {
     const messages = buildMessagesFromInput(request);
     const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
+    const effectiveSystem = this._instructions
+      ? system
+        ? this._instructions + '\n\n' + system
+        : this._instructions
+      : system;
 
     const response = await this.client.messages.create({
       model: this._model,
       max_tokens: this._maxTokens,
       messages: anthropicMessages,
-      ...(system && { system }),
+      ...(effectiveSystem && { system: effectiveSystem }),
     });
 
     const output = this.extractContent(response);
@@ -103,12 +114,17 @@ export class AnthropicChatAgent {
   async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
     const messages = buildMessagesFromInput(request);
     const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
+    const effectiveSystem = this._instructions
+      ? system
+        ? this._instructions + '\n\n' + system
+        : this._instructions
+      : system;
 
     const stream = this.client.messages.stream({
       model: this._model,
       max_tokens: this._maxTokens,
       messages: anthropicMessages,
-      ...(system && { system }),
+      ...(effectiveSystem && { system: effectiveSystem }),
     });
 
     for await (const event of stream) {

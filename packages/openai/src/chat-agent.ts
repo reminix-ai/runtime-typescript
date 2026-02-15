@@ -17,17 +17,23 @@ import {
 export interface OpenAIChatAgentOptions {
   name?: string;
   model?: string;
+  description?: string;
+  instructions?: string;
 }
 
 export class OpenAIChatAgent {
   private client: OpenAI;
   private _name: string;
   private _model: string;
+  private _description: string;
+  private _instructions: string | undefined;
 
   constructor(client: OpenAI, options: OpenAIChatAgentOptions = {}) {
     this.client = client;
     this._name = options.name ?? 'openai-agent';
     this._model = options.model ?? 'gpt-4o-mini';
+    this._description = options.description ?? 'openai chat agent';
+    this._instructions = options.instructions;
   }
 
   get name(): string {
@@ -40,7 +46,7 @@ export class OpenAIChatAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'openai chat agent',
+      description: this._description,
       capabilities: { streaming: true },
       input: AGENT_TYPES['chat'].input,
       output: AGENT_TYPES['chat'].output,
@@ -63,6 +69,9 @@ export class OpenAIChatAgent {
   async invoke(request: AgentRequest): Promise<AgentResponse> {
     const messages = buildMessagesFromInput(request);
     const openaiMessages = messages.map((m) => this.toOpenAIMessage(m));
+    if (this._instructions) {
+      openaiMessages.unshift({ role: 'system', content: this._instructions });
+    }
 
     const response = await this.client.chat.completions.create({
       model: this._model,
@@ -76,6 +85,9 @@ export class OpenAIChatAgent {
   async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
     const messages = buildMessagesFromInput(request);
     const openaiMessages = messages.map((m) => this.toOpenAIMessage(m));
+    if (this._instructions) {
+      openaiMessages.unshift({ role: 'system', content: this._instructions });
+    }
 
     const stream = await this.client.chat.completions.create({
       model: this._model,

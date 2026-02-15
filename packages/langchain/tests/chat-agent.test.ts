@@ -19,7 +19,7 @@ describe('LangChainChatAgent', () => {
 
   it('should accept a custom name', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const agent = new LangChainChatAgent(mockRunnable as any, 'my-custom-agent');
+    const agent = new LangChainChatAgent(mockRunnable as any, { name: 'my-custom-agent' });
 
     expect(agent.name).toBe('my-custom-agent');
   });

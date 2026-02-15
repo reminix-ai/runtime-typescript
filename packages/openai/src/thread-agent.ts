@@ -21,6 +21,8 @@ export interface OpenAIThreadAgentOptions {
   name?: string;
   model?: string;
   maxTurns?: number;
+  description?: string;
+  instructions?: string;
 }
 
 export class OpenAIThreadAgent {
@@ -30,6 +32,8 @@ export class OpenAIThreadAgent {
   private _name: string;
   private _model: string;
   private _maxTurns: number;
+  private _description: string;
+  private _instructions: string | undefined;
 
   constructor(client: OpenAI, tools: ToolLike[], options: OpenAIThreadAgentOptions = {}) {
     this.client = client;
@@ -38,6 +42,8 @@ export class OpenAIThreadAgent {
     this._name = options.name ?? 'openai-thread-agent';
     this._model = options.model ?? 'gpt-4o-mini';
     this._maxTurns = options.maxTurns ?? 10;
+    this._description = options.description ?? 'openai thread agent';
+    this._instructions = options.instructions;
   }
 
   get name(): string {
@@ -50,7 +56,7 @@ export class OpenAIThreadAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'openai thread agent',
+      description: this._description,
       capabilities: { streaming: false },
       input: AGENT_TYPES['thread'].input,
       output: AGENT_TYPES['thread'].output,
@@ -136,6 +142,9 @@ export class OpenAIThreadAgent {
     const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = messages.map((m) =>
       this.toOpenAIMessage(m)
     );
+    if (this._instructions) {
+      openaiMessages.unshift({ role: 'system', content: this._instructions });
+    }
 
     for (let turn = 0; turn < this._maxTurns; turn++) {
       const response = await this.client.chat.completions.create({

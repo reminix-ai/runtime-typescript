@@ -34,7 +34,7 @@ describe('LangChain Agent Integration', () => {
     const apiKey = getOpenAIApiKey();
     const llm = new ChatOpenAI({ model: 'gpt-4.1-nano', apiKey });
     const llmWithTools = llm.bindTools([getWeather]);
-    const agent = new LangChainChatAgent(llmWithTools, 'test-langchain');
+    const agent = new LangChainChatAgent(llmWithTools, { name: 'test-langchain' });
     app = createApp({ agents: [agent] });
   });
 

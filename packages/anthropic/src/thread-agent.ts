@@ -22,6 +22,8 @@ export interface AnthropicThreadAgentOptions {
   model?: string;
   maxTokens?: number;
   maxTurns?: number;
+  description?: string;
+  instructions?: string;
 }
 
 export class AnthropicThreadAgent {
@@ -32,6 +34,8 @@ export class AnthropicThreadAgent {
   private _model: string;
   private _maxTokens: number;
   private _maxTurns: number;
+  private _description: string;
+  private _instructions: string | undefined;
 
   constructor(client: Anthropic, tools: ToolLike[], options: AnthropicThreadAgentOptions = {}) {
     this.client = client;
@@ -41,6 +45,8 @@ export class AnthropicThreadAgent {
     this._model = options.model ?? 'claude-sonnet-4-20250514';
     this._maxTokens = options.maxTokens ?? 4096;
     this._maxTurns = options.maxTurns ?? 10;
+    this._description = options.description ?? 'anthropic thread agent';
+    this._instructions = options.instructions;
   }
 
   get name(): string {
@@ -53,7 +59,7 @@ export class AnthropicThreadAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'anthropic thread agent',
+      description: this._description,
       capabilities: { streaming: false },
       input: AGENT_TYPES['thread'].input,
       output: AGENT_TYPES['thread'].output,
@@ -118,6 +124,11 @@ export class AnthropicThreadAgent {
   async invoke(request: AgentRequest): Promise<AgentResponse> {
     const messages = buildMessagesFromInput(request);
     const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
+    const effectiveSystem = this._instructions
+      ? system
+        ? this._instructions + '\n\n' + system
+        : this._instructions
+      : system;
 
     for (let turn = 0; turn < this._maxTurns; turn++) {
       const response = await this.client.messages.create({
@@ -125,7 +136,7 @@ export class AnthropicThreadAgent {
         max_tokens: this._maxTokens,
         messages: anthropicMessages,
         tools: this.toolDefinitions,
-        ...(system && { system }),
+        ...(effectiveSystem && { system: effectiveSystem }),
       });
 
       // Convert response to Reminix message and add to output

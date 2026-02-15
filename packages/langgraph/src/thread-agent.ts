@@ -2,7 +2,7 @@
  * LangGraph thread agent for Reminix Runtime.
  */
 
-import { AIMessage, type BaseMessage } from '@langchain/core/messages';
+import { AIMessage, SystemMessage, type BaseMessage } from '@langchain/core/messages';
 
 import { toLangChainMessage } from '@reminix/langchain';
 import {
@@ -23,13 +23,23 @@ interface LangGraphRunnable {
   stream(input: unknown): AsyncIterable<unknown> | Promise<AsyncIterable<unknown>>;
 }
 
+export interface LangGraphThreadAgentOptions {
+  name?: string;
+  description?: string;
+  instructions?: string;
+}
+
 export class LangGraphThreadAgent {
   private graph: LangGraphRunnable;
   private _name: string;
+  private _description: string;
+  private _instructions: string | undefined;
 
-  constructor(graph: LangGraphRunnable, name: string = 'langgraph-agent') {
+  constructor(graph: LangGraphRunnable, options: LangGraphThreadAgentOptions = {}) {
     this.graph = graph;
-    this._name = name;
+    this._name = options.name ?? 'langgraph-agent';
+    this._description = options.description ?? 'langgraph thread agent';
+    this._instructions = options.instructions;
   }
 
   get name(): string {
@@ -38,7 +48,7 @@ export class LangGraphThreadAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'langgraph thread agent',
+      description: this._description,
       capabilities: { streaming: true },
       input: AGENT_TYPES['thread'].input,
       output: { type: 'string' },
@@ -82,6 +92,9 @@ export class LangGraphThreadAgent {
     if ('messages' in request.input) {
       const messages = buildMessagesFromInput(request);
       const lcMessages = messages.map((m) => toLangChainMessage(m));
+      if (this._instructions) {
+        lcMessages.unshift(new SystemMessage({ content: this._instructions }));
+      }
       return { messages: lcMessages };
     } else {
       return request.input;

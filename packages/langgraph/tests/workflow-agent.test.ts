@@ -44,7 +44,7 @@ describe('LangGraphWorkflowAgent', () => {
 
   it('should accept a custom name', () => {
     const mockGraph = createMockGraph([]);
-    const agent = new LangGraphWorkflowAgent(mockGraph as any, 'my-workflow');
+    const agent = new LangGraphWorkflowAgent(mockGraph as any, { name: 'my-workflow' });
 
     expect(agent.name).toBe('my-workflow');
   });

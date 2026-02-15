@@ -19,6 +19,8 @@ import {
 
 export interface VercelAIChatAgentOptions {
   name?: string;
+  description?: string;
+  instructions?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,6 +39,8 @@ export class VercelAIChatAgent {
   private modelOrAgent: LanguageModel | AnyToolLoopAgent;
   private isAgent: boolean;
   private _name: string;
+  private _description: string;
+  private _instructions: string | undefined;
 
   protected _generateText = generateText;
   protected _streamText = streamText;
@@ -48,6 +52,8 @@ export class VercelAIChatAgent {
     this.modelOrAgent = modelOrAgent;
     this.isAgent = isToolLoopAgent(modelOrAgent);
     this._name = options.name ?? 'vercel-ai-agent';
+    this._description = options.description ?? 'vercel-ai chat agent';
+    this._instructions = options.instructions;
   }
 
   get name(): string {
@@ -56,7 +62,7 @@ export class VercelAIChatAgent {
 
   get metadata(): AgentMetadata {
     return {
-      description: 'vercel-ai chat agent',
+      description: this._description,
       capabilities: { streaming: true },
       input: AGENT_TYPES['chat'].input,
       output: AGENT_TYPES['chat'].output,
@@ -108,6 +114,7 @@ export class VercelAIChatAgent {
       const result = await this._generateText({
         model,
         ...(prompt ? { prompt } : { messages: messages! }),
+        ...(this._instructions && { system: this._instructions }),
       });
       output = result.text;
     }
@@ -130,6 +137,7 @@ export class VercelAIChatAgent {
       const result = this._streamText({
         model,
         ...(prompt ? { prompt } : { messages: messages! }),
+        ...(this._instructions && { system: this._instructions }),
       });
       for await (const chunk of result.textStream) {
         yield JSON.stringify({ chunk });
