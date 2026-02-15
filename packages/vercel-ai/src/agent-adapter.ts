@@ -17,7 +17,7 @@ import {
   type Message,
 } from '@reminix/runtime';
 
-export interface VercelAIChatOptions {
+export interface VercelAIChatAgentOptions {
   name?: string;
 }
 
@@ -33,7 +33,7 @@ function isToolLoopAgent(input: unknown): input is AnyToolLoopAgent {
   );
 }
 
-export class VercelAIChat {
+export class VercelAIChatAgent {
   private modelOrAgent: LanguageModel | AnyToolLoopAgent;
   private isAgent: boolean;
   private _name: string;
@@ -41,7 +41,10 @@ export class VercelAIChat {
   protected _generateText = generateText;
   protected _streamText = streamText;
 
-  constructor(modelOrAgent: LanguageModel | AnyToolLoopAgent, options: VercelAIChatOptions = {}) {
+  constructor(
+    modelOrAgent: LanguageModel | AnyToolLoopAgent,
+    options: VercelAIChatAgentOptions = {}
+  ) {
     this.modelOrAgent = modelOrAgent;
     this.isAgent = isToolLoopAgent(modelOrAgent);
     this._name = options.name ?? 'vercel-ai-agent';

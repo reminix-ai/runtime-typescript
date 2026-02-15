@@ -7,46 +7,46 @@ import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages
 
 import type { AgentRequest } from '@reminix/runtime';
 import { AGENT_TEMPLATES } from '@reminix/runtime';
-import { LangGraphThread } from '../src/agent-adapter.js';
+import { LangGraphThreadAgent } from '../src/agent-adapter.js';
 
-describe('LangGraphThread', () => {
+describe('LangGraphThreadAgent', () => {
   it('should be instantiable', () => {
     const mockGraph = { invoke: vi.fn() };
-    const agent = new LangGraphThread(mockGraph as any);
+    const agent = new LangGraphThreadAgent(mockGraph as any);
 
-    expect(agent).toBeInstanceOf(LangGraphThread);
+    expect(agent).toBeInstanceOf(LangGraphThreadAgent);
   });
 
   it('should accept a custom name', () => {
     const mockGraph = { invoke: vi.fn() };
-    const agent = new LangGraphThread(mockGraph as any, 'my-custom-agent');
+    const agent = new LangGraphThreadAgent(mockGraph as any, 'my-custom-agent');
 
     expect(agent.name).toBe('my-custom-agent');
   });
 
   it('should use default name if not provided', () => {
     const mockGraph = { invoke: vi.fn() };
-    const agent = new LangGraphThread(mockGraph as any);
+    const agent = new LangGraphThreadAgent(mockGraph as any);
 
     expect(agent.name).toBe('langgraph-agent');
   });
 
   it('should have thread template metadata', () => {
     const mockGraph = { invoke: vi.fn() };
-    const agent = new LangGraphThread(mockGraph as any);
+    const agent = new LangGraphThreadAgent(mockGraph as any);
 
     expect(agent.metadata.template).toBe('thread');
     expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['thread'].input);
   });
 });
 
-describe('LangGraphThread.invoke', () => {
+describe('LangGraphThreadAgent.invoke', () => {
   it('should call the graph with the input', async () => {
     const mockGraph = {
       invoke: vi.fn().mockResolvedValue({ messages: [new AIMessage({ content: 'Hello!' })] }),
     };
 
-    const agent = new LangGraphThread(mockGraph as any);
+    const agent = new LangGraphThreadAgent(mockGraph as any);
     const request: AgentRequest = { input: { query: 'What is AI?' } };
 
     await agent.invoke(request);
@@ -61,7 +61,7 @@ describe('LangGraphThread.invoke', () => {
       }),
     };
 
-    const agent = new LangGraphThread(mockGraph as any);
+    const agent = new LangGraphThreadAgent(mockGraph as any);
     const request: AgentRequest = { input: { messages: [] } };
 
     const response = await agent.invoke(request);
@@ -74,7 +74,7 @@ describe('LangGraphThread.invoke', () => {
       invoke: vi.fn().mockResolvedValue({ result: 'success' }),
     };
 
-    const agent = new LangGraphThread(mockGraph as any);
+    const agent = new LangGraphThreadAgent(mockGraph as any);
     const request: AgentRequest = { input: { task: 'compute' } };
 
     const response = await agent.invoke(request);
@@ -87,7 +87,7 @@ describe('LangGraphThread.invoke', () => {
       invoke: vi.fn().mockResolvedValue({ messages: [new AIMessage({ content: 'Hello!' })] }),
     };
 
-    const agent = new LangGraphThread(mockGraph as any);
+    const agent = new LangGraphThreadAgent(mockGraph as any);
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
@@ -111,7 +111,7 @@ describe('LangGraphThread.invoke', () => {
       }),
     };
 
-    const agent = new LangGraphThread(mockGraph as any);
+    const agent = new LangGraphThreadAgent(mockGraph as any);
     const request: AgentRequest = {
       input: {
         messages: [

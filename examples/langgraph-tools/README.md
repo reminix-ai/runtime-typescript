@@ -72,7 +72,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
-import { LangGraphThread } from '@reminix/langgraph';
+import { LangGraphThreadAgent } from '@reminix/langgraph';
 import { serve } from '@reminix/runtime';
 
 const getWeather = tool(
@@ -87,6 +87,6 @@ const getWeather = tool(
 const llm = new ChatOpenAI({ model: 'gpt-4o-mini' });
 const graph = createReactAgent({ llm, tools: [getWeather] });
 
-const agent = new LangGraphThread(graph, { name: 'langgraph-tools' });
+const agent = new LangGraphThreadAgent(graph, { name: 'langgraph-tools' });
 serve({ agents: [agent] });
 ```

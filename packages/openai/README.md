@@ -16,11 +16,11 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import OpenAI from 'openai';
-import { OpenAIChat } from '@reminix/openai';
+import { OpenAIChatAgent } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
 const client = new OpenAI();
-const agent = new OpenAIChat(client, { name: 'my-chatbot', model: 'gpt-4o' });
+const agent = new OpenAIChatAgent(client, { name: 'my-chatbot', model: 'gpt-4o' });
 serve({ agents: [agent] });
 ```
 
@@ -29,7 +29,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `new OpenAIChat(client, options)`
+### `new OpenAIChatAgent(client, options)`
 
 Create an OpenAI chat agent for use with Reminix Runtime.
 
@@ -39,13 +39,13 @@ Create an OpenAI chat agent for use with Reminix Runtime.
 | `options.name` | `string` | `"openai-agent"` | Name for the agent (used in URL path) |
 | `options.model` | `string` | `"gpt-4o-mini"` | Model to use for completions |
 
-**Returns:** `OpenAIChat` - A Reminix chat agent instance
+**Returns:** `OpenAIChatAgent` - A Reminix chat agent instance
 
 ### Example with Custom Configuration
 
 ```typescript
 import OpenAI from 'openai';
-import { OpenAIChat } from '@reminix/openai';
+import { OpenAIChatAgent } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
 const client = new OpenAI({
@@ -53,7 +53,7 @@ const client = new OpenAI({
   baseURL: 'https://your-proxy.com/v1', // Optional: custom endpoint
 });
 
-const agent = new OpenAIChat(client, {
+const agent = new OpenAIChatAgent(client, {
   name: 'gpt4-agent',
   model: 'gpt-4o',
 });

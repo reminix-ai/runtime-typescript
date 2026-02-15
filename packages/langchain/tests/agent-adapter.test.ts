@@ -7,46 +7,46 @@ import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages
 
 import type { AgentRequest } from '@reminix/runtime';
 import { AGENT_TEMPLATES } from '@reminix/runtime';
-import { LangChainChat } from '../src/agent-adapter.js';
+import { LangChainChatAgent } from '../src/agent-adapter.js';
 
-describe('LangChainChat', () => {
+describe('LangChainChatAgent', () => {
   it('should be instantiable', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const agent = new LangChainChat(mockRunnable as any);
+    const agent = new LangChainChatAgent(mockRunnable as any);
 
-    expect(agent).toBeInstanceOf(LangChainChat);
+    expect(agent).toBeInstanceOf(LangChainChatAgent);
   });
 
   it('should accept a custom name', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const agent = new LangChainChat(mockRunnable as any, 'my-custom-agent');
+    const agent = new LangChainChatAgent(mockRunnable as any, 'my-custom-agent');
 
     expect(agent.name).toBe('my-custom-agent');
   });
 
   it('should use default name if not provided', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const agent = new LangChainChat(mockRunnable as any);
+    const agent = new LangChainChatAgent(mockRunnable as any);
 
     expect(agent.name).toBe('langchain-agent');
   });
 
   it('should have chat template metadata', () => {
     const mockRunnable = { invoke: vi.fn() };
-    const agent = new LangChainChat(mockRunnable as any);
+    const agent = new LangChainChatAgent(mockRunnable as any);
 
     expect(agent.metadata.template).toBe('chat');
     expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
   });
 });
 
-describe('LangChainChat.invoke', () => {
+describe('LangChainChatAgent.invoke', () => {
   it('should call the runnable with the input', async () => {
     const mockRunnable = {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
     };
 
-    const agent = new LangChainChat(mockRunnable as any);
+    const agent = new LangChainChatAgent(mockRunnable as any);
     const request: AgentRequest = { input: { query: 'What is AI?' } };
 
     await agent.invoke(request);
@@ -59,7 +59,7 @@ describe('LangChainChat.invoke', () => {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello from LangChain!' })),
     };
 
-    const agent = new LangChainChat(mockRunnable as any);
+    const agent = new LangChainChatAgent(mockRunnable as any);
     const request: AgentRequest = { input: { query: 'Hi' } };
 
     const response = await agent.invoke(request);
@@ -72,7 +72,7 @@ describe('LangChainChat.invoke', () => {
       invoke: vi.fn().mockResolvedValue({ result: 'success', value: 42 }),
     };
 
-    const agent = new LangChainChat(mockRunnable as any);
+    const agent = new LangChainChatAgent(mockRunnable as any);
     const request: AgentRequest = { input: { task: 'compute' } };
 
     const response = await agent.invoke(request);
@@ -85,7 +85,7 @@ describe('LangChainChat.invoke', () => {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Response' })),
     };
 
-    const agent = new LangChainChat(mockRunnable as any);
+    const agent = new LangChainChatAgent(mockRunnable as any);
     const request: AgentRequest = {
       input: {
         messages: [

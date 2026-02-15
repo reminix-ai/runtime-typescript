@@ -21,11 +21,11 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import { openai } from '@ai-sdk/openai';
-import { VercelAIChat } from '@reminix/vercel-ai';
+import { VercelAIChatAgent } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
 const model = openai('gpt-4o');
-const agent = new VercelAIChat(model, { name: 'chat-agent' });
+const agent = new VercelAIChatAgent(model, { name: 'chat-agent' });
 serve({ agents: [agent] });
 ```
 
@@ -37,7 +37,7 @@ For agents with tools, use `ToolLoopAgent`:
 import { ToolLoopAgent, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
-import { VercelAIChat } from '@reminix/vercel-ai';
+import { VercelAIChatAgent } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
 const weatherTool = tool({
@@ -56,7 +56,7 @@ const toolAgent = new ToolLoopAgent({
   tools: { getWeather: weatherTool }
 });
 
-const agent = new VercelAIChat(toolAgent, { name: 'weather-agent' });
+const agent = new VercelAIChatAgent(toolAgent, { name: 'weather-agent' });
 serve({ agents: [agent] });
 ```
 
@@ -65,7 +65,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `new VercelAIChat(modelOrAgent, options)`
+### `new VercelAIChatAgent(modelOrAgent, options)`
 
 Create a Vercel AI chat agent for use with Reminix Runtime.
 
@@ -74,7 +74,7 @@ Create a Vercel AI chat agent for use with Reminix Runtime.
 | `modelOrAgent` | `ToolLoopAgent \| LanguageModel` | required | A ToolLoopAgent or language model |
 | `options.name` | `string` | `"vercel-ai-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `VercelAIChat` - A Reminix chat agent instance
+**Returns:** `VercelAIChatAgent` - A Reminix chat agent instance
 
 ## Using Different Providers
 
@@ -84,12 +84,12 @@ The Vercel AI SDK supports multiple providers:
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
-import { VercelAIChat } from '@reminix/vercel-ai';
+import { VercelAIChatAgent } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
-const gpt = new VercelAIChat(openai('gpt-4o'), { name: 'gpt' });
-const claude = new VercelAIChat(anthropic('claude-sonnet-4-20250514'), { name: 'claude' });
-const gemini = new VercelAIChat(google('gemini-pro'), { name: 'gemini' });
+const gpt = new VercelAIChatAgent(openai('gpt-4o'), { name: 'gpt' });
+const claude = new VercelAIChatAgent(anthropic('claude-sonnet-4-20250514'), { name: 'claude' });
+const gemini = new VercelAIChatAgent(google('gemini-pro'), { name: 'gemini' });
 
 serve({ agents: [gpt, claude, gemini] });
 ```

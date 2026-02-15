@@ -41,7 +41,7 @@ config({ path: resolve(__dirname, '../../../.env') });
 import { openai } from '@ai-sdk/openai';
 import { ToolLoopAgent, tool } from 'ai';
 import { z } from 'zod';
-import { VercelAIChat } from '@reminix/vercel-ai';
+import { VercelAIChatAgent } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
 // Define a tool for the agent to use
@@ -66,7 +66,7 @@ const toolAgent = new ToolLoopAgent({
 });
 
 // Create and serve the agent
-const reminixAgent = new VercelAIChat(toolAgent, { name: 'vercel-ai-agent' });
+const reminixAgent = new VercelAIChatAgent(toolAgent, { name: 'vercel-ai-agent' });
 serve({ agents: [reminixAgent] });
 
 console.log('Server running on http://localhost:8080');

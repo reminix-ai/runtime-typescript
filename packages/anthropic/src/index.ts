@@ -1,2 +1,2 @@
-export { AnthropicChat } from './agent-adapter.js';
-export type { AnthropicChatOptions } from './agent-adapter.js';
+export { AnthropicChatAgent } from './agent-adapter.js';
+export type { AnthropicChatAgentOptions } from './agent-adapter.js';

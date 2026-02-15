@@ -39,14 +39,14 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 config({ path: resolve(__dirname, '../../../.env') });
 
 import Anthropic from '@anthropic-ai/sdk';
-import { AnthropicChat } from '@reminix/anthropic';
+import { AnthropicChatAgent } from '@reminix/anthropic';
 import { serve } from '@reminix/runtime';
 
 // Create an Anthropic client
 const client = new Anthropic();
 
 // Create and serve the agent
-const agent = new AnthropicChat(client, {
+const agent = new AnthropicChatAgent(client, {
   name: 'anthropic-basic',
   model: 'claude-3-haiku-20240307',
 });

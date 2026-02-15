@@ -17,12 +17,12 @@ This will also install `@reminix/runtime` as a dependency.
 ```typescript
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatOpenAI } from '@langchain/openai';
-import { LangGraphThread } from '@reminix/langgraph';
+import { LangGraphThreadAgent } from '@reminix/langgraph';
 import { serve } from '@reminix/runtime';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const graph = createReactAgent({ llm, tools: [] });
-const agent = new LangGraphThread(graph, { name: 'my-agent' });
+const agent = new LangGraphThreadAgent(graph, { name: 'my-agent' });
 serve({ agents: [agent] });
 ```
 
@@ -31,7 +31,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `new LangGraphThread(graph, options)`
+### `new LangGraphThreadAgent(graph, options)`
 
 Create a LangGraph thread agent for use with Reminix Runtime.
 
@@ -40,7 +40,7 @@ Create a LangGraph thread agent for use with Reminix Runtime.
 | `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
 | `options.name` | `string` | `"langgraph-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LangGraphThread` - A Reminix thread agent instance
+**Returns:** `LangGraphThreadAgent` - A Reminix thread agent instance
 
 ### How It Works
 

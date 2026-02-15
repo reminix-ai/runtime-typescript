@@ -1,1 +1,1 @@
-export { LangChainChat, toLangChainMessage } from './agent-adapter.js';
+export { LangChainChatAgent, toLangChainMessage } from './agent-adapter.js';

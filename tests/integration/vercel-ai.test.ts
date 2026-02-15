@@ -6,7 +6,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { openai } from '@ai-sdk/openai';
 import { ToolLoopAgent, tool } from 'ai';
 import { z } from 'zod';
-import { VercelAIChat } from '@reminix/vercel-ai';
+import { VercelAIChatAgent } from '@reminix/vercel-ai';
 import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getOpenAIApiKey } from './setup.js';
@@ -35,7 +35,7 @@ describe('Vercel AI Adapter Integration', () => {
       tools: { getWeather },
     });
 
-    const reminixAgent = new VercelAIChat(agent, { name: 'test-vercel-ai' });
+    const reminixAgent = new VercelAIChatAgent(agent, { name: 'test-vercel-ai' });
     app = createApp({ agents: [reminixAgent] });
   });
 

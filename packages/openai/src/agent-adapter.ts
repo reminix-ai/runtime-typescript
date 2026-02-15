@@ -14,17 +14,17 @@ import {
   type Message,
 } from '@reminix/runtime';
 
-export interface OpenAIChatOptions {
+export interface OpenAIChatAgentOptions {
   name?: string;
   model?: string;
 }
 
-export class OpenAIChat {
+export class OpenAIChatAgent {
   private client: OpenAI;
   private _name: string;
   private _model: string;
 
-  constructor(client: OpenAI, options: OpenAIChatOptions = {}) {
+  constructor(client: OpenAI, options: OpenAIChatAgentOptions = {}) {
     this.client = client;
     this._name = options.name ?? 'openai-agent';
     this._model = options.model ?? 'gpt-4o-mini';

@@ -6,43 +6,43 @@ import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest } from '@reminix/runtime';
 import { AGENT_TEMPLATES } from '@reminix/runtime';
-import { VercelAIChat } from '../src/agent-adapter.js';
+import { VercelAIChatAgent } from '../src/agent-adapter.js';
 
-describe('VercelAIChat', () => {
+describe('VercelAIChatAgent', () => {
   it('should be instantiable', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIChat(mockModel as any);
+    const agent = new VercelAIChatAgent(mockModel as any);
 
-    expect(agent).toBeInstanceOf(VercelAIChat);
+    expect(agent).toBeInstanceOf(VercelAIChatAgent);
   });
 
   it('should accept custom options', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIChat(mockModel as any, { name: 'my-agent' });
+    const agent = new VercelAIChatAgent(mockModel as any, { name: 'my-agent' });
 
     expect(agent.name).toBe('my-agent');
   });
 
   it('should use default values if not provided', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIChat(mockModel as any);
+    const agent = new VercelAIChatAgent(mockModel as any);
 
     expect(agent.name).toBe('vercel-ai-agent');
   });
 
   it('should have chat template metadata', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIChat(mockModel as any);
+    const agent = new VercelAIChatAgent(mockModel as any);
 
     expect(agent.metadata.template).toBe('chat');
     expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
   });
 });
 
-describe('VercelAIChat.invoke', () => {
+describe('VercelAIChatAgent.invoke', () => {
   it('should call generateText with prompt input', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIChat(mockModel as any);
+    const agent = new VercelAIChatAgent(mockModel as any);
 
     // Mock the internal generateText function
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello!' });
@@ -59,7 +59,7 @@ describe('VercelAIChat.invoke', () => {
 
   it('should return output', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIChat(mockModel as any);
+    const agent = new VercelAIChatAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Hello from Vercel AI!' });
     (agent as any)._generateText = mockGenerateText;
@@ -72,7 +72,7 @@ describe('VercelAIChat.invoke', () => {
 
   it('should handle messages input with generateText', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIChat(mockModel as any);
+    const agent = new VercelAIChatAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
     (agent as any)._generateText = mockGenerateText;
@@ -91,7 +91,7 @@ describe('VercelAIChat.invoke', () => {
 
   it('should preserve system messages', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIChat(mockModel as any);
+    const agent = new VercelAIChatAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({ text: 'Response' });
     (agent as any)._generateText = mockGenerateText;

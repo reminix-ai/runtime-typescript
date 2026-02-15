@@ -16,11 +16,11 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
-import { LangChainChat } from '@reminix/langchain';
+import { LangChainChatAgent } from '@reminix/langchain';
 import { serve } from '@reminix/runtime';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
-const agent = new LangChainChat(llm, { name: 'my-chatbot' });
+const agent = new LangChainChatAgent(llm, { name: 'my-chatbot' });
 serve({ agents: [agent] });
 ```
 
@@ -29,7 +29,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `new LangChainChat(runnable, options)`
+### `new LangChainChatAgent(runnable, options)`
 
 Create a LangChain chat agent for use with Reminix Runtime.
 
@@ -38,14 +38,14 @@ Create a LangChain chat agent for use with Reminix Runtime.
 | `runnable` | `Runnable` | required | Any LangChain runnable (LLM, chain, agent, etc.) |
 | `options.name` | `string` | `"langchain-agent"` | Name for the agent (used in URL path) |
 
-**Returns:** `LangChainChat` - A Reminix chat agent instance
+**Returns:** `LangChainChatAgent` - A Reminix chat agent instance
 
 ### Example with a Chain
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { LangChainChat } from '@reminix/langchain';
+import { LangChainChatAgent } from '@reminix/langchain';
 import { serve } from '@reminix/runtime';
 
 // Create a chain
@@ -57,7 +57,7 @@ const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const chain = prompt.pipe(llm);
 
 // Create agent and serve
-const agent = new LangChainChat(chain, { name: 'my-chain' });
+const agent = new LangChainChatAgent(chain, { name: 'my-chain' });
 serve({ agents: [agent] });
 ```
 

@@ -6,19 +6,19 @@ import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentInvokeRequest } from '@reminix/runtime';
 import { AGENT_TEMPLATES } from '@reminix/runtime';
-import { OpenAIChat } from '../src/agent-adapter.js';
+import { OpenAIChatAgent } from '../src/agent-adapter.js';
 
-describe('OpenAIChat', () => {
+describe('OpenAIChatAgent', () => {
   it('should be instantiable', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAIChat(mockClient as any);
+    const agent = new OpenAIChatAgent(mockClient as any);
 
-    expect(agent).toBeInstanceOf(OpenAIChat);
+    expect(agent).toBeInstanceOf(OpenAIChatAgent);
   });
 
   it('should accept custom options', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAIChat(mockClient as any, { name: 'my-agent', model: 'gpt-4o' });
+    const agent = new OpenAIChatAgent(mockClient as any, { name: 'my-agent', model: 'gpt-4o' });
 
     expect(agent.name).toBe('my-agent');
     expect(agent.model).toBe('gpt-4o');
@@ -26,7 +26,7 @@ describe('OpenAIChat', () => {
 
   it('should use default values if not provided', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAIChat(mockClient as any);
+    const agent = new OpenAIChatAgent(mockClient as any);
 
     expect(agent.name).toBe('openai-agent');
     expect(agent.model).toBe('gpt-4o-mini');
@@ -34,14 +34,14 @@ describe('OpenAIChat', () => {
 
   it('should have chat template metadata', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAIChat(mockClient as any);
+    const agent = new OpenAIChatAgent(mockClient as any);
 
     expect(agent.metadata.template).toBe('chat');
     expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
   });
 });
 
-describe('OpenAIChat.invoke', () => {
+describe('OpenAIChatAgent.invoke', () => {
   it('should call the client', async () => {
     const mockClient = {
       chat: {
@@ -53,7 +53,7 @@ describe('OpenAIChat.invoke', () => {
       },
     };
 
-    const agent = new OpenAIChat(mockClient as any);
+    const agent = new OpenAIChatAgent(mockClient as any);
     const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
 
     await agent.invoke(request);
@@ -72,7 +72,7 @@ describe('OpenAIChat.invoke', () => {
       },
     };
 
-    const agent = new OpenAIChat(mockClient as any);
+    const agent = new OpenAIChatAgent(mockClient as any);
     const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
 
     const response = await agent.invoke(request);
@@ -91,7 +91,7 @@ describe('OpenAIChat.invoke', () => {
       },
     };
 
-    const agent = new OpenAIChat(mockClient as any);
+    const agent = new OpenAIChatAgent(mockClient as any);
     const request: AgentInvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
@@ -114,7 +114,7 @@ describe('OpenAIChat.invoke', () => {
       },
     };
 
-    const agent = new OpenAIChat(mockClient as any, { model: 'gpt-4o' });
+    const agent = new OpenAIChatAgent(mockClient as any, { model: 'gpt-4o' });
     const request: AgentInvokeRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };

@@ -71,7 +71,7 @@ curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
 import { openai } from '@ai-sdk/openai';
 import { ToolLoopAgent, tool } from 'ai';
 import { z } from 'zod';
-import { VercelAIChat } from '@reminix/vercel-ai';
+import { VercelAIChatAgent } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
 const getWeather = tool({
@@ -85,6 +85,6 @@ const toolAgent = new ToolLoopAgent({
   tools: { getWeather },
 });
 
-const agent = new VercelAIChat(toolAgent, { name: 'vercel-ai-agent' });
+const agent = new VercelAIChatAgent(toolAgent, { name: 'vercel-ai-agent' });
 serve({ agents: [agent] });
 ```

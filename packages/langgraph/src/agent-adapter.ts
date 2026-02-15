@@ -23,7 +23,7 @@ interface LangGraphRunnable {
   stream(input: unknown): AsyncIterable<unknown> | Promise<AsyncIterable<unknown>>;
 }
 
-export class LangGraphThread {
+export class LangGraphThreadAgent {
   private graph: LangGraphRunnable;
   private _name: string;
 

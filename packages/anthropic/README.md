@@ -16,11 +16,11 @@ This will also install `@reminix/runtime` as a dependency.
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
-import { AnthropicChat } from '@reminix/anthropic';
+import { AnthropicChatAgent } from '@reminix/anthropic';
 import { serve } from '@reminix/runtime';
 
 const client = new Anthropic();
-const agent = new AnthropicChat(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
+const agent = new AnthropicChatAgent(client, { name: 'my-claude', model: 'claude-sonnet-4-20250514' });
 serve({ agents: [agent] });
 ```
 
@@ -29,7 +29,7 @@ Your agent is now available at:
 
 ## API Reference
 
-### `new AnthropicChat(client, options)`
+### `new AnthropicChatAgent(client, options)`
 
 Create an Anthropic chat agent for use with Reminix Runtime.
 
@@ -40,7 +40,7 @@ Create an Anthropic chat agent for use with Reminix Runtime.
 | `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
 
-**Returns:** `AnthropicChat` - A Reminix chat agent instance
+**Returns:** `AnthropicChatAgent` - A Reminix chat agent instance
 
 ### System Messages
 

@@ -64,11 +64,11 @@ curl -X POST http://localhost:8080/agents/langchain-basic/invoke \
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
-import { LangChainChat } from '@reminix/langchain';
+import { LangChainChatAgent } from '@reminix/langchain';
 import { serve } from '@reminix/runtime';
 
 const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
 
-const agent = new LangChainChat(model, { name: 'langchain-basic' });
+const agent = new LangChainChatAgent(model, { name: 'langchain-basic' });
 serve({ agents: [agent] });
 ```

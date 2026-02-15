@@ -64,11 +64,11 @@ curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
-import { AnthropicChat } from '@reminix/anthropic';
+import { AnthropicChatAgent } from '@reminix/anthropic';
 import { serve } from '@reminix/runtime';
 
 const client = new Anthropic();
 
-const agent = new AnthropicChat(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
+const agent = new AnthropicChatAgent(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
 serve({ agents: [agent] });
 ```

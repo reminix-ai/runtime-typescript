@@ -48,7 +48,7 @@ export function toLangChainMessage(message: Message): BaseMessage {
   }
 }
 
-export class LangChainChat {
+export class LangChainChatAgent {
   private agent: Runnable;
   private _name: string;
 

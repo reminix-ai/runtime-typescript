@@ -1,2 +1,2 @@
-export { VercelAIChat } from './agent-adapter.js';
-export type { VercelAIChatOptions } from './agent-adapter.js';
+export { VercelAIChatAgent } from './agent-adapter.js';
+export type { VercelAIChatAgentOptions } from './agent-adapter.js';

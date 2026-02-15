@@ -38,11 +38,11 @@ npm install @reminix/runtime @reminix/langchain
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
-import { LangChainChat } from '@reminix/langchain';
+import { LangChainChatAgent } from '@reminix/langchain';
 import { serve } from '@reminix/runtime';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
-const agent = new LangChainChat(llm, { name: 'my-agent' });
+const agent = new LangChainChatAgent(llm, { name: 'my-agent' });
 serve({ agents: [agent] });
 ```
 

@@ -14,7 +14,7 @@ import {
   type Message,
 } from '@reminix/runtime';
 
-export interface AnthropicChatOptions {
+export interface AnthropicChatAgentOptions {
   name?: string;
   model?: string;
   maxTokens?: number;
@@ -25,13 +25,13 @@ interface AnthropicMessage {
   content: string;
 }
 
-export class AnthropicChat {
+export class AnthropicChatAgent {
   private client: Anthropic;
   private _name: string;
   private _model: string;
   private _maxTokens: number;
 
-  constructor(client: Anthropic, options: AnthropicChatOptions = {}) {
+  constructor(client: Anthropic, options: AnthropicChatAgentOptions = {}) {
     this.client = client;
     this._name = options.name ?? 'anthropic-agent';
     this._model = options.model ?? 'claude-sonnet-4-20250514';
