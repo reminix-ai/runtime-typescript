@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest } from '@reminix/runtime';
 import { AGENT_TEMPLATES } from '@reminix/runtime';
-import { VercelAIChatAgent } from '../src/agent-adapter.js';
+import { VercelAIChatAgent } from '../src/chat-agent.js';
 
 describe('VercelAIChatAgent', () => {
   it('should be instantiable', () => {

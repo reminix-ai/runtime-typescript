@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest } from '@reminix/runtime';
 import { AGENT_TEMPLATES } from '@reminix/runtime';
-import { AnthropicChatAgent } from '../src/agent-adapter.js';
+import { AnthropicChatAgent } from '../src/chat-agent.js';
 
 describe('AnthropicChatAgent', () => {
   it('should be instantiable', () => {

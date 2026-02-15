@@ -7,7 +7,7 @@ import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages
 
 import type { AgentRequest } from '@reminix/runtime';
 import { AGENT_TEMPLATES } from '@reminix/runtime';
-import { LangGraphThreadAgent } from '../src/agent-adapter.js';
+import { LangGraphThreadAgent } from '../src/thread-agent.js';
 
 describe('LangGraphThreadAgent', () => {
   it('should be instantiable', () => {

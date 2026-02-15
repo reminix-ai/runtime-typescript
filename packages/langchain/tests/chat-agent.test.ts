@@ -7,7 +7,7 @@ import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages
 
 import type { AgentRequest } from '@reminix/runtime';
 import { AGENT_TEMPLATES } from '@reminix/runtime';
-import { LangChainChatAgent } from '../src/agent-adapter.js';
+import { LangChainChatAgent } from '../src/chat-agent.js';
 
 describe('LangChainChatAgent', () => {
   it('should be instantiable', () => {

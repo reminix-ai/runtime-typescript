@@ -1,1 +1,1 @@
-export { LangGraphThreadAgent } from './agent-adapter.js';
+export { LangGraphThreadAgent } from './thread-agent.js';

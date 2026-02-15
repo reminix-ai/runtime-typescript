@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentInvokeRequest } from '@reminix/runtime';
 import { AGENT_TEMPLATES } from '@reminix/runtime';
-import { OpenAIChatAgent } from '../src/agent-adapter.js';
+import { OpenAIChatAgent } from '../src/chat-agent.js';
 
 describe('OpenAIChatAgent', () => {
   it('should be instantiable', () => {
