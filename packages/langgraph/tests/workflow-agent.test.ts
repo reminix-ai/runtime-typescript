@@ -42,9 +42,9 @@ describe('LangGraphWorkflowAgent', () => {
     expect(agent.name).toBe('langgraph-workflow-agent');
   });
 
-  it('should accept a custom name via options', () => {
+  it('should accept a custom name', () => {
     const mockGraph = createMockGraph([]);
-    const agent = new LangGraphWorkflowAgent(mockGraph as any, { name: 'my-workflow' });
+    const agent = new LangGraphWorkflowAgent(mockGraph as any, 'my-workflow');
 
     expect(agent.name).toBe('my-workflow');
   });
@@ -203,6 +203,7 @@ describe('LangGraphWorkflowAgent.invoke', () => {
     expect(output.status).toBe('failed');
     expect(output.steps).toHaveLength(1);
     expect(output.steps[0].status).toBe('failed');
+    expect(output.error).toBe('Graph execution failed');
   });
 
   it('should pass thread_id from context to graph config', async () => {

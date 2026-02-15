@@ -46,19 +46,16 @@ interface WorkflowOutput {
   steps: WorkflowStep[];
   result?: unknown;
   pendingAction?: PendingAction;
-}
-
-interface LangGraphWorkflowAgentOptions {
-  name?: string;
+  error?: string;
 }
 
 export class LangGraphWorkflowAgent {
   private graph: LangGraphStreamable;
   private _name: string;
 
-  constructor(graph: LangGraphStreamable, options: LangGraphWorkflowAgentOptions = {}) {
+  constructor(graph: LangGraphStreamable, name: string = 'langgraph-workflow-agent') {
     this.graph = graph;
-    this._name = options.name ?? 'langgraph-workflow-agent';
+    this._name = name;
   }
 
   get name(): string {
@@ -172,6 +169,7 @@ export class LangGraphWorkflowAgent {
       const output: WorkflowOutput = {
         status: 'failed',
         steps,
+        error: error instanceof Error ? error.message : String(error),
       };
 
       return { output };

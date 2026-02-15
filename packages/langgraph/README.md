@@ -1,6 +1,6 @@
 # @reminix/langgraph
 
-Reminix Runtime thread agent for [LangGraph](https://langchain-ai.github.io/langgraphjs/). Serve any LangGraph agent as a REST API.
+Reminix Runtime adapters for [LangGraph](https://langchain-ai.github.io/langgraphjs/). Serve any LangGraph agent as a REST API.
 
 > **Ready to go live?** [Deploy to Reminix Cloud](https://reminix.com/docs/deployment) for zero-config hosting, or [self-host](https://reminix.com/docs/deployment/self-hosting) on your own infrastructure.
 
@@ -14,6 +14,8 @@ This will also install `@reminix/runtime` as a dependency.
 
 ## Quick Start
 
+### Thread Agent (chat-style)
+
 ```typescript
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatOpenAI } from '@langchain/openai';
@@ -22,39 +24,63 @@ import { serve } from '@reminix/runtime';
 
 const llm = new ChatOpenAI({ model: 'gpt-4o' });
 const graph = createReactAgent({ llm, tools: [] });
-const agent = new LangGraphThreadAgent(graph, { name: 'my-agent' });
+const agent = new LangGraphThreadAgent(graph, 'my-agent');
+serve({ agents: [agent] });
+```
+
+### Workflow Agent (multi-step with interrupt/resume)
+
+```typescript
+import { LangGraphWorkflowAgent } from '@reminix/langgraph';
+import { serve } from '@reminix/runtime';
+
+const graph = buildWorkflowGraph(); // your LangGraph compiled graph
+const agent = new LangGraphWorkflowAgent(graph, 'my-workflow');
 serve({ agents: [agent] });
 ```
 
 Your agent is now available at:
-- `POST /agents/my-agent/invoke` - Execute the agent
+- `POST /agents/{name}/invoke` - Execute the agent
 
 ## API Reference
 
-### `new LangGraphThreadAgent(graph, options)`
+### `new LangGraphThreadAgent(graph, name)`
 
-Create a LangGraph thread agent for use with Reminix Runtime.
+Create a LangGraph thread agent for chat-style interactions.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
-| `options.name` | `string` | `"langgraph-agent"` | Name for the agent (used in URL path) |
+| `name` | `string` | `"langgraph-agent"` | Name for the agent (used in URL path) |
 
 **Returns:** `LangGraphThreadAgent` - A Reminix thread agent instance
 
-### How It Works
-
-LangGraph uses a state-based approach. The agent:
+The thread adapter:
 1. Converts incoming messages to LangChain message format
 2. Invokes the graph with `{ messages: [...] }`
 3. Extracts the last AI message from the response
 4. Returns it in the Reminix response format
 
+### `new LangGraphWorkflowAgent(graph, name)`
+
+Create a LangGraph workflow agent for multi-step execution with interrupt/resume support.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `graph` | `CompiledGraph` | required | A LangGraph compiled graph |
+| `name` | `string` | `"langgraph-workflow-agent"` | Name for the agent (used in URL path) |
+
+**Returns:** `LangGraphWorkflowAgent` - A Reminix workflow agent instance
+
+The workflow adapter:
+1. Streams the graph and collects per-node outputs as steps
+2. Maps `GraphInterrupt` to `pendingAction` with status `"paused"`
+3. Accepts `resume` input to continue interrupted graphs via `Command`
+4. Returns structured `{status, steps, result?, pendingAction?}` output
+
 ## Endpoint Input/Output Formats
 
-### POST /agents/{name}/invoke
-
-Execute the graph. Input keys are passed directly to the graph.
+### Thread Agent — POST /agents/{name}/invoke
 
 **Request:**
 ```json
@@ -72,9 +98,42 @@ Execute the graph. Input keys are passed directly to the graph.
 }
 ```
 
+### Workflow Agent — POST /agents/{name}/invoke
+
+**Request:**
+```json
+{
+  "input": {"task": "process data"}
+}
+```
+
+**Response:**
+```json
+{
+  "output": {
+    "status": "completed",
+    "steps": [
+      {"name": "fetch_data", "status": "completed", "output": {"records": 10}},
+      {"name": "process", "status": "completed", "output": {"summary": "done"}}
+    ],
+    "result": {"summary": "done"}
+  }
+}
+```
+
+**Resume a paused workflow:**
+```json
+{
+  "input": {
+    "task": "process data",
+    "resume": {"step": "approve", "input": {"approved": true}}
+  }
+}
+```
+
 ### Streaming
 
-For streaming responses, set `stream: true` in the request:
+For streaming responses (thread agent only), set `stream: true` in the request:
 
 ```json
 {
