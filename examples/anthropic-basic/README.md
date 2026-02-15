@@ -60,16 +60,13 @@ curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
 ## How it works
 
 1. Create an Anthropic client using `@anthropic-ai/sdk`
-2. Wrap it with `@reminix/anthropic`
-3. Serve it with `@reminix/runtime`
+2. Serve it with `@reminix/anthropic`
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk';
-import { wrapAgent } from '@reminix/anthropic';
-import { serve } from '@reminix/runtime';
+import { serveAgent } from '@reminix/anthropic';
 
 const client = new Anthropic();
-const agent = wrapAgent(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
 
-serve({ agents: [agent] });
+serveAgent(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
 ```

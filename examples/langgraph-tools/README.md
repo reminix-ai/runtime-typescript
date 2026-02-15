@@ -65,16 +65,14 @@ curl -X POST http://localhost:8080/agents/langgraph-tools/invoke \
 
 1. Define tools using `tool` from `@langchain/core/tools`
 2. Create a LangGraph ReAct agent using `createReactAgent`
-3. Wrap it with `@reminix/langgraph`
-4. Serve it with `@reminix/runtime`
+3. Serve it with `@reminix/langgraph`
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
-import { wrapAgent } from '@reminix/langgraph';
-import { serve } from '@reminix/runtime';
+import { serveAgent } from '@reminix/langgraph';
 
 const getWeather = tool(
   async ({ city }) => `Weather in ${city}: Sunny, 22°C`,
@@ -87,7 +85,6 @@ const getWeather = tool(
 
 const llm = new ChatOpenAI({ model: 'gpt-4o-mini' });
 const graph = createReactAgent({ llm, tools: [getWeather] });
-const agent = wrapAgent(graph, 'langgraph-tools');
 
-serve({ agents: [agent] });
+serveAgent(graph, { name: 'langgraph-tools' });
 ```

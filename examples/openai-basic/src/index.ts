@@ -39,17 +39,13 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 config({ path: resolve(__dirname, '../../../.env') });
 
 import OpenAI from 'openai';
-import { wrapAgent } from '@reminix/openai';
-import { serve } from '@reminix/runtime';
+import { serveAgent } from '@reminix/openai';
 
 // Create an OpenAI client
 const client = new OpenAI();
 
-// Wrap the client with the Reminix adapter
-const agent = wrapAgent(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
-
 // Serve the agent
-serve({ agents: [agent] });
+serveAgent(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
 
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');

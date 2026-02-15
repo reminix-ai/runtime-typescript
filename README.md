@@ -38,12 +38,11 @@ npm install @reminix/runtime @reminix/langchain
 
 ```typescript
 import { ChatOpenAI } from '@langchain/openai';
-import { wrapAgent } from '@reminix/langchain';
-import { serve } from '@reminix/runtime';
+import { serveAgent } from '@reminix/langchain';
 
 const agent = new ChatOpenAI({ model: 'gpt-4o' });
 
-serve({ agents: [wrapAgent(agent, 'my-agent')] });
+serveAgent(agent, { name: 'my-agent' });
 ```
 
 ### With Factory Functions (No Framework)

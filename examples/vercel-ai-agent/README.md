@@ -65,15 +65,13 @@ curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
 
 1. Define tools using `tool` from `ai`
 2. Create a Vercel AI ToolLoopAgent
-3. Wrap it with `@reminix/vercel-ai`
-4. Serve it with `@reminix/runtime`
+3. Serve it with `@reminix/vercel-ai`
 
 ```typescript
 import { openai } from '@ai-sdk/openai';
 import { ToolLoopAgent, tool } from 'ai';
 import { z } from 'zod';
-import { wrapAgent } from '@reminix/vercel-ai';
-import { serve } from '@reminix/runtime';
+import { serveAgent } from '@reminix/vercel-ai';
 
 const getWeather = tool({
   description: 'Get the current weather for a city',
@@ -86,7 +84,5 @@ const toolAgent = new ToolLoopAgent({
   tools: { getWeather },
 });
 
-const agent = wrapAgent(toolAgent, { name: 'vercel-ai-agent' });
-
-serve({ agents: [agent] });
+serveAgent(toolAgent, { name: 'vercel-ai-agent' });
 ```

@@ -39,17 +39,13 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 config({ path: resolve(__dirname, '../../../.env') });
 
 import { ChatOpenAI } from '@langchain/openai';
-import { wrapAgent } from '@reminix/langchain';
-import { serve } from '@reminix/runtime';
+import { serveAgent } from '@reminix/langchain';
 
 // Create a LangChain chat model
 const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
 
-// Wrap the model with the Reminix adapter
-const agent = wrapAgent(model, 'langchain-basic');
-
 // Serve the agent
-serve({ agents: [agent] });
+serveAgent(model, { name: 'langchain-basic' });
 
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');

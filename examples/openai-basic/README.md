@@ -60,16 +60,13 @@ curl -X POST http://localhost:8080/agents/openai-basic/invoke \
 ## How it works
 
 1. Create an OpenAI client using `openai`
-2. Wrap it with `@reminix/openai`
-3. Serve it with `@reminix/runtime`
+2. Serve it with `@reminix/openai`
 
 ```typescript
 import OpenAI from 'openai';
-import { wrapAgent } from '@reminix/openai';
-import { serve } from '@reminix/runtime';
+import { serveAgent } from '@reminix/openai';
 
 const client = new OpenAI();
-const agent = wrapAgent(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
 
-serve({ agents: [agent] });
+serveAgent(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
 ```
