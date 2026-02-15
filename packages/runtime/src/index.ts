@@ -1,7 +1,7 @@
 export { serve, createApp } from './server.js';
 export type { ServeOptions, CreateAppOptions, FullServeOptions } from './server.js';
 export { VERSION } from './version.js';
-export { messageContentToText } from './content.js';
+export { messageContentToText, buildMessagesFromInput } from './content.js';
 export type {
   Role,
   Message,
@@ -24,6 +24,7 @@ export type {
 // Schema exports
 export type { AgentTemplate } from './schemas.js';
 export {
+  ADAPTER_INPUT,
   AGENT_TEMPLATES,
   DEFAULT_AGENT_TEMPLATE,
   DEFAULT_AGENT_INPUT,

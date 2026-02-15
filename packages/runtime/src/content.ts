@@ -2,7 +2,7 @@
  * Helpers for message content (string | ContentPart[] | null).
  */
 
-import type { ContentPart } from './types.js';
+import type { AgentRequest, ContentPart, Message } from './types.js';
 
 /**
  * Normalize message content to a single string for providers that only accept text.
@@ -20,4 +20,23 @@ export function messageContentToText(content: string | ContentPart[] | null): st
       return `[${type}]`;
     })
     .join(' ');
+}
+
+/**
+ * Extract a list of Messages from an AgentRequest's input.
+ *
+ * Handles three input shapes that all adapters accept:
+ * - `{ messages: [...] }` — chat-style, returned as Message list
+ * - `{ prompt: "..." }` — single prompt, wrapped as a user message
+ * - anything else — stringified and wrapped as a user message
+ */
+export function buildMessagesFromInput(request: AgentRequest): Message[] {
+  const input = request.input as Record<string, unknown>;
+  if ('messages' in input) {
+    return input.messages as Message[];
+  } else if ('prompt' in input) {
+    return [{ role: 'user', content: String(input.prompt) }];
+  } else {
+    return [{ role: 'user', content: JSON.stringify(input) }];
+  }
 }

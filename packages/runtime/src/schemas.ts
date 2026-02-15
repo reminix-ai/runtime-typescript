@@ -306,3 +306,12 @@ export const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output:
 /** Default input/output schemas (same as prompt template). */
 export const DEFAULT_AGENT_INPUT = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE].input;
 export const DEFAULT_AGENT_OUTPUT = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE].output;
+
+/** Shared input schema for adapters (accepts messages or prompt). */
+export const ADAPTER_INPUT: JSONSchema = {
+  type: 'object',
+  properties: {
+    messages: { type: 'array', description: 'Chat-style messages input' },
+    prompt: { type: 'string', description: 'Simple prompt input' },
+  },
+};

@@ -5,41 +5,28 @@
 import type OpenAI from 'openai';
 
 import {
-  AgentAdapter,
+  ADAPTER_INPUT,
   serve,
   messageContentToText,
+  buildMessagesFromInput,
   type ServeOptions,
-  type AgentInvokeRequest,
-  type AgentInvokeResponse,
+  type AgentRequest,
+  type AgentResponse,
+  type AgentMetadata,
   type Message,
 } from '@reminix/runtime';
 
-/**
- * Options for wrapping an OpenAI client.
- */
 export interface OpenAIAgentAdapterOptions {
   name?: string;
   model?: string;
 }
 
-/**
- * Adapter for OpenAI chat completions.
- */
-export class OpenAIAgentAdapter extends AgentAdapter {
-  static adapterName = 'openai';
-
+export class OpenAIAgentAdapter {
   private client: OpenAI;
   private _name: string;
   private _model: string;
 
-  /**
-   * Initialize the adapter.
-   *
-   * @param client - An OpenAI client.
-   * @param options - Adapter options.
-   */
   constructor(client: OpenAI, options: OpenAIAgentAdapterOptions = {}) {
-    super();
     this.client = client;
     this._name = options.name ?? 'openai-agent';
     this._model = options.model ?? 'gpt-4o-mini';
@@ -53,9 +40,16 @@ export class OpenAIAgentAdapter extends AgentAdapter {
     return this._model;
   }
 
-  /**
-   * Convert a Reminix message to OpenAI format.
-   */
+  get metadata(): AgentMetadata {
+    return {
+      description: 'openai adapter',
+      capabilities: { streaming: true },
+      input: ADAPTER_INPUT,
+      output: { type: 'string' },
+      adapter: 'openai',
+    };
+  }
+
   private toOpenAIMessage(message: Message): OpenAI.Chat.ChatCompletionMessageParam {
     const role = message.role === 'developer' ? 'system' : message.role;
     if (role !== 'user' && role !== 'assistant' && role !== 'system')
@@ -67,61 +61,26 @@ export class OpenAIAgentAdapter extends AgentAdapter {
     return result;
   }
 
-  /**
-   * Build OpenAI messages from invoke request input.
-   */
-  private buildOpenAIMessages(
-    request: AgentInvokeRequest
-  ): OpenAI.Chat.ChatCompletionMessageParam[] {
-    const input = request.input as Record<string, unknown>;
+  async invoke(request: AgentRequest): Promise<AgentResponse> {
+    const messages = buildMessagesFromInput(request);
+    const openaiMessages = messages.map((m) => this.toOpenAIMessage(m));
 
-    if ('messages' in input) {
-      const messages = input.messages as Message[];
-      return messages.map((m) => this.toOpenAIMessage(m));
-    } else if ('prompt' in input) {
-      return [{ role: 'user', content: String(input.prompt) }];
-    } else {
-      return [{ role: 'user', content: JSON.stringify(input) }];
-    }
-  }
-
-  /**
-   * Handle an invoke request.
-   *
-   * For both task-oriented and chat-style operations. Expects input with 'messages' key
-   * or a 'prompt' key for simple text generation.
-   *
-   * @param request - The invoke request with input data.
-   * @returns The invoke response with the output.
-   */
-  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
-    const messages = this.buildOpenAIMessages(request);
-
-    // Call OpenAI API
     const response = await this.client.chat.completions.create({
       model: this._model,
-      messages,
+      messages: openaiMessages,
     });
 
-    // Extract content from response
     const output = response.choices[0]?.message?.content ?? '';
-
     return { output };
   }
 
-  /**
-   * Handle a streaming invoke request.
-   *
-   * @param request - The invoke request with input data.
-   * @yields JSON-encoded chunks from the stream.
-   */
-  async *invokeStream(request: AgentInvokeRequest): AsyncGenerator<string, void, unknown> {
-    const messages = this.buildOpenAIMessages(request);
+  async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
+    const messages = buildMessagesFromInput(request);
+    const openaiMessages = messages.map((m) => this.toOpenAIMessage(m));
 
-    // Stream from OpenAI API
     const stream = await this.client.chat.completions.create({
       model: this._model,
-      messages,
+      messages: openaiMessages,
       stream: true,
     });
 
@@ -134,24 +93,6 @@ export class OpenAIAgentAdapter extends AgentAdapter {
   }
 }
 
-/**
- * Wrap an OpenAI client for use with Reminix Runtime.
- *
- * @param client - An OpenAI client.
- * @param options - Adapter options.
- * @returns An OpenAIAgentAdapter instance.
- *
- * @example
- * ```typescript
- * import OpenAI from 'openai';
- * import { wrap } from '@reminix/openai';
- * import { serve } from '@reminix/runtime';
- *
- * const client = new OpenAI();
- * const agent = wrapAgent(client, { name: 'my-agent', model: 'gpt-4o' });
- * serve({ agents: [agent], port: 8080 });
- * ```
- */
 export function wrapAgent(
   client: OpenAI,
   options: OpenAIAgentAdapterOptions = {}
@@ -159,28 +100,8 @@ export function wrapAgent(
   return new OpenAIAgentAdapter(client, options);
 }
 
-/**
- * Options for wrapping and serving an OpenAI client.
- */
 export interface WrapAndServeOptions extends OpenAIAgentAdapterOptions, ServeOptions {}
 
-/**
- * Wrap an OpenAI client and serve it immediately.
- *
- * This is a convenience function that combines `wrapAgent` and `serve` for single-agent setups.
- *
- * @param client - An OpenAI client.
- * @param options - Combined adapter and server options.
- *
- * @example
- * ```typescript
- * import OpenAI from 'openai';
- * import { serveAgent } from '@reminix/openai';
- *
- * const client = new OpenAI();
- * serveAgent(client, { name: 'my-agent', model: 'gpt-4o', port: 8080 });
- * ```
- */
 export function serveAgent(client: OpenAI, options: WrapAndServeOptions = {}): void {
   const { port, hostname, ...adapterOptions } = options;
   const agent = wrapAgent(client, adapterOptions);

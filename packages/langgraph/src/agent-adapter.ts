@@ -2,57 +2,34 @@
  * LangGraph adapter for Reminix Runtime.
  */
 
-import {
-  HumanMessage,
-  AIMessage,
-  SystemMessage,
-  ToolMessage,
-  type BaseMessage,
-} from '@langchain/core/messages';
+import { AIMessage, type BaseMessage } from '@langchain/core/messages';
 
+import { toLangChainMessage } from '@reminix/langchain';
 import {
-  AgentAdapter,
+  ADAPTER_INPUT,
   serve,
-  messageContentToText,
+  buildMessagesFromInput,
   type ServeOptions,
-  type AgentInvokeRequest,
-  type AgentInvokeResponse,
-  type Message,
+  type AgentRequest,
+  type AgentResponse,
+  type AgentMetadata,
 } from '@reminix/runtime';
 
-/**
- * State type for LangGraph graphs.
- */
 interface GraphState {
   messages: BaseMessage[];
   [key: string]: unknown;
 }
 
-/**
- * Graph interface that matches LangGraph compiled graphs.
- */
 interface LangGraphRunnable {
   invoke(input: unknown): Promise<unknown>;
   stream(input: unknown): AsyncIterable<unknown> | Promise<AsyncIterable<unknown>>;
 }
 
-/**
- * Adapter for LangGraph compiled graphs.
- */
-export class LangGraphAgentAdapter extends AgentAdapter {
-  static adapterName = 'langgraph';
-
+export class LangGraphAgentAdapter {
   private graph: LangGraphRunnable;
   private _name: string;
 
-  /**
-   * Initialize the adapter.
-   *
-   * @param graph - A LangGraph compiled graph.
-   * @param name - Name for the agent.
-   */
   constructor(graph: LangGraphRunnable, name: string = 'langgraph-agent') {
-    super();
     this.graph = graph;
     this._name = name;
   }
@@ -61,47 +38,23 @@ export class LangGraphAgentAdapter extends AgentAdapter {
     return this._name;
   }
 
-  /**
-   * Convert a Reminix message to a LangChain message.
-   */
-  private toLangChainMessage(message: Message): BaseMessage {
-    const { role } = message;
-    const contentStr = messageContentToText(message.content);
-
-    switch (role) {
-      case 'user':
-        return new HumanMessage({ content: contentStr });
-      case 'assistant':
-        return new AIMessage({ content: contentStr });
-      case 'system':
-      case 'developer':
-        return new SystemMessage({ content: contentStr });
-      case 'tool':
-        return new ToolMessage({
-          content: contentStr,
-          tool_call_id: message.tool_call_id || 'unknown',
-        });
-      default:
-        return new HumanMessage({ content: contentStr });
-    }
+  get metadata(): AgentMetadata {
+    return {
+      description: 'langgraph adapter',
+      capabilities: { streaming: true },
+      input: ADAPTER_INPUT,
+      output: { type: 'string' },
+      adapter: 'langgraph',
+    };
   }
 
-  /**
-   * Check if a message is an AI message.
-   */
   private isAIMessage(message: BaseMessage): boolean {
-    // Check instanceof for proper class instances
     if (message instanceof AIMessage) return true;
-    // Also check _getType() for deserialized messages
     if (typeof message._getType === 'function' && message._getType() === 'ai') return true;
-    // Fallback: check constructor name
     if (message.constructor?.name === 'AIMessage') return true;
     return false;
   }
 
-  /**
-   * Extract content from the last AI message.
-   */
   private getLastAIContent(messages: BaseMessage[]): string {
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i];
@@ -110,7 +63,6 @@ export class LangGraphAgentAdapter extends AgentAdapter {
         if (typeof content === 'string') {
           if (content) return content;
         } else if (Array.isArray(content)) {
-          // Handle array of content blocks (text, tool_use, etc.)
           const textParts = content
             .filter(
               (part): part is { type: 'text'; text: string } =>
@@ -127,36 +79,20 @@ export class LangGraphAgentAdapter extends AgentAdapter {
     return '';
   }
 
-  /**
-   * Build LangGraph input from invoke request.
-   */
-  private buildGraphInput(request: AgentInvokeRequest): unknown {
-    const input = request.input as Record<string, unknown>;
-
-    if ('messages' in input) {
-      const messages = input.messages as Message[];
-      const lcMessages = messages.map((m) => this.toLangChainMessage(m));
+  private buildGraphInput(request: AgentRequest): unknown {
+    if ('messages' in request.input) {
+      const messages = buildMessagesFromInput(request);
+      const lcMessages = messages.map((m) => toLangChainMessage(m));
       return { messages: lcMessages };
     } else {
-      return input;
+      return request.input;
     }
   }
 
-  /**
-   * Handle an invoke request.
-   *
-   * For both task-oriented and chat-style operations.
-   *
-   * @param request - The invoke request with input data.
-   * @returns The invoke response with the output.
-   */
-  async invoke(request: AgentInvokeRequest): Promise<AgentInvokeResponse> {
+  async invoke(request: AgentRequest): Promise<AgentResponse> {
     const graphInput = this.buildGraphInput(request);
-
-    // Call the graph
     const result = await this.graph.invoke(graphInput);
 
-    // Extract output from result
     let output: unknown;
     if (result && typeof result === 'object' && 'messages' in result) {
       const messages = (result as GraphState).messages || [];
@@ -170,20 +106,12 @@ export class LangGraphAgentAdapter extends AgentAdapter {
     return { output };
   }
 
-  /**
-   * Handle a streaming invoke request.
-   *
-   * @param request - The invoke request with input data.
-   * @yields JSON-encoded chunks from the stream.
-   */
-  async *invokeStream(request: AgentInvokeRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
     const graphInput = this.buildGraphInput(request);
 
-    // Stream from the graph (await if stream returns a promise)
     const streamResult = this.graph.stream(graphInput);
     const stream = streamResult instanceof Promise ? await streamResult : streamResult;
     for await (const chunk of stream) {
-      // LangGraph streams dicts with node outputs
       if (chunk && typeof chunk === 'object') {
         for (const [, nodeOutput] of Object.entries(chunk as Record<string, unknown>)) {
           if (nodeOutput && typeof nodeOutput === 'object' && 'messages' in nodeOutput) {
@@ -207,26 +135,6 @@ export class LangGraphAgentAdapter extends AgentAdapter {
   }
 }
 
-/**
- * Wrap a LangGraph compiled graph for use with Reminix Runtime.
- *
- * @param graph - A LangGraph compiled graph.
- * @param name - Name for the agent.
- * @returns A LangGraphAgentAdapter instance.
- *
- * @example
- * ```typescript
- * import { createReactAgent } from '@langchain/langgraph/prebuilt';
- * import { ChatOpenAI } from '@langchain/openai';
- * import { wrap } from '@reminix/langgraph';
- * import { serve } from '@reminix/runtime';
- *
- * const llm = new ChatOpenAI({ model: 'gpt-4' });
- * const graph = createReactAgent({ llm, tools: [] });
- * const agent = wrapAgent(graph, 'my-agent');
- * serve({ agents: [agent], port: 8080 });
- * ```
- */
 export function wrapAgent(
   graph: LangGraphRunnable,
   name: string = 'langgraph-agent'
@@ -234,32 +142,10 @@ export function wrapAgent(
   return new LangGraphAgentAdapter(graph, name);
 }
 
-/**
- * Options for wrapping and serving a LangGraph graph.
- */
 export interface WrapAndServeOptions extends ServeOptions {
   name?: string;
 }
 
-/**
- * Wrap a LangGraph graph and serve it immediately.
- *
- * This is a convenience function that combines `wrapAgent` and `serve` for single-agent setups.
- *
- * @param graph - A LangGraph compiled graph.
- * @param options - Combined adapter and server options.
- *
- * @example
- * ```typescript
- * import { createReactAgent } from '@langchain/langgraph/prebuilt';
- * import { ChatOpenAI } from '@langchain/openai';
- * import { serveAgent } from '@reminix/langgraph';
- *
- * const llm = new ChatOpenAI({ model: 'gpt-4' });
- * const graph = createReactAgent({ llm, tools: [] });
- * serveAgent(graph, { name: 'my-agent', port: 8080 });
- * ```
- */
 export function serveAgent(graph: LangGraphRunnable, options: WrapAndServeOptions = {}): void {
   const { port, hostname, name } = options;
   const agent = wrapAgent(graph, name);
