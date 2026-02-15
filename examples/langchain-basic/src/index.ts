@@ -49,7 +49,7 @@ const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
 const agent = wrapAgent(model, 'langchain-basic');
 
 // Serve the agent
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');

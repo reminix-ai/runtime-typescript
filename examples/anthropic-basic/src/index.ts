@@ -49,7 +49,7 @@ const client = new Anthropic();
 const agent = wrapAgent(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
 
 // Serve the agent
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');

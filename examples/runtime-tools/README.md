@@ -92,5 +92,5 @@ const getWeather = tool('get_weather', {
   },
 });
 
-serve({ tools: [getWeather], port: 8080 });
+serve({ tools: [getWeather] });
 ```

@@ -190,4 +190,4 @@ console.log('  POST /tools/calculate/call');
 console.log('  POST /tools/string_utils/call');
 console.log();
 
-serve({ tools: [getWeather, calculate, stringUtils], port: 8080 });
+serve({ tools: [getWeather, calculate, stringUtils] });

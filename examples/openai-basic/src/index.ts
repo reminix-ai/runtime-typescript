@@ -49,7 +49,7 @@ const client = new OpenAI();
 const agent = wrapAgent(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
 
 // Serve the agent
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');

@@ -89,5 +89,5 @@ const llm = new ChatOpenAI({ model: 'gpt-4o-mini' });
 const graph = createReactAgent({ llm, tools: [getWeather] });
 const agent = wrapAgent(graph, 'langgraph-tools');
 
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 ```

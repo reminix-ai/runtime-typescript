@@ -71,5 +71,5 @@ import { serve } from '@reminix/runtime';
 const client = new Anthropic();
 const agent = wrapAgent(client, { name: 'anthropic-basic', model: 'claude-3-haiku-20240307' });
 
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 ```

@@ -71,5 +71,5 @@ import { serve } from '@reminix/runtime';
 const model = new ChatOpenAI({ model: 'gpt-4o-mini' });
 const agent = wrapAgent(model, 'langchain-basic');
 
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 ```

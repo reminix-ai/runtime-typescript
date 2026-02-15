@@ -31,7 +31,7 @@ const calculator = agent('calculator', {
 });
 
 // Serve the agent
-serve({ agents: [calculator], port: 8080 });
+serve({ agents: [calculator] });
 ```
 
 ## How It Works
@@ -190,7 +190,7 @@ const assistant = agent('assistant', {
   },
 });
 
-serve({ agents: [assistant], port: 8080 });
+serve({ agents: [assistant] });
 ```
 
 ### Task-Oriented Agent
@@ -229,7 +229,7 @@ const textProcessor = agent('text-processor', {
   },
 });
 
-serve({ agents: [calculator, textProcessor], port: 8080 });
+serve({ agents: [calculator, textProcessor] });
 ```
 
 ### Streaming
@@ -253,7 +253,7 @@ const streamer = agent('streamer', {
   },
 });
 
-serve({ agents: [streamer], port: 8080 });
+serve({ agents: [streamer] });
 ```
 
 For streaming agents:
@@ -294,7 +294,7 @@ const getWeather = tool('get_weather', {
   },
 });
 
-serve({ tools: [getWeather], port: 8080 });
+serve({ tools: [getWeather] });
 ```
 
 ### Serving Agents and Tools Together
@@ -324,7 +324,7 @@ const calculator = tool('calculate', {
   handler: async (input) => ({ result: eval(input.expression as string) }),
 });
 
-serve({ agents: [summarizer], tools: [calculator], port: 8080 });
+serve({ agents: [summarizer], tools: [calculator] });
 ```
 
 ## Framework Adapters

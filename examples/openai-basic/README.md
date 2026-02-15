@@ -71,5 +71,5 @@ import { serve } from '@reminix/runtime';
 const client = new OpenAI();
 const agent = wrapAgent(client, { name: 'openai-basic', model: 'gpt-4o-mini' });
 
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 ```

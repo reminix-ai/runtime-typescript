@@ -98,4 +98,4 @@ console.log('  GET  /info');
 console.log('  POST /agents/echo/invoke');
 console.log();
 
-serve({ agents: [echo], port: 8080 });
+serve({ agents: [echo] });

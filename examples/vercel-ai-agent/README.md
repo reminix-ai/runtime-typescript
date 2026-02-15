@@ -88,5 +88,5 @@ const toolAgent = new ToolLoopAgent({
 
 const agent = wrapAgent(toolAgent, { name: 'vercel-ai-agent' });
 
-serve({ agents: [agent], port: 8080 });
+serve({ agents: [agent] });
 ```
