@@ -1,5 +1,5 @@
 /**
- * Tests for the Anthropic thread adapter.
+ * Tests for the Anthropic thread agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

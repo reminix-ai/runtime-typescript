@@ -1,5 +1,5 @@
 /**
- * Tests for the OpenAI chat adapter.
+ * Tests for the OpenAI chat agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

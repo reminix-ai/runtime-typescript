@@ -1,5 +1,5 @@
 /**
- * Tests for the Vercel AI SDK chat adapter.
+ * Tests for the Vercel AI SDK chat agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

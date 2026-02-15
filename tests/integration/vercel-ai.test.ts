@@ -1,5 +1,5 @@
 /**
- * Integration tests for Vercel AI adapter with tool calling.
+ * Integration tests for Vercel AI agents with tool calling.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -11,7 +11,7 @@ import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getOpenAIApiKey } from './setup.js';
 
-describe('Vercel AI Adapter Integration', () => {
+describe('Vercel AI Agent Integration', () => {
   let app: Hono;
 
   beforeAll(() => {

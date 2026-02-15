@@ -7,7 +7,7 @@ import { VERSION, tool, type AgentRequest, type AgentResponse } from '../src/ind
 import { createApp } from '../src/server.js';
 
 /**
- * A mock adapter for testing task-style requests.
+ * A mock agent for testing task-style requests.
  */
 class MockTaskAdapter {
   private _name: string;
@@ -40,7 +40,7 @@ class MockTaskAdapter {
 }
 
 /**
- * A mock adapter for testing chat-style requests.
+ * A mock agent for testing chat-style requests.
  */
 class MockChatAdapter {
   private _name: string;

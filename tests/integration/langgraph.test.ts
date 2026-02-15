@@ -1,5 +1,5 @@
 /**
- * Integration tests for LangGraph adapter with tool calling.
+ * Integration tests for LangGraph agents with tool calling.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -28,7 +28,7 @@ const getWeather = tool(
   }
 );
 
-describe('LangGraph Adapter Integration', () => {
+describe('LangGraph Agent Integration', () => {
   let app: Hono;
 
   beforeAll(() => {

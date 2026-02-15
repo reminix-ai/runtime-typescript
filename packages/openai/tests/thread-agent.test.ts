@@ -1,5 +1,5 @@
 /**
- * Tests for the OpenAI thread adapter.
+ * Tests for the OpenAI thread agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

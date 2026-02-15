@@ -1,5 +1,5 @@
 /**
- * Integration tests for LangChain adapter with tool calling.
+ * Integration tests for LangChain agents with tool calling.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -27,7 +27,7 @@ const getWeather = tool(
   }
 );
 
-describe('LangChain Adapter Integration', () => {
+describe('LangChain Agent Integration', () => {
   let app: Hono;
 
   beforeAll(() => {

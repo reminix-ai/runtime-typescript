@@ -1,5 +1,5 @@
 /**
- * Tests for the Anthropic chat adapter.
+ * Tests for the Anthropic chat agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

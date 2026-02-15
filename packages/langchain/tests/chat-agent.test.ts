@@ -1,5 +1,5 @@
 /**
- * Tests for the LangChain chat adapter.
+ * Tests for the LangChain chat agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

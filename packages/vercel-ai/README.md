@@ -1,6 +1,6 @@
 # @reminix/vercel-ai
 
-Reminix Runtime agents for the [Vercel AI SDK](https://ai-sdk.dev). Serve AI agents as a REST API.
+Reminix agents for the [Vercel AI SDK](https://ai-sdk.dev). Serve AI agents as a REST API.
 
 Supports both:
 

@@ -327,9 +327,9 @@ const calculator = tool('calculate', {
 serve({ agents: [summarizer], tools: [calculator] });
 ```
 
-## Framework Adapters
+## Framework Agents
 
-Already using a framework? Use our pre-built adapters:
+Already using a framework? Use our pre-built agents:
 
 | Package | Framework |
 |---------|-----------|
@@ -468,12 +468,12 @@ interface AgentResponse {
 
 ### AgentLike Interface
 
-For building framework integrations, implement the `AgentLike` interface. See the [framework adapter packages](#framework-adapters) for examples.
+For building framework integrations, implement the `AgentLike` interface. See the [framework agent packages](#framework-agents) for examples.
 
 ```typescript
 import type { AgentLike, AgentRequest, AgentResponse, AgentMetadata } from '@reminix/runtime';
 
-class MyFrameworkAdapter implements AgentLike {
+class MyFrameworkAgent implements AgentLike {
   readonly name: string;
   readonly metadata: AgentMetadata;
 

@@ -1,5 +1,5 @@
 /**
- * Tests for the LangGraph workflow adapter.
+ * Tests for the LangGraph workflow agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

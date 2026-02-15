@@ -1,5 +1,5 @@
 /**
- * Tests for the OpenAI task adapter.
+ * Tests for the OpenAI task agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

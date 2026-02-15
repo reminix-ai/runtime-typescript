@@ -1,5 +1,5 @@
 /**
- * Integration tests for Anthropic adapter.
+ * Integration tests for Anthropic agents.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -9,7 +9,7 @@ import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getAnthropicApiKey } from './setup.js';
 
-describe('Anthropic Adapter Integration', () => {
+describe('Anthropic Agent Integration', () => {
   let app: Hono;
 
   beforeAll(() => {

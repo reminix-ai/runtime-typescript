@@ -1,5 +1,5 @@
 /**
- * Tests for the LangGraph thread adapter.
+ * Tests for the LangGraph thread agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

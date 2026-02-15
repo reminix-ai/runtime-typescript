@@ -1,5 +1,5 @@
 /**
- * Integration tests for OpenAI adapter.
+ * Integration tests for OpenAI agents.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -9,7 +9,7 @@ import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getOpenAIApiKey } from './setup.js';
 
-describe('OpenAI Adapter Integration', () => {
+describe('OpenAI Agent Integration', () => {
   let app: Hono;
 
   beforeAll(() => {

@@ -29,7 +29,7 @@ export type ToolHandler = (
 /**
  * Interface defining what the server accepts as a tool.
  *
- * Both the tool() factory and adapter wrapTool() produce objects
+ * Both the tool() factory and framework agents produce objects
  * conforming to this interface.
  */
 export interface ToolLike {

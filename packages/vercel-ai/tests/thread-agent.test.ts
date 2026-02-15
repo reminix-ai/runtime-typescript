@@ -1,5 +1,5 @@
 /**
- * Tests for the Vercel AI SDK thread adapter.
+ * Tests for the Vercel AI SDK thread agent.
  */
 
 import { describe, it, expect, vi } from 'vitest';

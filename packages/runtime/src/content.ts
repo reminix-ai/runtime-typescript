@@ -25,7 +25,7 @@ export function messageContentToText(content: string | ContentPart[] | null): st
 /**
  * Extract a list of Messages from an AgentRequest's input.
  *
- * Handles three input shapes that all adapters accept:
+ * Handles three input shapes that all agents accept:
  * - `{ messages: [...] }` — chat-style, returned as Message list
  * - `{ prompt: "..." }` — single prompt, wrapped as a user message
  * - anything else — stringified and wrapped as a user message

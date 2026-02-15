@@ -32,7 +32,7 @@ export interface AgentMetadata {
 /**
  * Interface defining what the server accepts as an agent.
  *
- * Both the agent() factory and adapter wrapAgent() produce objects
+ * Both the agent() factory and framework agents produce objects
  * conforming to this interface.
  */
 export interface AgentLike {
