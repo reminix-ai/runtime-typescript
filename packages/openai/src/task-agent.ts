@@ -5,7 +5,7 @@
 import type OpenAI from 'openai';
 
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   type AgentRequest,
   type AgentResponse,
   type AgentMetadata,
@@ -45,10 +45,10 @@ export class OpenAITaskAgent {
     return {
       description: 'openai task agent',
       capabilities: { streaming: false },
-      input: AGENT_TEMPLATES['task'].input,
-      output: AGENT_TEMPLATES['task'].output,
+      input: AGENT_TYPES['task'].input,
+      output: AGENT_TYPES['task'].output,
       framework: 'openai',
-      template: 'task',
+      type: 'task',
     };
   }
 

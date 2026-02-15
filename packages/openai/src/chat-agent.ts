@@ -5,7 +5,7 @@
 import type OpenAI from 'openai';
 
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
@@ -42,10 +42,10 @@ export class OpenAIChatAgent {
     return {
       description: 'openai chat agent',
       capabilities: { streaming: true },
-      input: AGENT_TEMPLATES['chat'].input,
-      output: AGENT_TEMPLATES['chat'].output,
+      input: AGENT_TYPES['chat'].input,
+      output: AGENT_TYPES['chat'].output,
       framework: 'openai',
-      template: 'chat',
+      type: 'chat',
     };
   }
 

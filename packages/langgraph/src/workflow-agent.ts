@@ -3,7 +3,7 @@
  */
 
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   type AgentRequest,
   type AgentResponse,
   type AgentMetadata,
@@ -66,10 +66,10 @@ export class LangGraphWorkflowAgent {
     return {
       description: 'langgraph workflow agent',
       capabilities: { streaming: false },
-      input: AGENT_TEMPLATES['workflow'].input,
-      output: AGENT_TEMPLATES['workflow'].output,
+      input: AGENT_TYPES['workflow'].input,
+      output: AGENT_TYPES['workflow'].output,
       framework: 'langgraph',
-      template: 'workflow',
+      type: 'workflow',
     };
   }
 

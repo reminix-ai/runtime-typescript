@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 import type { AgentRequest } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { LangGraphThreadAgent } from '../src/thread-agent.js';
 
 describe('LangGraphThreadAgent', () => {
@@ -31,12 +31,12 @@ describe('LangGraphThreadAgent', () => {
     expect(agent.name).toBe('langgraph-agent');
   });
 
-  it('should have thread template metadata', () => {
+  it('should have thread type metadata', () => {
     const mockGraph = { invoke: vi.fn() };
     const agent = new LangGraphThreadAgent(mockGraph as any);
 
-    expect(agent.metadata.template).toBe('thread');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['thread'].input);
+    expect(agent.metadata.type).toBe('thread');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['thread'].input);
   });
 });
 

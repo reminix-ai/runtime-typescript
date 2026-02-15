@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { OpenAITaskAgent } from '../src/task-agent.js';
 
 const SAMPLE_SCHEMA = {
@@ -44,13 +44,13 @@ describe('OpenAITaskAgent', () => {
     expect(agent.model).toBe('gpt-4o-mini');
   });
 
-  it('should have task template metadata', () => {
+  it('should have task type metadata', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
     const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA);
 
-    expect(agent.metadata.template).toBe('task');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['task'].input);
-    expect(agent.metadata.output).toEqual(AGENT_TEMPLATES['task'].output);
+    expect(agent.metadata.type).toBe('task');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['task'].input);
+    expect(agent.metadata.output).toEqual(AGENT_TYPES['task'].output);
     expect(agent.metadata.capabilities.streaming).toBe(false);
   });
 });

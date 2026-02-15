@@ -173,12 +173,12 @@ describe('agent() Factory', () => {
 describe('Agent Templates', () => {
   it('template prompt: metadata and invoke', async () => {
     const echo = agent('echo', {
-      template: 'prompt',
+      type: 'prompt',
       description: 'Echo the prompt',
       handler: async ({ prompt }) => `You said: ${prompt}`,
     });
 
-    expect(echo.metadata.template).toBe('prompt');
+    expect(echo.metadata.type).toBe('prompt');
     expect(echo.metadata.input).toEqual({
       type: 'object',
       properties: {
@@ -194,7 +194,7 @@ describe('Agent Templates', () => {
 
   it('template chat: metadata and invoke', async () => {
     const chat = agent('chat', {
-      template: 'chat',
+      type: 'chat',
       description: 'Reply to messages',
       handler: async ({ messages }) => {
         const last = (messages as Array<{ role: string; content: string }>)[
@@ -204,7 +204,7 @@ describe('Agent Templates', () => {
       },
     });
 
-    expect(chat.metadata.template).toBe('chat');
+    expect(chat.metadata.type).toBe('chat');
     expect(chat.metadata.input?.type).toBe('object');
     expect(chat.metadata.input?.required).toEqual(['messages']);
     expect((chat.metadata.input?.properties as Record<string, unknown>)?.messages).toBeDefined();
@@ -220,12 +220,12 @@ describe('Agent Templates', () => {
 
   it('template task: metadata and invoke', async () => {
     const taskAgent = agent('summarizer', {
-      template: 'task',
+      type: 'task',
       description: 'Run a task',
       handler: async ({ task, text }) => `Task "${task}" on: ${(text as string) ?? '—'}`,
     });
 
-    expect(taskAgent.metadata.template).toBe('task');
+    expect(taskAgent.metadata.type).toBe('task');
     expect(taskAgent.metadata.input?.type).toBe('object');
     expect(taskAgent.metadata.input?.required).toEqual(['task']);
     expect((taskAgent.metadata.input?.properties as Record<string, unknown>)?.task).toBeDefined();
@@ -239,7 +239,7 @@ describe('Agent Templates', () => {
 
   it('explicit input overrides template', () => {
     const custom = agent('custom', {
-      template: 'prompt',
+      type: 'prompt',
       input: {
         type: 'object',
         properties: { q: { type: 'string' } },
@@ -248,7 +248,7 @@ describe('Agent Templates', () => {
       handler: async () => 'ok',
     });
 
-    expect(custom.metadata.template).toBe('prompt');
+    expect(custom.metadata.type).toBe('prompt');
     expect(custom.metadata.input?.required).toEqual(['q']);
   });
 
@@ -257,18 +257,18 @@ describe('Agent Templates', () => {
       handler: async ({ prompt }) => String(prompt),
     });
 
-    expect(def.metadata.template).toBe('prompt');
+    expect(def.metadata.type).toBe('prompt');
     expect(def.metadata.input?.required).toEqual(['prompt']);
   });
 
   it('template rag: metadata and invoke', async () => {
     const ragAgent = agent('rag', {
-      template: 'rag',
+      type: 'rag',
       description: 'Answer from documents',
       handler: async ({ query }) => `Answer for: ${query}`,
     });
 
-    expect(ragAgent.metadata.template).toBe('rag');
+    expect(ragAgent.metadata.type).toBe('rag');
     expect(ragAgent.metadata.input?.required).toEqual(['query']);
     expect((ragAgent.metadata.input?.properties as Record<string, unknown>)?.query).toBeDefined();
     expect(ragAgent.metadata.output).toEqual({ type: 'string' });
@@ -279,7 +279,7 @@ describe('Agent Templates', () => {
 
   it('template thread: metadata and invoke (output is messages)', async () => {
     const threadAgent = agent('thread-agent', {
-      template: 'thread',
+      type: 'thread',
       description: 'Message thread in, updated thread out',
       handler: async ({ messages }) => {
         const inputMessages = messages as Array<{ role: string; content: string | null }>;
@@ -293,7 +293,7 @@ describe('Agent Templates', () => {
       },
     });
 
-    expect(threadAgent.metadata.template).toBe('thread');
+    expect(threadAgent.metadata.type).toBe('thread');
     expect(threadAgent.metadata.input?.required).toEqual(['messages']);
     expect(
       (threadAgent.metadata.input?.properties as Record<string, unknown>)?.messages
@@ -314,7 +314,7 @@ describe('Agent Templates', () => {
 
   it('template workflow: metadata and invoke', async () => {
     const workflowAgent = agent('workflow-agent', {
-      template: 'workflow',
+      type: 'workflow',
       description: 'Multi-step workflow',
       handler: async ({ task, steps }) => {
         const inputSteps = (steps as Array<{ name: string }>) || [];
@@ -332,7 +332,7 @@ describe('Agent Templates', () => {
     });
 
     // Verify metadata
-    expect(workflowAgent.metadata.template).toBe('workflow');
+    expect(workflowAgent.metadata.type).toBe('workflow');
     const inputSchema = workflowAgent.metadata.input;
     expect(inputSchema?.required).toEqual(['task']);
     expect((inputSchema?.properties as Record<string, unknown>)?.task).toBeDefined();

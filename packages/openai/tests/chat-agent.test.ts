@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentInvokeRequest } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { OpenAIChatAgent } from '../src/chat-agent.js';
 
 describe('OpenAIChatAgent', () => {
@@ -32,12 +32,12 @@ describe('OpenAIChatAgent', () => {
     expect(agent.model).toBe('gpt-4o-mini');
   });
 
-  it('should have chat template metadata', () => {
+  it('should have chat type metadata', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
     const agent = new OpenAIChatAgent(mockClient as any);
 
-    expect(agent.metadata.template).toBe('chat');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
+    expect(agent.metadata.type).toBe('chat');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['chat'].input);
   });
 });
 

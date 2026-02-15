@@ -22,8 +22,8 @@ export type {
   RuntimeErrorResponse,
 } from './types.js';
 // Schema exports
-export type { AgentTemplate } from './schemas.js';
-export { AGENT_TEMPLATES } from './schemas.js';
+export type { AgentType } from './schemas.js';
+export { AGENT_TYPES } from './schemas.js';
 // Agent exports
 export { agent } from './agent.js';
 export type { AgentLike, AgentMetadata, AgentOptions } from './agent.js';

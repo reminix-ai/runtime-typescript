@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest, ToolLike } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { OpenAIThreadAgent } from '../src/thread-agent.js';
 
 function makeMockTool(
@@ -73,12 +73,12 @@ describe('OpenAIThreadAgent', () => {
     expect(agent.model).toBe('gpt-4o-mini');
   });
 
-  it('should have thread template metadata', () => {
+  it('should have thread type metadata', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
     const agent = new OpenAIThreadAgent(mockClient as any, [makeMockTool()]);
-    expect(agent.metadata.template).toBe('thread');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['thread'].input);
-    expect(agent.metadata.output).toEqual(AGENT_TEMPLATES['thread'].output);
+    expect(agent.metadata.type).toBe('thread');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['thread'].input);
+    expect(agent.metadata.output).toEqual(AGENT_TYPES['thread'].output);
     expect(agent.metadata.capabilities.streaming).toBe(false);
   });
 });

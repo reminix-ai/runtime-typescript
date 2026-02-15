@@ -5,7 +5,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   buildMessagesFromInput,
   messageContentToText,
   type AgentRequest,
@@ -55,10 +55,10 @@ export class AnthropicThreadAgent {
     return {
       description: 'anthropic thread agent',
       capabilities: { streaming: false },
-      input: AGENT_TEMPLATES['thread'].input,
-      output: AGENT_TEMPLATES['thread'].output,
+      input: AGENT_TYPES['thread'].input,
+      output: AGENT_TYPES['thread'].output,
       framework: 'anthropic',
-      template: 'thread',
+      type: 'thread',
     };
   }
 

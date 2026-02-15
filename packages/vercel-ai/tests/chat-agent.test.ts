@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { VercelAIChatAgent } from '../src/chat-agent.js';
 
 describe('VercelAIChatAgent', () => {
@@ -30,12 +30,12 @@ describe('VercelAIChatAgent', () => {
     expect(agent.name).toBe('vercel-ai-agent');
   });
 
-  it('should have chat template metadata', () => {
+  it('should have chat type metadata', () => {
     const mockModel = { modelId: 'gpt-4o' };
     const agent = new VercelAIChatAgent(mockModel as any);
 
-    expect(agent.metadata.template).toBe('chat');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
+    expect(agent.metadata.type).toBe('chat');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['chat'].input);
   });
 });
 

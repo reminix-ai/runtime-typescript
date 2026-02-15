@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest, ToolLike } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { VercelAIThreadAgent } from '../src/thread-agent.js';
 
 function makeMockTool(
@@ -49,12 +49,12 @@ describe('VercelAIThreadAgent', () => {
     expect(agent.name).toBe('vercel-ai-thread-agent');
   });
 
-  it('should have thread template metadata', () => {
+  it('should have thread type metadata', () => {
     const mockModel = { modelId: 'gpt-4o' };
     const agent = new VercelAIThreadAgent(mockModel as any, [makeMockTool()]);
-    expect(agent.metadata.template).toBe('thread');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['thread'].input);
-    expect(agent.metadata.output).toEqual(AGENT_TEMPLATES['thread'].output);
+    expect(agent.metadata.type).toBe('thread');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['thread'].input);
+    expect(agent.metadata.output).toEqual(AGENT_TYPES['thread'].output);
     expect(agent.metadata.capabilities.streaming).toBe(false);
   });
 });

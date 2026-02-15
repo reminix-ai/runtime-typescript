@@ -5,7 +5,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   type AgentRequest,
   type AgentResponse,
   type AgentMetadata,
@@ -48,10 +48,10 @@ export class AnthropicTaskAgent {
     return {
       description: 'anthropic task agent',
       capabilities: { streaming: false },
-      input: AGENT_TEMPLATES['task'].input,
-      output: AGENT_TEMPLATES['task'].output,
+      input: AGENT_TYPES['task'].input,
+      output: AGENT_TYPES['task'].output,
       framework: 'anthropic',
-      template: 'task',
+      type: 'task',
     };
   }
 

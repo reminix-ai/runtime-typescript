@@ -2,7 +2,7 @@
 
 The open source runtime for serving AI agents via REST APIs. Part of [Reminix](https://reminix.com) — the developer platform for AI agents.
 
-Core runtime package for serving AI agents and tools via REST APIs. Provides the `agent()` and `tool()` factory functions, agent templates (prompt, chat, task, rag, thread, workflow), and types `Message` and `ToolCall` for OpenAI-style conversations.
+Core runtime package for serving AI agents and tools via REST APIs. Provides the `agent()` and `tool()` factory functions, agent types (prompt, chat, task, rag, thread, workflow), and types `Message` and `ToolCall` for OpenAI-style conversations.
 
 Built on [Hono](https://hono.dev) for portability across Node.js, Deno, Bun, and edge runtimes.
 
@@ -123,7 +123,7 @@ curl -X POST http://localhost:8080/agents/calculator/invoke \
 
 **Chat agent:**
 
-Chat agents (template `chat` or `thread`) expect `messages` at the top level. Messages are OpenAI-style: `role` (`user` | `assistant` | `system` | `tool`), `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the `Message` and `ToolCall` types from `@reminix/runtime` in your handler. Chat returns a string; thread returns an array of messages.
+Chat agents (type `chat` or `thread`) expect `messages` at the top level. Messages are OpenAI-style: `role` (`user` | `assistant` | `system` | `tool`), `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the `Message` and `ToolCall` types from `@reminix/runtime` in your handler. Chat returns a string; thread returns an array of messages.
 
 ```bash
 curl -X POST http://localhost:8080/agents/assistant/invoke \
@@ -163,11 +163,11 @@ curl -X POST http://localhost:8080/tools/get_weather/call \
 
 Agents handle requests via the `/agents/{name}/invoke` endpoint.
 
-### Agent templates
+### Agent types
 
-You can use a **template** to get standard input/output schemas without defining them yourself. Pass `template` when creating an agent:
+You can use a **type** to get standard input/output schemas without defining them yourself. Pass `type` when creating an agent:
 
-| Template | Input | Output | Use case |
+| Type | Input | Output | Use case |
 |----------|--------|--------|----------|
 | `prompt` (default) | `{ prompt: string }` | `string` | Single prompt in, text out |
 | `chat` | `{ messages: Message[] }` | `string` | Multi-turn chat, final reply as string |
@@ -182,7 +182,7 @@ Messages are OpenAI-style: `role`, `content`, and optionally `tool_calls`, `tool
 import { agent, serve, type Message, type ToolCall } from '@reminix/runtime';
 
 const assistant = agent('assistant', {
-  template: 'chat',
+  type: 'chat',
   description: 'Helpful assistant',
   handler: async ({ messages }) => {
     const last = (messages as Message[]).slice(-1)[0];
@@ -195,7 +195,7 @@ serve({ agents: [assistant] });
 
 ### Task-Oriented Agent
 
-Use `agent()` for task-oriented agents that take structured input and return output (or omit `template` / use `template: 'prompt'` or `template: 'task'` for standard shapes):
+Use `agent()` for task-oriented agents that take structured input and return output (or omit `type` / use `type: 'prompt'` or `type: 'task'` for standard shapes):
 
 ```typescript
 import { agent, serve } from '@reminix/runtime';
@@ -367,15 +367,15 @@ const app = createApp({ agents: [myAgent], tools: [myTool] });
 
 ### `agent(name, options)`
 
-Factory function to create an agent. Use `template` for standard I/O shapes, or provide custom `input`/`output` schemas.
+Factory function to create an agent. Use `type` for standard I/O shapes, or provide custom `input`/`output` schemas.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | `string` | Unique identifier for the agent |
-| `options.template` | `'prompt' \| 'chat' \| 'task' \| 'rag' \| 'thread' \| 'workflow'` | Optional. Standard input/output schema (default: `prompt` when no custom input/output). |
+| `options.type` | `'prompt' \| 'chat' \| 'task' \| 'rag' \| 'thread' \| 'workflow'` | Optional. Standard input/output schema (default: `prompt` when no custom input/output). |
 | `options.description` | `string` | Human-readable description |
-| `options.input` | `object` | JSON Schema for input (ignored if `template` is set) |
-| `options.output` | `object` | Optional JSON Schema for output (ignored if `template` is set) |
+| `options.input` | `object` | JSON Schema for input (ignored if `type` is set) |
+| `options.output` | `object` | Optional JSON Schema for output (ignored if `type` is set) |
 | `options.handler` | `function` | Async function or async generator |
 
 ```typescript

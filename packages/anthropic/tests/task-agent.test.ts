@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { AnthropicTaskAgent } from '../src/task-agent.js';
 
 const SAMPLE_SCHEMA = {
@@ -44,13 +44,13 @@ describe('AnthropicTaskAgent', () => {
     expect(agent.model).toBe('claude-sonnet-4-20250514');
   });
 
-  it('should have task template metadata', () => {
+  it('should have task type metadata', () => {
     const mockClient = { messages: { create: vi.fn() } };
     const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA);
 
-    expect(agent.metadata.template).toBe('task');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['task'].input);
-    expect(agent.metadata.output).toEqual(AGENT_TEMPLATES['task'].output);
+    expect(agent.metadata.type).toBe('task');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['task'].input);
+    expect(agent.metadata.output).toEqual(AGENT_TYPES['task'].output);
     expect(agent.metadata.capabilities.streaming).toBe(false);
   });
 });

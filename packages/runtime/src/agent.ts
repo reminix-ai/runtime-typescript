@@ -4,15 +4,15 @@
 
 import type { AgentRequest, AgentResponse, JSONSchema, Capabilities } from './types.js';
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   DEFAULT_AGENT_INPUT,
   DEFAULT_AGENT_OUTPUT,
-  DEFAULT_AGENT_TEMPLATE,
+  DEFAULT_AGENT_TYPE,
 } from './schemas.js';
-import type { AgentTemplate } from './schemas.js';
+import type { AgentType } from './schemas.js';
 
-// Re-export AgentTemplate for convenience
-export type { AgentTemplate };
+// Re-export AgentType for convenience
+export type { AgentType };
 
 // === AgentLike Interface ===
 
@@ -24,8 +24,8 @@ export interface AgentMetadata {
   capabilities: Capabilities;
   input: JSONSchema;
   output?: JSONSchema;
-  /** Named template (prompt, chat, task, rag, thread, workflow) when agent uses a template. */
-  template?: AgentTemplate;
+  /** Named type (prompt, chat, task, rag, thread, workflow) when agent uses a type. */
+  type?: AgentType;
   [key: string]: unknown;
 }
 
@@ -51,16 +51,16 @@ export interface AgentOptions {
   /** Human-readable description of what the agent does */
   description?: string;
   /**
-   * Named template (prompt, chat, task, rag, thread, workflow). When set, input/output default to the template's schemas
+   * Named type (prompt, chat, task, rag, thread, workflow). When set, input/output default to the type's schemas
    * unless overridden by explicit input/output.
    */
-  template?: AgentTemplate;
+  type?: AgentType;
   /**
    * JSON Schema for input.
-   * Defaults to template schema if template is set, else { prompt: string }.
+   * Defaults to type schema if type is set, else { prompt: string }.
    */
   input?: JSONSchema;
-  /** JSON Schema for output. Defaults to template schema if set, else string. */
+  /** JSON Schema for output. Defaults to type schema if set, else string. */
   output?: JSONSchema;
   /**
    * Set to true if handler is an async generator for streaming.
@@ -124,26 +124,22 @@ export interface AgentOptions {
 export function agent(name: string, options: AgentOptions): AgentLike {
   const isStreaming = options.stream === true;
 
-  // Default template is 'prompt' when no template and no custom input/output
-  const effectiveTemplate: AgentTemplate | undefined =
-    options.template ??
-    (options.input === undefined && options.output === undefined
-      ? DEFAULT_AGENT_TEMPLATE
-      : undefined);
+  // Default type is 'prompt' when no type and no custom input/output
+  const effectiveType: AgentType | undefined =
+    options.type ??
+    (options.input === undefined && options.output === undefined ? DEFAULT_AGENT_TYPE : undefined);
 
   const inputSchema =
-    options.input ??
-    (effectiveTemplate ? AGENT_TEMPLATES[effectiveTemplate].input : DEFAULT_AGENT_INPUT);
+    options.input ?? (effectiveType ? AGENT_TYPES[effectiveType].input : DEFAULT_AGENT_INPUT);
   const outputSchema =
-    options.output ??
-    (effectiveTemplate ? AGENT_TEMPLATES[effectiveTemplate].output : DEFAULT_AGENT_OUTPUT);
+    options.output ?? (effectiveType ? AGENT_TYPES[effectiveType].output : DEFAULT_AGENT_OUTPUT);
 
   const metadata: AgentMetadata = {
     description: options.description,
     capabilities: { streaming: isStreaming },
     input: inputSchema,
     output: outputSchema,
-    ...(effectiveTemplate !== undefined && { template: effectiveTemplate }),
+    ...(effectiveType !== undefined && { type: effectiveType }),
   };
 
   if (isStreaming) {

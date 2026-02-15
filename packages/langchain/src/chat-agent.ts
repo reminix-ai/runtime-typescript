@@ -12,7 +12,7 @@ import {
 import type { Runnable } from '@langchain/core/runnables';
 
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
@@ -65,10 +65,10 @@ export class LangChainChatAgent {
     return {
       description: 'langchain chat agent',
       capabilities: { streaming: true },
-      input: AGENT_TEMPLATES['chat'].input,
-      output: AGENT_TEMPLATES['chat'].output,
+      input: AGENT_TYPES['chat'].input,
+      output: AGENT_TYPES['chat'].output,
       framework: 'langchain',
-      template: 'chat',
+      type: 'chat',
     };
   }
 

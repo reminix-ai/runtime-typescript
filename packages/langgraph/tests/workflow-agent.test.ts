@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { LangGraphWorkflowAgent } from '../src/workflow-agent.js';
 
 function createMockGraph(chunks: Record<string, unknown>[]) {
@@ -49,13 +49,13 @@ describe('LangGraphWorkflowAgent', () => {
     expect(agent.name).toBe('my-workflow');
   });
 
-  it('should have workflow template metadata', () => {
+  it('should have workflow type metadata', () => {
     const mockGraph = createMockGraph([]);
     const agent = new LangGraphWorkflowAgent(mockGraph as any);
 
-    expect(agent.metadata.template).toBe('workflow');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['workflow'].input);
-    expect(agent.metadata.output).toEqual(AGENT_TEMPLATES['workflow'].output);
+    expect(agent.metadata.type).toBe('workflow');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['workflow'].input);
+    expect(agent.metadata.output).toEqual(AGENT_TYPES['workflow'].output);
     expect(agent.metadata.framework).toBe('langgraph');
   });
 });

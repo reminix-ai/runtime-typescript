@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages';
 
 import type { AgentRequest } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { LangChainChatAgent } from '../src/chat-agent.js';
 
 describe('LangChainChatAgent', () => {
@@ -31,12 +31,12 @@ describe('LangChainChatAgent', () => {
     expect(agent.name).toBe('langchain-agent');
   });
 
-  it('should have chat template metadata', () => {
+  it('should have chat type metadata', () => {
     const mockRunnable = { invoke: vi.fn() };
     const agent = new LangChainChatAgent(mockRunnable as any);
 
-    expect(agent.metadata.template).toBe('chat');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
+    expect(agent.metadata.type).toBe('chat');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['chat'].input);
   });
 });
 

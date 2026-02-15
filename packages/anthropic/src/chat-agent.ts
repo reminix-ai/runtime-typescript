@@ -5,7 +5,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
@@ -50,10 +50,10 @@ export class AnthropicChatAgent {
     return {
       description: 'anthropic chat agent',
       capabilities: { streaming: true },
-      input: AGENT_TEMPLATES['chat'].input,
-      output: AGENT_TEMPLATES['chat'].output,
+      input: AGENT_TYPES['chat'].input,
+      output: AGENT_TYPES['chat'].output,
       framework: 'anthropic',
-      template: 'chat',
+      type: 'chat',
     };
   }
 

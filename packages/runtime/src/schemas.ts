@@ -1,16 +1,16 @@
 /**
- * Agent template schemas for Reminix Runtime.
+ * Agent type schemas for Reminix Runtime.
  *
- * Defines named templates with predefined input/output JSON schemas.
- * These templates standardize common agent patterns (prompt, chat, task, etc.)
+ * Defines named types with predefined input/output JSON schemas.
+ * These types standardize common agent patterns (prompt, chat, task, etc.)
  * so that clients and tooling can interoperate without inspecting individual schemas.
  */
 
 import type { JSONSchema } from './types.js';
 
-export type AgentTemplate = 'prompt' | 'chat' | 'task' | 'rag' | 'thread' | 'workflow';
+export type AgentType = 'prompt' | 'chat' | 'task' | 'rag' | 'thread' | 'workflow';
 
-export const DEFAULT_AGENT_TEMPLATE: AgentTemplate = 'prompt';
+export const DEFAULT_AGENT_TYPE: AgentType = 'prompt';
 
 /** JSON schema for a single tool call (OpenAI-style). */
 export const TOOL_CALL_SCHEMA: JSONSchema = {
@@ -122,7 +122,7 @@ export const MESSAGE_SCHEMA: JSONSchema = {
   },
 };
 
-export const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output: JSONSchema }> = {
+export const AGENT_TYPES: Record<AgentType, { input: JSONSchema; output: JSONSchema }> = {
   prompt: {
     input: {
       type: 'object',
@@ -303,6 +303,6 @@ export const AGENT_TEMPLATES: Record<AgentTemplate, { input: JSONSchema; output:
   },
 };
 
-/** Default input/output schemas (same as prompt template). */
-export const DEFAULT_AGENT_INPUT = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE].input;
-export const DEFAULT_AGENT_OUTPUT = AGENT_TEMPLATES[DEFAULT_AGENT_TEMPLATE].output;
+/** Default input/output schemas (same as prompt type). */
+export const DEFAULT_AGENT_INPUT = AGENT_TYPES[DEFAULT_AGENT_TYPE].input;
+export const DEFAULT_AGENT_OUTPUT = AGENT_TYPES[DEFAULT_AGENT_TYPE].output;

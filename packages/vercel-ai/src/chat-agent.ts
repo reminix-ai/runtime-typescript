@@ -8,7 +8,7 @@ import type { ToolLoopAgent } from 'ai';
 import { generateText, streamText, type LanguageModel, type ModelMessage } from 'ai';
 
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
@@ -58,10 +58,10 @@ export class VercelAIChatAgent {
     return {
       description: 'vercel-ai chat agent',
       capabilities: { streaming: true },
-      input: AGENT_TEMPLATES['chat'].input,
-      output: AGENT_TEMPLATES['chat'].output,
+      input: AGENT_TYPES['chat'].input,
+      output: AGENT_TYPES['chat'].output,
       framework: 'vercel-ai',
-      template: 'chat',
+      type: 'chat',
     };
   }
 

@@ -6,7 +6,7 @@ import { AIMessage, type BaseMessage } from '@langchain/core/messages';
 
 import { toLangChainMessage } from '@reminix/langchain';
 import {
-  AGENT_TEMPLATES,
+  AGENT_TYPES,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
@@ -40,10 +40,10 @@ export class LangGraphThreadAgent {
     return {
       description: 'langgraph thread agent',
       capabilities: { streaming: true },
-      input: AGENT_TEMPLATES['thread'].input,
+      input: AGENT_TYPES['thread'].input,
       output: { type: 'string' },
       framework: 'langgraph',
-      template: 'thread',
+      type: 'thread',
     };
   }
 

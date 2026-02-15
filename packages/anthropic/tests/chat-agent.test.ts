@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 import type { AgentRequest } from '@reminix/runtime';
-import { AGENT_TEMPLATES } from '@reminix/runtime';
+import { AGENT_TYPES } from '@reminix/runtime';
 import { AnthropicChatAgent } from '../src/chat-agent.js';
 
 describe('AnthropicChatAgent', () => {
@@ -35,12 +35,12 @@ describe('AnthropicChatAgent', () => {
     expect(agent.model).toBe('claude-sonnet-4-20250514');
   });
 
-  it('should have chat template metadata', () => {
+  it('should have chat type metadata', () => {
     const mockClient = { messages: { create: vi.fn() } };
     const agent = new AnthropicChatAgent(mockClient as any);
 
-    expect(agent.metadata.template).toBe('chat');
-    expect(agent.metadata.input).toEqual(AGENT_TEMPLATES['chat'].input);
+    expect(agent.metadata.type).toBe('chat');
+    expect(agent.metadata.input).toEqual(AGENT_TYPES['chat'].input);
   });
 });
 
