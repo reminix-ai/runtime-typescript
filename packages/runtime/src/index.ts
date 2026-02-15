@@ -12,29 +12,29 @@ export type {
   InputAudioContentPart,
   FileContentPart,
   RefusalContentPart,
-  InvokeRequest,
-  InvokeResponse,
-  AgentInvokeRequest,
-  AgentInvokeResponse,
-  ToolCallRequest,
-  ToolCallResponse,
+  AgentRequest,
+  AgentResponse,
+  ToolRequest,
+  ToolResponse,
   JSONSchema,
   Capabilities,
   RuntimeError,
   RuntimeErrorResponse,
 } from './types.js';
+// Schema exports
+export type { AgentTemplate } from './schemas.js';
+export {
+  AGENT_TEMPLATES,
+  DEFAULT_AGENT_TEMPLATE,
+  DEFAULT_AGENT_INPUT,
+  DEFAULT_AGENT_OUTPUT,
+  TOOL_CALL_SCHEMA,
+  CONTENT_PART_SCHEMA,
+  MESSAGE_SCHEMA,
+} from './schemas.js';
 // Agent exports
-export { AgentBase, Agent, agent } from './agent.js';
-export type {
-  AgentMetadata,
-  AgentTemplate,
-  InvokeHandler,
-  InvokeStreamHandler,
-  FetchHandler,
-  AgentOptions,
-} from './agent.js';
-// Adapter exports
-export { AgentAdapter } from './agent-adapter.js';
+export { agent } from './agent.js';
+export type { AgentLike, AgentMetadata, AgentOptions } from './agent.js';
 // Tool exports
-export { ToolBase, Tool, tool } from './tool.js';
-export type { ToolMetadata, ToolOptions, ToolHandler } from './tool.js';
+export { tool } from './tool.js';
+export type { ToolLike, ToolMetadata, ToolOptions, ToolHandler } from './tool.js';

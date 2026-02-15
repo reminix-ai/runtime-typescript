@@ -2,22 +2,22 @@
  * Reminix Runtime Tool definitions
  */
 
-import type { ToolCallRequest, ToolCallResponse, JSONSchema, Capabilities } from './types.js';
+import type { ToolRequest, ToolResponse, JSONSchema } from './types.js';
 
 /**
  * Default output schema for tools.
- * Response: { output: '...' }
  */
 const DEFAULT_TOOL_OUTPUT: JSONSchema = {
   type: 'string',
 };
 
+// === ToolLike Interface ===
+
 /** Metadata for a tool */
 export interface ToolMetadata {
   description: string;
-  capabilities?: Capabilities;
   input: JSONSchema;
-  output?: JSONSchema;
+  output: JSONSchema;
 }
 
 /** Handler function type */
@@ -27,38 +27,18 @@ export type ToolHandler = (
 ) => Promise<unknown> | unknown;
 
 /**
- * Abstract base class for all tools.
+ * Interface defining what the server accepts as a tool.
+ *
+ * Both the tool() factory and adapter wrapTool() produce objects
+ * conforming to this interface.
  */
-export abstract class ToolBase {
-  /** Unique tool identifier */
-  abstract get name(): string;
-
-  /** Human-readable description */
-  abstract get description(): string;
-
-  /** JSON Schema for input */
-  abstract get input(): JSONSchema;
-
-  /** Optional JSON Schema for output */
-  get output(): JSONSchema | undefined {
-    return undefined;
-  }
-
-  /** Metadata for runtime discovery */
-  get metadata(): ToolMetadata {
-    const meta: ToolMetadata = {
-      description: this.description,
-      input: this.input,
-    };
-    if (this.output) {
-      meta.output = this.output;
-    }
-    return meta;
-  }
-
-  /** Call the tool with the given request */
-  abstract call(request: ToolCallRequest): Promise<ToolCallResponse>;
+export interface ToolLike {
+  readonly name: string;
+  readonly metadata: ToolMetadata;
+  call(request: ToolRequest): Promise<ToolResponse>;
 }
+
+// === Tool Options ===
 
 /** Options for creating a tool */
 export interface ToolOptions {
@@ -72,52 +52,7 @@ export interface ToolOptions {
   handler: ToolHandler;
 }
 
-/**
- * A tool created using the tool() factory function.
- */
-export class Tool extends ToolBase {
-  private _name: string;
-  private _description: string;
-  private _input: JSONSchema;
-  private _output?: JSONSchema;
-  private _handler: ToolHandler;
-
-  constructor(name: string, options: ToolOptions) {
-    super();
-    this._name = name;
-    this._description = options.description;
-    this._input = options.input;
-    this._output = options.output;
-    this._handler = options.handler;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get description(): string {
-    return this._description;
-  }
-
-  get input(): JSONSchema {
-    return this._input;
-  }
-
-  get output(): JSONSchema | undefined {
-    return this._output ?? DEFAULT_TOOL_OUTPUT;
-  }
-
-  /**
-   * Call the tool by invoking the handler function.
-   *
-   * Exceptions are not caught here - they propagate to the server
-   * which returns appropriate HTTP error codes.
-   */
-  async call(request: ToolCallRequest): Promise<ToolCallResponse> {
-    const result = await this._handler(request.input, request.context);
-    return { output: result };
-  }
-}
+// === tool() factory ===
 
 /**
  * Factory function to create a tool.
@@ -150,6 +85,19 @@ export class Tool extends ToolBase {
  * });
  * ```
  */
-export function tool(name: string, options: ToolOptions): Tool {
-  return new Tool(name, options);
+export function tool(name: string, options: ToolOptions): ToolLike {
+  const metadata: ToolMetadata = {
+    description: options.description,
+    input: options.input,
+    output: options.output ?? DEFAULT_TOOL_OUTPUT,
+  };
+
+  return {
+    name,
+    metadata,
+    async call(request: ToolRequest): Promise<ToolResponse> {
+      const result = await options.handler(request.input, request.context);
+      return { output: result };
+    },
+  };
 }

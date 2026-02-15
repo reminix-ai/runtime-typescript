@@ -5,9 +5,9 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
-import type { AgentBase } from './agent.js';
-import type { ToolBase } from './tool.js';
-import type { InvokeRequest, RuntimeErrorResponse } from './types.js';
+import type { AgentLike } from './agent.js';
+import type { ToolLike } from './tool.js';
+import type { AgentRequest, ToolRequest, RuntimeErrorResponse } from './types.js';
 import { VERSION } from './version.js';
 
 /**
@@ -46,8 +46,8 @@ export interface ServeOptions {
 }
 
 export interface CreateAppOptions {
-  agents?: AgentBase[];
-  tools?: ToolBase[];
+  agents?: AgentLike[];
+  tools?: ToolLike[];
 }
 
 /**
@@ -56,6 +56,7 @@ export interface CreateAppOptions {
  * @param options - Options containing agents and/or tools.
  * @returns A Hono application instance.
  * @throws Error if no agents or tools are provided.
+ * @throws Error if duplicate agent or tool names are found.
  */
 export function createApp(options: CreateAppOptions): Hono {
   const agents = options.agents ?? [];
@@ -65,14 +66,20 @@ export function createApp(options: CreateAppOptions): Hono {
     throw new Error('At least one agent or tool is required');
   }
 
-  // Build lookup maps by name
-  const agentMap = new Map<string, AgentBase>();
+  // Build lookup maps by name (with duplicate detection)
+  const agentMap = new Map<string, AgentLike>();
   for (const agent of agents) {
+    if (agentMap.has(agent.name)) {
+      throw new Error(`Duplicate agent name: '${agent.name}'`);
+    }
     agentMap.set(agent.name, agent);
   }
 
-  const toolMap = new Map<string, ToolBase>();
+  const toolMap = new Map<string, ToolLike>();
   for (const tool of tools) {
+    if (toolMap.has(tool.name)) {
+      throw new Error(`Duplicate tool name: '${tool.name}'`);
+    }
     toolMap.set(tool.name, tool);
   }
 
@@ -115,9 +122,9 @@ export function createApp(options: CreateAppOptions): Hono {
       );
     }
 
-    const body = await c.req.json<InvokeRequest>();
+    const body = await c.req.json<AgentRequest>();
 
-    const request: InvokeRequest = {
+    const request: AgentRequest = {
       input: body.input ?? {},
       stream: body.stream === true,
       context: body.context,
@@ -125,9 +132,19 @@ export function createApp(options: CreateAppOptions): Hono {
 
     // Handle streaming
     if (request.stream) {
+      if (!agent.invokeStream) {
+        return c.json(
+          createErrorResponse(
+            new Error(`Streaming not supported for agent '${agentName}'`),
+            'NotImplementedError'
+          ),
+          501
+        );
+      }
+
       return streamSSE(c, async (stream) => {
         try {
-          for await (const chunk of agent.invokeStream(request)) {
+          for await (const chunk of agent.invokeStream!(request)) {
             await stream.writeSSE({ data: JSON.stringify({ delta: chunk }) });
           }
           await stream.writeSSE({ data: JSON.stringify({ done: true }) });
@@ -176,9 +193,9 @@ export function createApp(options: CreateAppOptions): Hono {
       );
     }
 
-    const body = await c.req.json<InvokeRequest>();
+    const body = await c.req.json<ToolRequest>();
 
-    const request: InvokeRequest = {
+    const request: ToolRequest = {
       input: body.input ?? {},
       context: body.context,
     };

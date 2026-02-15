@@ -60,34 +60,33 @@ export interface Message {
   name?: string;
 }
 
-// === Request Types ===
+// === Agent Request/Response ===
 
-/** Base request type for invoke/call operations */
-export interface InvokeRequest {
+/** Request type for agent invoke operations. */
+export interface AgentRequest {
   input: Record<string, unknown>;
   stream?: boolean;
   context?: Record<string, unknown>;
 }
 
-/** Request type for agent invoke operations */
-export type AgentInvokeRequest = InvokeRequest;
-
-/** Request type for tool call operations */
-export type ToolCallRequest = InvokeRequest;
-
-// === Response Types ===
-
-/** Base response type for invoke/call operations */
-export interface InvokeResponse {
+/** Response type for agent invoke operations. */
+export interface AgentResponse {
   output: unknown;
   metadata?: Record<string, unknown>;
 }
 
-/** Response type for agent invoke operations */
-export type AgentInvokeResponse = InvokeResponse;
+// === Tool Request/Response ===
 
-/** Response type for tool call operations */
-export type ToolCallResponse = InvokeResponse;
+/** Request type for tool call operations. */
+export interface ToolRequest {
+  input: Record<string, unknown>;
+  context?: Record<string, unknown>;
+}
+
+/** Response type for tool call operations. */
+export interface ToolResponse {
+  output: unknown;
+}
 
 // === Schema Types ===
 
@@ -106,9 +105,6 @@ export interface JSONSchema {
 
 export interface Capabilities {
   streaming?: boolean;
-  // batch?: boolean;    // Process multiple inputs in one call
-  // async?: boolean;    // Fire-and-forget with webhook callback
-  // retry?: boolean;    // Built-in retry with backoff
   [key: string]: unknown;
 }
 
