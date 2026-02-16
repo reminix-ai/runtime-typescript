@@ -1,0 +1,23 @@
+{
+  "name": "example-google-basic",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Basic Google Gemini agent example",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@reminix/runtime": "workspace:*",
+    "@reminix/google": "workspace:*",
+    "@google/genai": "^1.0.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}

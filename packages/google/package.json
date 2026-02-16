@@ -1,0 +1,32 @@
+{
+  "name": "@reminix/google",
+  "version": "0.0.18",
+  "description": "Reminix agents for Google Gemini - serve AI agents as REST APIs",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@reminix/runtime": "workspace:^"
+  },
+  "peerDependencies": {
+    "@google/genai": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@google/genai": "^1.0.0",
+    "@types/node": "^25.0.9",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.17"
+  }
+}
