@@ -122,7 +122,7 @@ export class VercelAIChatAgent extends Agent {
       const agentInput = prompt ? { prompt, options: {} } : { messages: messages!, options: {} };
       const result = await agent.stream(agentInput);
       for await (const chunk of result.textStream) {
-        yield JSON.stringify({ chunk });
+        yield chunk;
       }
     } else {
       const model = this.modelOrAgent as LanguageModel;
@@ -132,7 +132,7 @@ export class VercelAIChatAgent extends Agent {
         ...(this.instructions && { system: this.instructions }),
       });
       for await (const chunk of result.textStream) {
-        yield JSON.stringify({ chunk });
+        yield chunk;
       }
     }
   }

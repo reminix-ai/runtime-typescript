@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 
-import type { AgentInvokeRequest } from '@reminix/runtime';
+import type { AgentRequest } from '@reminix/runtime';
 import { AGENT_TYPES } from '@reminix/runtime';
 import { OpenAIChatAgent } from '../src/chat-agent.js';
 
@@ -54,7 +54,7 @@ describe('OpenAIChatAgent.invoke', () => {
     };
 
     const agent = new OpenAIChatAgent(mockClient as any);
-    const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
+    const request: AgentRequest = { input: { prompt: 'Hi' } };
 
     await agent.invoke(request);
 
@@ -73,7 +73,7 @@ describe('OpenAIChatAgent.invoke', () => {
     };
 
     const agent = new OpenAIChatAgent(mockClient as any);
-    const request: AgentInvokeRequest = { input: { prompt: 'Hi' } };
+    const request: AgentRequest = { input: { prompt: 'Hi' } };
 
     const response = await agent.invoke(request);
 
@@ -92,7 +92,7 @@ describe('OpenAIChatAgent.invoke', () => {
     };
 
     const agent = new OpenAIChatAgent(mockClient as any);
-    const request: AgentInvokeRequest = {
+    const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hello' }] },
     };
 
@@ -115,7 +115,7 @@ describe('OpenAIChatAgent.invoke', () => {
     };
 
     const agent = new OpenAIChatAgent(mockClient as any, { model: 'gpt-4o' });
-    const request: AgentInvokeRequest = {
+    const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
 

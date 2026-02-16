@@ -118,7 +118,7 @@ export class LangChainChatAgent extends Agent {
       } else {
         content = String(chunk);
       }
-      yield JSON.stringify({ chunk: content });
+      yield content;
     }
   }
 }

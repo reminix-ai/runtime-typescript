@@ -39,7 +39,7 @@ export class LangGraphThreadAgent extends Agent {
       description: options.description ?? 'langgraph thread agent',
       streaming: true,
       inputSchema: AGENT_TYPES['thread'].input,
-      outputSchema: { type: 'string' },
+      outputSchema: AGENT_TYPES['thread'].output,
       type: 'thread',
       framework: 'langgraph',
       instructions: options.instructions,
@@ -124,16 +124,16 @@ export class LangGraphThreadAgent extends Agent {
               if (msg instanceof AIMessage) {
                 const content = typeof msg.content === 'string' ? msg.content : String(msg.content);
                 if (content) {
-                  yield JSON.stringify({ chunk: content });
+                  yield content;
                 }
               }
             }
           } else {
-            yield JSON.stringify({ chunk: JSON.stringify(nodeOutput) });
+            yield JSON.stringify(nodeOutput);
           }
         }
       } else {
-        yield JSON.stringify({ chunk: String(chunk) });
+        yield String(chunk);
       }
     }
   }

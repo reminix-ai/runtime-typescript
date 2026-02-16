@@ -121,7 +121,7 @@ export class AnthropicChatAgent extends Agent {
 
     for await (const event of stream) {
       if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        yield JSON.stringify({ chunk: event.delta.text });
+        yield event.delta.text;
       }
     }
   }
