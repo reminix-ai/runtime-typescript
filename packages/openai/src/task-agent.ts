@@ -4,12 +4,7 @@
 
 import type OpenAI from 'openai';
 
-import {
-  AGENT_TYPES,
-  type AgentRequest,
-  type AgentResponse,
-  type AgentMetadata,
-} from '@reminix/runtime';
+import { Agent, AGENT_TYPES, type AgentRequest, type AgentResponse } from '@reminix/runtime';
 
 export interface OpenAITaskAgentOptions {
   name?: string;
@@ -20,55 +15,34 @@ export interface OpenAITaskAgentOptions {
   metadata?: Record<string, unknown>;
 }
 
-export class OpenAITaskAgent {
+export class OpenAITaskAgent extends Agent {
   private client: OpenAI;
-  private _outputSchema: Record<string, unknown>;
-  private _name: string;
+  private _responseSchema: Record<string, unknown>;
   private _model: string;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(
     client: OpenAI,
     outputSchema: Record<string, unknown>,
     options: OpenAITaskAgentOptions = {}
   ) {
+    super(options.name ?? 'openai-task-agent', {
+      description: options.description ?? 'openai task agent',
+      streaming: false,
+      inputSchema: AGENT_TYPES['task'].input,
+      outputSchema: AGENT_TYPES['task'].output,
+      type: 'task',
+      framework: 'openai',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
     this.client = client;
-    this._outputSchema = outputSchema;
-    this._name = options.name ?? 'openai-task-agent';
+    this._responseSchema = outputSchema;
     this._model = options.model ?? 'gpt-4o-mini';
-    this._description = options.description ?? 'openai task agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
   }
 
   get model(): string {
     return this._model;
-  }
-
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: false },
-      input: AGENT_TYPES['task'].input,
-      output: AGENT_TYPES['task'].output,
-      framework: 'openai',
-      type: 'task',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
   }
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {
@@ -87,8 +61,8 @@ export class OpenAITaskAgent {
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       { role: 'user' as const, content: prompt },
     ];
-    if (this._instructions) {
-      messages.unshift({ role: 'system' as const, content: this._instructions });
+    if (this.instructions) {
+      messages.unshift({ role: 'system' as const, content: this.instructions });
     }
 
     const response = await this.client.chat.completions.create({
@@ -98,7 +72,7 @@ export class OpenAITaskAgent {
         type: 'json_schema',
         json_schema: {
           name: 'task_result',
-          schema: this._outputSchema,
+          schema: this._responseSchema,
         },
       } as OpenAI.Chat.ChatCompletionCreateParams['response_format'],
     });

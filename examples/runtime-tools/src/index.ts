@@ -13,7 +13,7 @@
  *     curl http://localhost:8080/health
  *
  *     # Discovery (shows available tools)
- *     curl http://localhost:8080/info
+ *     curl http://localhost:8080/manifest
  *
  *     # Execute the weather tool
  *     curl -X POST http://localhost:8080/tools/get_weather/call \
@@ -184,7 +184,7 @@ console.log('Server running on http://localhost:8080');
 console.log();
 console.log('Endpoints:');
 console.log('  GET  /health');
-console.log('  GET  /info');
+console.log('  GET  /manifest');
 console.log('  POST /tools/get_weather/call');
 console.log('  POST /tools/calculate/call');
 console.log('  POST /tools/string_utils/call');

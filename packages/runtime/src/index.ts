@@ -25,8 +25,8 @@ export type {
 export type { AgentType } from './schemas.js';
 export { AGENT_TYPES } from './schemas.js';
 // Agent exports
-export { agent } from './agent.js';
-export type { AgentLike, AgentMetadata, AgentOptions } from './agent.js';
+export { Agent, agent } from './agent.js';
+export type { AgentMetadata, AgentOptions } from './agent.js';
 // Tool exports
-export { tool } from './tool.js';
-export type { ToolLike, ToolMetadata, ToolOptions, ToolHandler } from './tool.js';
+export { Tool, tool } from './tool.js';
+export type { ToolMetadata, ToolOptions, ToolHandler } from './tool.js';

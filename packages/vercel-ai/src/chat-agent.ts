@@ -8,12 +8,12 @@ import type { ToolLoopAgent } from 'ai';
 import { generateText, streamText, type LanguageModel, type ModelMessage } from 'ai';
 
 import {
+  Agent,
   AGENT_TYPES,
   messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
-  type AgentMetadata,
   type Message,
 } from '@reminix/runtime';
 
@@ -37,14 +37,9 @@ function isToolLoopAgent(input: unknown): input is AnyToolLoopAgent {
   );
 }
 
-export class VercelAIChatAgent {
+export class VercelAIChatAgent extends Agent {
   private modelOrAgent: LanguageModel | AnyToolLoopAgent;
   private isAgent: boolean;
-  private _name: string;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
   protected _generateText = generateText;
   protected _streamText = streamText;
@@ -53,35 +48,19 @@ export class VercelAIChatAgent {
     modelOrAgent: LanguageModel | AnyToolLoopAgent,
     options: VercelAIChatAgentOptions = {}
   ) {
+    super(options.name ?? 'vercel-ai-agent', {
+      description: options.description ?? 'vercel-ai chat agent',
+      streaming: true,
+      inputSchema: AGENT_TYPES['chat'].input,
+      outputSchema: AGENT_TYPES['chat'].output,
+      type: 'chat',
+      framework: 'vercel-ai',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
     this.modelOrAgent = modelOrAgent;
     this.isAgent = isToolLoopAgent(modelOrAgent);
-    this._name = options.name ?? 'vercel-ai-agent';
-    this._description = options.description ?? 'vercel-ai chat agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: true },
-      input: AGENT_TYPES['chat'].input,
-      output: AGENT_TYPES['chat'].output,
-      framework: 'vercel-ai',
-      type: 'chat',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
   }
 
   private toModelMessages(messages: Message[]): ModelMessage[] {
@@ -127,7 +106,7 @@ export class VercelAIChatAgent {
       const result = await this._generateText({
         model,
         ...(prompt ? { prompt } : { messages: messages! }),
-        ...(this._instructions && { system: this._instructions }),
+        ...(this.instructions && { system: this.instructions }),
       });
       output = result.text;
     }
@@ -150,7 +129,7 @@ export class VercelAIChatAgent {
       const result = this._streamText({
         model,
         ...(prompt ? { prompt } : { messages: messages! }),
-        ...(this._instructions && { system: this._instructions }),
+        ...(this.instructions && { system: this.instructions }),
       });
       for await (const chunk of result.textStream) {
         yield JSON.stringify({ chunk });

@@ -11,13 +11,15 @@ const DEFAULT_TOOL_OUTPUT: JSONSchema = {
   type: 'string',
 };
 
-// === ToolLike Interface ===
+// === ToolMetadata ===
 
 /** Metadata for a tool */
 export interface ToolMetadata {
   description: string;
   input: JSONSchema;
   output: JSONSchema;
+  tags?: string[];
+  [key: string]: unknown;
 }
 
 /** Handler function type */
@@ -26,16 +28,59 @@ export type ToolHandler = (
   context?: Record<string, unknown>
 ) => Promise<unknown> | unknown;
 
+// === Tool Base Class ===
+
 /**
- * Interface defining what the server accepts as a tool.
+ * Abstract base class for all tools.
  *
- * Both the tool() factory and framework agents produce objects
- * conforming to this interface.
+ * The tool() factory creates a private _FunctionTool subclass internally.
  */
-export interface ToolLike {
-  readonly name: string;
-  readonly metadata: ToolMetadata;
-  call(request: ToolRequest): Promise<ToolResponse>;
+export abstract class Tool {
+  private _name: string;
+  private _description: string;
+  private _inputSchema: JSONSchema;
+  private _outputSchema: JSONSchema;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
+
+  constructor(
+    name: string,
+    options: {
+      description?: string;
+      inputSchema?: JSONSchema;
+      outputSchema?: JSONSchema;
+      tags?: string[];
+      metadata?: Record<string, unknown>;
+    } = {}
+  ) {
+    this._name = name;
+    this._description = options.description ?? '';
+    this._inputSchema = options.inputSchema ?? { type: 'object', properties: {} };
+    this._outputSchema = options.outputSchema ?? DEFAULT_TOOL_OUTPUT;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  get metadata(): ToolMetadata {
+    const result: ToolMetadata = {
+      description: this._description,
+      input: this._inputSchema,
+      output: this._outputSchema,
+    };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
+  }
+
+  abstract call(request: ToolRequest): Promise<ToolResponse>;
 }
 
 // === Tool Options ===
@@ -48,6 +93,10 @@ export interface ToolOptions {
   input: JSONSchema;
   /** Optional JSON Schema for output (defaults to string) */
   output?: JSONSchema;
+  /** Optional list of tags for categorization */
+  tags?: string[];
+  /** Optional extra metadata */
+  metadata?: Record<string, unknown>;
   /** Handler function to execute when the tool is called */
   handler: ToolHandler;
 }
@@ -85,19 +134,45 @@ export interface ToolOptions {
  * });
  * ```
  */
-export function tool(name: string, options: ToolOptions): ToolLike {
-  const metadata: ToolMetadata = {
+export function tool(name: string, options: ToolOptions): Tool {
+  return new _FunctionTool(name, {
     description: options.description,
-    input: options.input,
-    output: options.output ?? DEFAULT_TOOL_OUTPUT,
-  };
+    inputSchema: options.input,
+    outputSchema: options.output,
+    tags: options.tags,
+    metadata: options.metadata,
+    handler: options.handler,
+  });
+}
 
-  return {
-    name,
-    metadata,
-    async call(request: ToolRequest): Promise<ToolResponse> {
-      const result = await options.handler(request.input, request.context);
-      return { output: result };
-    },
-  };
+// === _FunctionTool (private) ===
+
+class _FunctionTool extends Tool {
+  private _handler: ToolHandler;
+
+  constructor(
+    name: string,
+    options: {
+      description: string;
+      inputSchema: JSONSchema;
+      outputSchema?: JSONSchema;
+      tags?: string[];
+      metadata?: Record<string, unknown>;
+      handler: ToolHandler;
+    }
+  ) {
+    super(name, {
+      description: options.description,
+      inputSchema: options.inputSchema,
+      outputSchema: options.outputSchema,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
+    this._handler = options.handler;
+  }
+
+  async call(request: ToolRequest): Promise<ToolResponse> {
+    const result = await this._handler(request.input, request.context);
+    return { output: result };
+  }
 }

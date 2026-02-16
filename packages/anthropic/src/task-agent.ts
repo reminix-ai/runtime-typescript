@@ -4,12 +4,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk';
 
-import {
-  AGENT_TYPES,
-  type AgentRequest,
-  type AgentResponse,
-  type AgentMetadata,
-} from '@reminix/runtime';
+import { Agent, AGENT_TYPES, type AgentRequest, type AgentResponse } from '@reminix/runtime';
 
 export interface AnthropicTaskAgentOptions {
   name?: string;
@@ -21,57 +16,36 @@ export interface AnthropicTaskAgentOptions {
   metadata?: Record<string, unknown>;
 }
 
-export class AnthropicTaskAgent {
+export class AnthropicTaskAgent extends Agent {
   private client: Anthropic;
-  private _outputSchema: Record<string, unknown>;
-  private _name: string;
+  private _responseSchema: Record<string, unknown>;
   private _model: string;
   private _maxTokens: number;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(
     client: Anthropic,
     outputSchema: Record<string, unknown>,
     options: AnthropicTaskAgentOptions = {}
   ) {
+    super(options.name ?? 'anthropic-task-agent', {
+      description: options.description ?? 'anthropic task agent',
+      streaming: false,
+      inputSchema: AGENT_TYPES['task'].input,
+      outputSchema: AGENT_TYPES['task'].output,
+      type: 'task',
+      framework: 'anthropic',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
     this.client = client;
-    this._outputSchema = outputSchema;
-    this._name = options.name ?? 'anthropic-task-agent';
+    this._responseSchema = outputSchema;
     this._model = options.model ?? 'claude-sonnet-4-20250514';
     this._maxTokens = options.maxTokens ?? 4096;
-    this._description = options.description ?? 'anthropic task agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
   }
 
   get model(): string {
     return this._model;
-  }
-
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: false },
-      input: AGENT_TYPES['task'].input,
-      output: AGENT_TYPES['task'].output,
-      framework: 'anthropic',
-      type: 'task',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
   }
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {
@@ -91,12 +65,12 @@ export class AnthropicTaskAgent {
       model: this._model,
       max_tokens: this._maxTokens,
       messages: [{ role: 'user', content: prompt }],
-      ...(this._instructions && { system: this._instructions }),
+      ...(this.instructions && { system: this.instructions }),
       tools: [
         {
           name: 'task_result',
           description: 'Return the structured result of the task',
-          input_schema: this._outputSchema as Anthropic.Tool['input_schema'],
+          input_schema: this._responseSchema as Anthropic.Tool['input_schema'],
         },
       ],
       tool_choice: { type: 'tool', name: 'task_result' },

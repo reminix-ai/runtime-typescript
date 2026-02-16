@@ -5,8 +5,8 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
-import type { AgentLike } from './agent.js';
-import type { ToolLike } from './tool.js';
+import type { Agent } from './agent.js';
+import type { Tool } from './tool.js';
 import type { AgentRequest, ToolRequest, RuntimeErrorResponse } from './types.js';
 import { VERSION } from './version.js';
 
@@ -46,8 +46,8 @@ export interface ServeOptions {
 }
 
 export interface CreateAppOptions {
-  agents?: AgentLike[];
-  tools?: ToolLike[];
+  agents?: Agent[];
+  tools?: Tool[];
 }
 
 /**
@@ -67,7 +67,7 @@ export function createApp(options: CreateAppOptions): Hono {
   }
 
   // Build lookup maps by name (with duplicate detection)
-  const agentMap = new Map<string, AgentLike>();
+  const agentMap = new Map<string, Agent>();
   for (const agent of agents) {
     if (agentMap.has(agent.name)) {
       throw new Error(`Duplicate agent name: '${agent.name}'`);
@@ -75,7 +75,7 @@ export function createApp(options: CreateAppOptions): Hono {
     agentMap.set(agent.name, agent);
   }
 
-  const toolMap = new Map<string, ToolLike>();
+  const toolMap = new Map<string, Tool>();
   for (const tool of tools) {
     if (toolMap.has(tool.name)) {
       throw new Error(`Duplicate tool name: '${tool.name}'`);
@@ -91,7 +91,7 @@ export function createApp(options: CreateAppOptions): Hono {
   });
 
   // Runtime discovery endpoint
-  app.get('/info', (c) => {
+  app.get('/manifest', (c) => {
     return c.json({
       runtime: {
         name: 'reminix-runtime',

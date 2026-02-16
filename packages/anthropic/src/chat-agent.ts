@@ -5,12 +5,12 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
 import {
+  Agent,
   AGENT_TYPES,
   messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
-  type AgentMetadata,
   type Message,
 } from '@reminix/runtime';
 
@@ -29,51 +29,30 @@ interface AnthropicMessage {
   content: string;
 }
 
-export class AnthropicChatAgent {
+export class AnthropicChatAgent extends Agent {
   private client: Anthropic;
-  private _name: string;
   private _model: string;
   private _maxTokens: number;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(client: Anthropic, options: AnthropicChatAgentOptions = {}) {
+    super(options.name ?? 'anthropic-agent', {
+      description: options.description ?? 'anthropic chat agent',
+      streaming: true,
+      inputSchema: AGENT_TYPES['chat'].input,
+      outputSchema: AGENT_TYPES['chat'].output,
+      type: 'chat',
+      framework: 'anthropic',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
     this.client = client;
-    this._name = options.name ?? 'anthropic-agent';
     this._model = options.model ?? 'claude-sonnet-4-20250514';
     this._maxTokens = options.maxTokens ?? 4096;
-    this._description = options.description ?? 'anthropic chat agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
   }
 
   get model(): string {
     return this._model;
-  }
-
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: true },
-      input: AGENT_TYPES['chat'].input,
-      output: AGENT_TYPES['chat'].output,
-      framework: 'anthropic',
-      type: 'chat',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
   }
 
   private extractSystemAndMessages(messages: Message[]): {
@@ -107,10 +86,10 @@ export class AnthropicChatAgent {
   async invoke(request: AgentRequest): Promise<AgentResponse> {
     const messages = buildMessagesFromInput(request);
     const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
-    const effectiveSystem = this._instructions
+    const effectiveSystem = this.instructions
       ? system
-        ? this._instructions + '\n\n' + system
-        : this._instructions
+        ? this.instructions + '\n\n' + system
+        : this.instructions
       : system;
 
     const response = await this.client.messages.create({
@@ -127,10 +106,10 @@ export class AnthropicChatAgent {
   async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
     const messages = buildMessagesFromInput(request);
     const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
-    const effectiveSystem = this._instructions
+    const effectiveSystem = this.instructions
       ? system
-        ? this._instructions + '\n\n' + system
-        : this._instructions
+        ? this.instructions + '\n\n' + system
+        : this.instructions
       : system;
 
     const stream = this.client.messages.stream({

@@ -5,15 +5,15 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
 import {
+  Agent,
   AGENT_TYPES,
+  type Tool,
   buildMessagesFromInput,
   messageContentToText,
   type AgentRequest,
   type AgentResponse,
-  type AgentMetadata,
   type Message,
   type ToolCall,
-  type ToolLike,
   type ToolRequest,
 } from '@reminix/runtime';
 
@@ -28,60 +28,39 @@ export interface AnthropicThreadAgentOptions {
   metadata?: Record<string, unknown>;
 }
 
-export class AnthropicThreadAgent {
+export class AnthropicThreadAgent extends Agent {
   private client: Anthropic;
-  private toolMap: Map<string, ToolLike>;
+  private toolMap: Map<string, Tool>;
   private toolDefinitions: Anthropic.Tool[];
-  private _name: string;
   private _model: string;
   private _maxTokens: number;
   private _maxTurns: number;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
-  constructor(client: Anthropic, tools: ToolLike[], options: AnthropicThreadAgentOptions = {}) {
+  constructor(client: Anthropic, tools: Tool[], options: AnthropicThreadAgentOptions = {}) {
+    super(options.name ?? 'anthropic-thread-agent', {
+      description: options.description ?? 'anthropic thread agent',
+      streaming: false,
+      inputSchema: AGENT_TYPES['thread'].input,
+      outputSchema: AGENT_TYPES['thread'].output,
+      type: 'thread',
+      framework: 'anthropic',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
     this.client = client;
     this.toolMap = new Map(tools.map((t) => [t.name, t]));
     this.toolDefinitions = tools.map((t) => this.toAnthropicTool(t));
-    this._name = options.name ?? 'anthropic-thread-agent';
     this._model = options.model ?? 'claude-sonnet-4-20250514';
     this._maxTokens = options.maxTokens ?? 4096;
     this._maxTurns = options.maxTurns ?? 10;
-    this._description = options.description ?? 'anthropic thread agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
   }
 
   get model(): string {
     return this._model;
   }
 
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: false },
-      input: AGENT_TYPES['thread'].input,
-      output: AGENT_TYPES['thread'].output,
-      framework: 'anthropic',
-      type: 'thread',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
-  }
-
-  private toAnthropicTool(tool: ToolLike): Anthropic.Tool {
+  private toAnthropicTool(tool: Tool): Anthropic.Tool {
     return {
       name: tool.name,
       description: tool.metadata.description,
@@ -137,10 +116,10 @@ export class AnthropicThreadAgent {
   async invoke(request: AgentRequest): Promise<AgentResponse> {
     const messages = buildMessagesFromInput(request);
     const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
-    const effectiveSystem = this._instructions
+    const effectiveSystem = this.instructions
       ? system
-        ? this._instructions + '\n\n' + system
-        : this._instructions
+        ? this.instructions + '\n\n' + system
+        : this.instructions
       : system;
 
     for (let turn = 0; turn < this._maxTurns; turn++) {

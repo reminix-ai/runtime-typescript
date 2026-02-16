@@ -2,12 +2,7 @@
  * LangGraph workflow agent for Reminix Runtime.
  */
 
-import {
-  AGENT_TYPES,
-  type AgentRequest,
-  type AgentResponse,
-  type AgentMetadata,
-} from '@reminix/runtime';
+import { Agent, AGENT_TYPES, type AgentRequest, type AgentResponse } from '@reminix/runtime';
 
 interface LangGraphStreamable {
   stream(
@@ -57,43 +52,22 @@ export interface LangGraphWorkflowAgentOptions {
   metadata?: Record<string, unknown>;
 }
 
-export class LangGraphWorkflowAgent {
+export class LangGraphWorkflowAgent extends Agent {
   private graph: LangGraphStreamable;
-  private _name: string;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(graph: LangGraphStreamable, options: LangGraphWorkflowAgentOptions = {}) {
-    this.graph = graph;
-    this._name = options.name ?? 'langgraph-workflow-agent';
-    this._description = options.description ?? 'langgraph workflow agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: false },
-      input: AGENT_TYPES['workflow'].input,
-      output: AGENT_TYPES['workflow'].output,
-      framework: 'langgraph',
+    super(options.name ?? 'langgraph-workflow-agent', {
+      description: options.description ?? 'langgraph workflow agent',
+      streaming: false,
+      inputSchema: AGENT_TYPES['workflow'].input,
+      outputSchema: AGENT_TYPES['workflow'].output,
       type: 'workflow',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
+      framework: 'langgraph',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
+    this.graph = graph;
   }
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {

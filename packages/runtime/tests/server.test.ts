@@ -3,30 +3,20 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { VERSION, tool, type AgentRequest, type AgentResponse } from '../src/index.js';
+import { Agent, VERSION, tool, type AgentRequest, type AgentResponse } from '../src/index.js';
 import { createApp } from '../src/server.js';
 
 /**
  * A mock agent for testing task-style requests.
  */
-class MockTaskAgent {
-  private _name: string;
-
+class MockTaskAgent extends Agent {
   constructor(name: string = 'mock-agent') {
-    this._name = name;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get metadata() {
-    return {
-      capabilities: { streaming: true },
+    super(name, {
+      streaming: true,
       framework: 'mock',
-      input: { type: 'object' as const },
-      output: { type: 'string' as const },
-    };
+      inputSchema: { type: 'object' },
+      outputSchema: { type: 'string' },
+    });
   }
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {
@@ -42,24 +32,14 @@ class MockTaskAgent {
 /**
  * A mock agent for testing chat-style requests.
  */
-class MockChatAgent {
-  private _name: string;
-
+class MockChatAgent extends Agent {
   constructor(name: string = 'mock-agent') {
-    this._name = name;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get metadata() {
-    return {
-      capabilities: { streaming: true },
+    super(name, {
+      streaming: true,
       framework: 'mock',
-      input: { type: 'object' as const },
-      output: { type: 'string' as const },
-    };
+      inputSchema: { type: 'object' },
+      outputSchema: { type: 'string' },
+    });
   }
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {
@@ -97,12 +77,12 @@ describe('Health Endpoint', () => {
   });
 });
 
-describe('Info Endpoint', () => {
-  it('GET /info should return runtime info and agents', async () => {
+describe('Manifest Endpoint', () => {
+  it('GET /manifest should return runtime info and agents', async () => {
     const app = createApp({
       agents: [new MockTaskAgent('agent-one'), new MockTaskAgent('agent-two')],
     });
-    const response = await app.request('/info');
+    const response = await app.request('/manifest');
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -267,8 +247,8 @@ describe('Tool Call Endpoint', () => {
   });
 });
 
-describe('Info Endpoint with Tools', () => {
-  it('GET /info should include tools', async () => {
+describe('Manifest Endpoint with Tools', () => {
+  it('GET /manifest should include tools', async () => {
     const myTool = tool('my-tool', {
       description: 'My tool description',
       input: {
@@ -280,7 +260,7 @@ describe('Info Endpoint with Tools', () => {
     });
 
     const app = createApp({ tools: [myTool] });
-    const response = await app.request('/info');
+    const response = await app.request('/manifest');
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -291,7 +271,7 @@ describe('Info Endpoint with Tools', () => {
     expect(data.tools[0].input).toBeDefined();
   });
 
-  it('GET /info should include both agents and tools', async () => {
+  it('GET /manifest should include both agents and tools', async () => {
     const myTool = tool('my-tool', {
       description: 'Test tool',
       input: { type: 'object', properties: {} },
@@ -302,7 +282,7 @@ describe('Info Endpoint with Tools', () => {
       agents: [new MockTaskAgent('my-agent')],
       tools: [myTool],
     });
-    const response = await app.request('/info');
+    const response = await app.request('/manifest');
 
     expect(response.status).toBe(200);
     const data = await response.json();

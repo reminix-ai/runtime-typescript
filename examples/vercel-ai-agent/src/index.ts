@@ -72,7 +72,7 @@ serve({ agents: [reminixAgent] });
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
-console.log('  GET  /info');
+console.log('  GET  /manifest');
 console.log('  POST /agents/vercel-ai-agent/invoke');
 console.log('\nAvailable tools:');
 console.log('  - getWeather(city): Get weather for Paris, London, Tokyo, or New York');

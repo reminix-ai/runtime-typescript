@@ -13,7 +13,7 @@
  *     curl http://localhost:8080/health
  *
  *     # Discovery
- *     curl http://localhost:8080/info
+ *     curl http://localhost:8080/manifest
  *
  *     # Execute endpoint
  *     curl -X POST http://localhost:8080/agents/echo/invoke \
@@ -94,7 +94,7 @@ console.log('Server running on http://localhost:8080');
 console.log();
 console.log('Endpoints:');
 console.log('  GET  /health');
-console.log('  GET  /info');
+console.log('  GET  /manifest');
 console.log('  POST /agents/echo/invoke');
 console.log();
 

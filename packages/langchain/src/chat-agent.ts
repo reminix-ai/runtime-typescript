@@ -12,12 +12,12 @@ import {
 import type { Runnable } from '@langchain/core/runnables';
 
 import {
+  Agent,
   AGENT_TYPES,
   messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
-  type AgentMetadata,
   type Message,
 } from '@reminix/runtime';
 
@@ -56,43 +56,22 @@ export interface LangChainChatAgentOptions {
   metadata?: Record<string, unknown>;
 }
 
-export class LangChainChatAgent {
+export class LangChainChatAgent extends Agent {
   private agent: Runnable;
-  private _name: string;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(agent: Runnable, options: LangChainChatAgentOptions = {}) {
-    this.agent = agent;
-    this._name = options.name ?? 'langchain-agent';
-    this._description = options.description ?? 'langchain chat agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: true },
-      input: AGENT_TYPES['chat'].input,
-      output: AGENT_TYPES['chat'].output,
-      framework: 'langchain',
+    super(options.name ?? 'langchain-agent', {
+      description: options.description ?? 'langchain chat agent',
+      streaming: true,
+      inputSchema: AGENT_TYPES['chat'].input,
+      outputSchema: AGENT_TYPES['chat'].output,
       type: 'chat',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
+      framework: 'langchain',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
+    this.agent = agent;
   }
 
   private buildLangChainInput(request: AgentRequest): unknown {
@@ -100,8 +79,8 @@ export class LangChainChatAgent {
 
     if ('messages' in request.input) {
       const lcMessages = messages.map((m) => toLangChainMessage(m));
-      if (this._instructions) {
-        lcMessages.unshift(new SystemMessage({ content: this._instructions }));
+      if (this.instructions) {
+        lcMessages.unshift(new SystemMessage({ content: this.instructions }));
       }
       return lcMessages;
     } else if ('prompt' in request.input) {

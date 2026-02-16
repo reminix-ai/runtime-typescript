@@ -5,15 +5,15 @@
 import type OpenAI from 'openai';
 
 import {
+  Agent,
   AGENT_TYPES,
+  type Tool,
   buildMessagesFromInput,
   messageContentToText,
   type AgentRequest,
   type AgentResponse,
-  type AgentMetadata,
   type Message,
   type ToolCall,
-  type ToolLike,
   type ToolRequest,
 } from '@reminix/runtime';
 
@@ -27,58 +27,37 @@ export interface OpenAIThreadAgentOptions {
   metadata?: Record<string, unknown>;
 }
 
-export class OpenAIThreadAgent {
+export class OpenAIThreadAgent extends Agent {
   private client: OpenAI;
-  private toolMap: Map<string, ToolLike>;
+  private toolMap: Map<string, Tool>;
   private toolDefinitions: OpenAI.Chat.ChatCompletionTool[];
-  private _name: string;
   private _model: string;
   private _maxTurns: number;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
-  constructor(client: OpenAI, tools: ToolLike[], options: OpenAIThreadAgentOptions = {}) {
+  constructor(client: OpenAI, tools: Tool[], options: OpenAIThreadAgentOptions = {}) {
+    super(options.name ?? 'openai-thread-agent', {
+      description: options.description ?? 'openai thread agent',
+      streaming: false,
+      inputSchema: AGENT_TYPES['thread'].input,
+      outputSchema: AGENT_TYPES['thread'].output,
+      type: 'thread',
+      framework: 'openai',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
     this.client = client;
     this.toolMap = new Map(tools.map((t) => [t.name, t]));
     this.toolDefinitions = tools.map((t) => this.toOpenAITool(t));
-    this._name = options.name ?? 'openai-thread-agent';
     this._model = options.model ?? 'gpt-4o-mini';
     this._maxTurns = options.maxTurns ?? 10;
-    this._description = options.description ?? 'openai thread agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
   }
 
   get model(): string {
     return this._model;
   }
 
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: false },
-      input: AGENT_TYPES['thread'].input,
-      output: AGENT_TYPES['thread'].output,
-      framework: 'openai',
-      type: 'thread',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
-  }
-
-  private toOpenAITool(tool: ToolLike): OpenAI.Chat.ChatCompletionTool {
+  private toOpenAITool(tool: Tool): OpenAI.Chat.ChatCompletionTool {
     return {
       type: 'function' as const,
       function: {
@@ -155,8 +134,8 @@ export class OpenAIThreadAgent {
     const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = messages.map((m) =>
       this.toOpenAIMessage(m)
     );
-    if (this._instructions) {
-      openaiMessages.unshift({ role: 'system', content: this._instructions });
+    if (this.instructions) {
+      openaiMessages.unshift({ role: 'system', content: this.instructions });
     }
 
     for (let turn = 0; turn < this._maxTurns; turn++) {

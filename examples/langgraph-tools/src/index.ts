@@ -67,7 +67,7 @@ serve({ agents: [agent] });
 console.log('Server running on http://localhost:8080');
 console.log('\nEndpoints:');
 console.log('  GET  /health');
-console.log('  GET  /info');
+console.log('  GET  /manifest');
 console.log('  POST /agents/langgraph-tools/invoke');
 console.log('\nAvailable tools:');
 console.log('  - get_weather(city): Get weather for Paris, London, Tokyo, or New York');

@@ -7,14 +7,14 @@
 import { generateText, tool as vercelTool, jsonSchema, stepCountIs, type LanguageModel } from 'ai';
 
 import {
+  Agent,
   AGENT_TYPES,
+  type Tool,
   buildMessagesFromInput,
   messageContentToText,
   type AgentRequest,
   type AgentResponse,
-  type AgentMetadata,
   type Message,
-  type ToolLike,
   type ToolRequest,
 } from '@reminix/runtime';
 
@@ -30,49 +30,28 @@ export interface VercelAIThreadAgentOptions {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyToolSet = Record<string, ReturnType<typeof vercelTool<any, any>>>;
 
-export class VercelAIThreadAgent {
+export class VercelAIThreadAgent extends Agent {
   private model: LanguageModel;
-  private tools: ToolLike[];
-  private _name: string;
+  private tools: Tool[];
   private _maxTurns: number;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
   protected _generateText = generateText;
 
-  constructor(model: LanguageModel, tools: ToolLike[], options: VercelAIThreadAgentOptions = {}) {
+  constructor(model: LanguageModel, tools: Tool[], options: VercelAIThreadAgentOptions = {}) {
+    super(options.name ?? 'vercel-ai-thread-agent', {
+      description: options.description ?? 'vercel-ai thread agent',
+      streaming: false,
+      inputSchema: AGENT_TYPES['thread'].input,
+      outputSchema: AGENT_TYPES['thread'].output,
+      type: 'thread',
+      framework: 'vercel-ai',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
     this.model = model;
     this.tools = tools;
-    this._name = options.name ?? 'vercel-ai-thread-agent';
     this._maxTurns = options.maxTurns ?? 10;
-    this._description = options.description ?? 'vercel-ai thread agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: false },
-      input: AGENT_TYPES['thread'].input,
-      output: AGENT_TYPES['thread'].output,
-      framework: 'vercel-ai',
-      type: 'thread',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
   }
 
   private buildVercelTools(): AnyToolSet {
@@ -116,7 +95,7 @@ export class VercelAIThreadAgent {
       messages: modelMessages,
       tools: vercelTools,
       stopWhen: stepCountIs(this._maxTurns),
-      ...(this._instructions && { system: this._instructions }),
+      ...(this.instructions && { system: this.instructions }),
     });
 
     // Build output messages from the input + response messages

@@ -14,7 +14,7 @@ import type { AgentType } from './schemas.js';
 // Re-export AgentType for convenience
 export type { AgentType };
 
-// === AgentLike Interface ===
+// === AgentMetadata ===
 
 /**
  * Metadata returned by agents for discovery.
@@ -29,16 +29,80 @@ export interface AgentMetadata {
   [key: string]: unknown;
 }
 
+// === Agent Base Class ===
+
 /**
- * Interface defining what the server accepts as an agent.
+ * Abstract base class for all agents.
  *
- * Both the agent() factory and framework agents produce objects
- * conforming to this interface.
+ * Framework agents extend this class. The agent() factory creates
+ * a private _FunctionAgent subclass internally.
  */
-export interface AgentLike {
-  readonly name: string;
-  readonly metadata: AgentMetadata;
-  invoke(request: AgentRequest): Promise<AgentResponse>;
+export abstract class Agent {
+  private _name: string;
+  private _description: string;
+  private _streaming: boolean;
+  private _inputSchema: JSONSchema;
+  private _outputSchema: JSONSchema;
+  private _type: AgentType | undefined;
+  private _framework: string | undefined;
+  public instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
+
+  constructor(
+    name: string,
+    options: {
+      description?: string;
+      streaming?: boolean;
+      inputSchema?: JSONSchema;
+      outputSchema?: JSONSchema;
+      type?: AgentType;
+      framework?: string;
+      instructions?: string;
+      tags?: string[];
+      metadata?: Record<string, unknown>;
+    } = {}
+  ) {
+    this._name = name;
+    this._description = options.description ?? '';
+    this._streaming = options.streaming ?? false;
+    this._inputSchema = options.inputSchema ?? DEFAULT_AGENT_INPUT;
+    this._outputSchema = options.outputSchema ?? DEFAULT_AGENT_OUTPUT;
+    this._type = options.type;
+    this._framework = options.framework;
+    this.instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  get metadata(): AgentMetadata {
+    const result: AgentMetadata = {
+      description: this._description,
+      capabilities: { streaming: this._streaming },
+      input: this._inputSchema,
+      output: this._outputSchema,
+    };
+    if (this._type) {
+      result.type = this._type;
+    }
+    if (this._framework) {
+      result.framework = this._framework;
+    }
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
+  }
+
+  abstract invoke(request: AgentRequest): Promise<AgentResponse>;
+
   invokeStream?(request: AgentRequest): AsyncIterable<string>;
 }
 
@@ -67,6 +131,10 @@ export interface AgentOptions {
    * When true, non-streaming requests collect all chunks into a single response.
    */
   stream?: boolean;
+  /** Optional list of tags for categorization. */
+  tags?: string[];
+  /** Optional extra metadata to include in the agent's metadata. */
+  metadata?: Record<string, unknown>;
   /**
    * Handler function - can be a regular async function or an async generator for streaming.
    *
@@ -121,7 +189,7 @@ export interface AgentOptions {
  * });
  * ```
  */
-export function agent(name: string, options: AgentOptions): AgentLike {
+export function agent(name: string, options: AgentOptions): Agent {
   const isStreaming = options.stream === true;
 
   // Default type is 'prompt' when no type and no custom input/output
@@ -134,34 +202,33 @@ export function agent(name: string, options: AgentOptions): AgentLike {
   const outputSchema =
     options.output ?? (effectiveType ? AGENT_TYPES[effectiveType].output : DEFAULT_AGENT_OUTPUT);
 
-  const metadata: AgentMetadata = {
-    description: options.description,
-    capabilities: { streaming: isStreaming },
-    input: inputSchema,
-    output: outputSchema,
-    ...(effectiveType !== undefined && { type: effectiveType }),
-  };
-
   if (isStreaming) {
     const streamFn = options.handler as (
       input: Record<string, unknown>,
       context?: Record<string, unknown>
     ) => AsyncGenerator<string, void, unknown>;
 
-    return {
-      name,
-      metadata,
-      async invoke(request: AgentRequest): Promise<AgentResponse> {
+    return new _FunctionAgent(name, {
+      description: options.description,
+      streaming: true,
+      inputSchema,
+      outputSchema,
+      type: effectiveType,
+      tags: options.tags,
+      metadata: options.metadata,
+      invokeFn: async (request: AgentRequest): Promise<AgentResponse> => {
         const chunks: string[] = [];
         for await (const chunk of streamFn(request.input, request.context)) {
           chunks.push(chunk);
         }
         return { output: chunks.join('') };
       },
-      async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
+      invokeStreamFn: async function* (
+        request: AgentRequest
+      ): AsyncGenerator<string, void, unknown> {
         yield* streamFn(request.input, request.context);
       },
-    };
+    });
   }
 
   const regularHandler = options.handler as (
@@ -169,12 +236,62 @@ export function agent(name: string, options: AgentOptions): AgentLike {
     context?: Record<string, unknown>
   ) => Promise<unknown>;
 
-  return {
-    name,
-    metadata,
-    async invoke(request: AgentRequest): Promise<AgentResponse> {
+  return new _FunctionAgent(name, {
+    description: options.description,
+    streaming: false,
+    inputSchema,
+    outputSchema,
+    type: effectiveType,
+    tags: options.tags,
+    metadata: options.metadata,
+    invokeFn: async (request: AgentRequest): Promise<AgentResponse> => {
       const result = await regularHandler(request.input, request.context);
       return { output: result };
     },
-  };
+  });
+}
+
+// === _FunctionAgent (private) ===
+
+class _FunctionAgent extends Agent {
+  private _invokeFn: (request: AgentRequest) => Promise<AgentResponse>;
+  private _invokeStreamFn?: (request: AgentRequest) => AsyncGenerator<string, void, unknown>;
+
+  constructor(
+    name: string,
+    options: {
+      description?: string;
+      streaming: boolean;
+      inputSchema: JSONSchema;
+      outputSchema: JSONSchema;
+      type?: AgentType;
+      tags?: string[];
+      metadata?: Record<string, unknown>;
+      invokeFn: (request: AgentRequest) => Promise<AgentResponse>;
+      invokeStreamFn?: (request: AgentRequest) => AsyncGenerator<string, void, unknown>;
+    }
+  ) {
+    super(name, {
+      description: options.description,
+      streaming: options.streaming,
+      inputSchema: options.inputSchema,
+      outputSchema: options.outputSchema,
+      type: options.type,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
+    this._invokeFn = options.invokeFn;
+    this._invokeStreamFn = options.invokeStreamFn;
+  }
+
+  async invoke(request: AgentRequest): Promise<AgentResponse> {
+    return this._invokeFn(request);
+  }
+
+  async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
+    if (!this._invokeStreamFn) {
+      throw new Error(`Streaming not supported for agent '${this.name}'`);
+    }
+    yield* this._invokeStreamFn(request);
+  }
 }

@@ -6,11 +6,11 @@ import { AIMessage, SystemMessage, type BaseMessage } from '@langchain/core/mess
 
 import { toLangChainMessage } from '@reminix/langchain';
 import {
+  Agent,
   AGENT_TYPES,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
-  type AgentMetadata,
 } from '@reminix/runtime';
 
 interface GraphState {
@@ -31,43 +31,22 @@ export interface LangGraphThreadAgentOptions {
   metadata?: Record<string, unknown>;
 }
 
-export class LangGraphThreadAgent {
+export class LangGraphThreadAgent extends Agent {
   private graph: LangGraphRunnable;
-  private _name: string;
-  private _description: string;
-  private _instructions: string | undefined;
-  private _tags: string[] | undefined;
-  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(graph: LangGraphRunnable, options: LangGraphThreadAgentOptions = {}) {
-    this.graph = graph;
-    this._name = options.name ?? 'langgraph-agent';
-    this._description = options.description ?? 'langgraph thread agent';
-    this._instructions = options.instructions;
-    this._tags = options.tags;
-    this._extraMetadata = options.metadata;
-  }
-
-  get name(): string {
-    return this._name;
-  }
-
-  get metadata(): AgentMetadata {
-    const result: AgentMetadata = {
-      description: this._description,
-      capabilities: { streaming: true },
-      input: AGENT_TYPES['thread'].input,
-      output: { type: 'string' },
-      framework: 'langgraph',
+    super(options.name ?? 'langgraph-agent', {
+      description: options.description ?? 'langgraph thread agent',
+      streaming: true,
+      inputSchema: AGENT_TYPES['thread'].input,
+      outputSchema: { type: 'string' },
       type: 'thread',
-    };
-    if (this._tags) {
-      result.tags = this._tags;
-    }
-    if (this._extraMetadata) {
-      Object.assign(result, this._extraMetadata);
-    }
-    return result;
+      framework: 'langgraph',
+      instructions: options.instructions,
+      tags: options.tags,
+      metadata: options.metadata,
+    });
+    this.graph = graph;
   }
 
   private isAIMessage(message: BaseMessage): boolean {
@@ -105,8 +84,8 @@ export class LangGraphThreadAgent {
     if ('messages' in request.input) {
       const messages = buildMessagesFromInput(request);
       const lcMessages = messages.map((m) => toLangChainMessage(m));
-      if (this._instructions) {
-        lcMessages.unshift(new SystemMessage({ content: this._instructions }));
+      if (this.instructions) {
+        lcMessages.unshift(new SystemMessage({ content: this.instructions }));
       }
       return { messages: lcMessages };
     } else {
