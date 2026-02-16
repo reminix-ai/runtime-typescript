@@ -77,7 +77,7 @@ import { tool, serve } from '@reminix/runtime';
 
 const getWeather = tool('get_weather', {
   description: 'Get the current weather for a city',
-  parameters: {
+  input: {
     type: 'object',
     properties: {
       location: { type: 'string', description: 'City name' },

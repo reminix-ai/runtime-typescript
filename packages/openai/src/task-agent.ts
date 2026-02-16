@@ -17,7 +17,7 @@ export interface OpenAITaskAgentOptions {
 
 export class OpenAITaskAgent extends Agent {
   private client: OpenAI;
-  private _responseSchema: Record<string, unknown>;
+  private _userOutputSchema: Record<string, unknown>;
   private _model: string;
 
   constructor(
@@ -37,7 +37,7 @@ export class OpenAITaskAgent extends Agent {
       metadata: options.metadata,
     });
     this.client = client;
-    this._responseSchema = outputSchema;
+    this._userOutputSchema = outputSchema;
     this._model = options.model ?? 'gpt-4o-mini';
   }
 
@@ -72,7 +72,7 @@ export class OpenAITaskAgent extends Agent {
         type: 'json_schema',
         json_schema: {
           name: 'task_result',
-          schema: this._responseSchema,
+          schema: this._userOutputSchema,
         },
       } as OpenAI.Chat.ChatCompletionCreateParams['response_format'],
     });

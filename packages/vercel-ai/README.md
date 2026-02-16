@@ -89,7 +89,7 @@ serve({ agents: [agent] });
 ```
 
 Your agent is now available at:
-- `POST /agents/<name>/invoke` - Execute the agent
+- `POST /agents/{name}/invoke` - Execute the agent
 
 ## API Reference
 
@@ -160,16 +160,20 @@ Execute the agent with a prompt or messages.
 **Request with prompt:**
 ```json
 {
-  "prompt": "Summarize this text: ..."
+  "input": {
+    "prompt": "Summarize this text: ..."
+  }
 }
 ```
 
 **Request with messages:**
 ```json
 {
-  "messages": [
-    {"role": "user", "content": "Hello!"}
-  ]
+  "input": {
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ]
+  }
 }
 ```
 
@@ -198,7 +202,9 @@ For streaming responses, set `stream: true` in the request:
 
 ```json
 {
-  "prompt": "Tell me a story",
+  "input": {
+    "prompt": "Tell me a story"
+  },
   "stream": true
 }
 ```

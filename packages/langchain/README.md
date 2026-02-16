@@ -74,7 +74,9 @@ Execute the agent. Input keys are passed directly to the LangChain runnable.
 **Request:**
 ```json
 {
-  "input": "Hello, how are you?"
+  "input": {
+    "input": "Hello, how are you?"
+  }
 }
 ```
 
@@ -91,7 +93,9 @@ For streaming responses, set `stream: true` in the request:
 
 ```json
 {
-  "input": "Tell me a story",
+  "input": {
+    "input": "Tell me a story"
+  },
   "stream": true
 }
 ```

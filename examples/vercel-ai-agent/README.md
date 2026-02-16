@@ -35,7 +35,6 @@ Once running, the following endpoints are available:
 | `/health` | GET | Health check |
 | `/manifest` | GET | Agent discovery |
 | `/agents/vercel-ai-agent/invoke` | POST | Execute agent |
-| `/agents/vercel-ai-agent/invoke` | POST | Execute agent |
 
 ## Available Tools
 
@@ -58,7 +57,7 @@ curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
 # Chat
 curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}'
+  -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}}'
 ```
 
 ## How it works

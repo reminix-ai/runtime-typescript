@@ -156,17 +156,21 @@ Execute the agent with a prompt or messages.
 **Request with prompt:**
 ```json
 {
-  "prompt": "Summarize this text: ..."
+  "input": {
+    "prompt": "Summarize this text: ..."
+  }
 }
 ```
 
 **Request with messages:**
 ```json
 {
-  "messages": [
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Hello!"}
-  ]
+  "input": {
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Hello!"}
+    ]
+  }
 }
 ```
 
@@ -183,7 +187,9 @@ For streaming responses, set `stream: true` in the request (chat agent only):
 
 ```json
 {
-  "prompt": "Tell me a story",
+  "input": {
+    "prompt": "Tell me a story"
+  },
   "stream": true
 }
 ```

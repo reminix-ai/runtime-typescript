@@ -35,7 +35,6 @@ Once running, the following endpoints are available:
 | `/health` | GET | Health check |
 | `/manifest` | GET | Agent discovery |
 | `/agents/anthropic-basic/invoke` | POST | Execute agent |
-| `/agents/anthropic-basic/invoke` | POST | Execute agent |
 
 ## Testing
 
@@ -54,7 +53,7 @@ curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
 # Chat
 curl -X POST http://localhost:8080/agents/anthropic-basic/invoke \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Hello!"}]}'
+  -d '{"input": {"messages": [{"role": "user", "content": "Hello!"}]}}'
 ```
 
 ## How it works

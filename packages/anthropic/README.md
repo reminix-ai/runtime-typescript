@@ -166,17 +166,21 @@ const request = {
 **Request with prompt:**
 ```json
 {
-  "prompt": "Summarize this text: ..."
+  "input": {
+    "prompt": "Summarize this text: ..."
+  }
 }
 ```
 
 **Request with messages:**
 ```json
 {
-  "messages": [
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Hello!"}
-  ]
+  "input": {
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Hello!"}
+    ]
+  }
 }
 ```
 
@@ -192,7 +196,9 @@ const request = {
 **Request:**
 ```json
 {
-  "task": "Analyze the sentiment of this review: 'Great product, love it!'"
+  "input": {
+    "task": "Analyze the sentiment of this review: 'Great product, love it!'"
+  }
 }
 ```
 
@@ -211,9 +217,11 @@ const request = {
 **Request:**
 ```json
 {
-  "messages": [
-    {"role": "user", "content": "What's the weather in San Francisco?"}
-  ]
+  "input": {
+    "messages": [
+      {"role": "user", "content": "What's the weather in San Francisco?"}
+    ]
+  }
 }
 ```
 
@@ -235,7 +243,9 @@ For streaming responses (chat agent only), set `stream: true` in the request:
 
 ```json
 {
-  "prompt": "Tell me a story",
+  "input": {
+    "prompt": "Tell me a story"
+  },
   "stream": true
 }
 ```

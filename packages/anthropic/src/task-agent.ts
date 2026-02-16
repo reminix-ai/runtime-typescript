@@ -18,7 +18,7 @@ export interface AnthropicTaskAgentOptions {
 
 export class AnthropicTaskAgent extends Agent {
   private client: Anthropic;
-  private _responseSchema: Record<string, unknown>;
+  private _userOutputSchema: Record<string, unknown>;
   private _model: string;
   private _maxTokens: number;
 
@@ -39,7 +39,7 @@ export class AnthropicTaskAgent extends Agent {
       metadata: options.metadata,
     });
     this.client = client;
-    this._responseSchema = outputSchema;
+    this._userOutputSchema = outputSchema;
     this._model = options.model ?? 'claude-sonnet-4-20250514';
     this._maxTokens = options.maxTokens ?? 4096;
   }
@@ -70,7 +70,7 @@ export class AnthropicTaskAgent extends Agent {
         {
           name: 'task_result',
           description: 'Return the structured result of the task',
-          input_schema: this._responseSchema as Anthropic.Tool['input_schema'],
+          input_schema: this._userOutputSchema as Anthropic.Tool['input_schema'],
         },
       ],
       tool_choice: { type: 'tool', name: 'task_result' },

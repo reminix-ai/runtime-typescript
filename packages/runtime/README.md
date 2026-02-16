@@ -97,13 +97,13 @@ Returns runtime information, available agents, and tools:
 
 `POST /agents/{name}/invoke` - Invoke an agent.
 
-Request keys are defined by the agent's input schema. For example, a calculator agent with input schema `{ properties: { a, b } }` expects `a` and `b` at the top level:
+The request body wraps the agent's input inside an `input` key. For example, a calculator agent with input schema `{ properties: { a, b } }` expects `a` and `b` inside `input`:
 
 **Task-oriented agent:**
 ```bash
 curl -X POST http://localhost:8080/agents/calculator/invoke \
   -H "Content-Type: application/json" \
-  -d '{"a": 5, "b": 3}'
+  -d '{"input": {"a": 5, "b": 3}}'
 ```
 
 **Response:**
@@ -115,15 +115,17 @@ curl -X POST http://localhost:8080/agents/calculator/invoke \
 
 **Chat agent:**
 
-Chat agents (type `chat` or `thread`) expect `messages` at the top level. Messages are OpenAI-style: `role` (`user` | `assistant` | `system` | `tool`), `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the `Message` and `ToolCall` types from `@reminix/runtime` in your handler. Chat returns a string; thread returns an array of messages.
+Chat agents (type `chat` or `thread`) expect `messages` inside `input`. Messages are OpenAI-style: `role` (`user` | `assistant` | `system` | `tool`), `content`, and optionally `tool_calls`, `tool_call_id`, and `name`. Use the `Message` and `ToolCall` types from `@reminix/runtime` in your handler. Chat returns a string; thread returns an array of messages.
 
 ```bash
 curl -X POST http://localhost:8080/agents/assistant/invoke \
   -H "Content-Type: application/json" \
   -d '{
-    "messages": [
-      {"role": "user", "content": "Hello!"}
-    ]
+    "input": {
+      "messages": [
+        {"role": "user", "content": "Hello!"}
+      ]
+    }
   }'
 ```
 
@@ -141,7 +143,7 @@ curl -X POST http://localhost:8080/agents/assistant/invoke \
 ```bash
 curl -X POST http://localhost:8080/tools/get_weather/call \
   -H "Content-Type: application/json" \
-  -d '{"location": "San Francisco"}'
+  -d '{"input": {"location": "San Francisco"}}'
 ```
 
 **Response:**
@@ -441,13 +443,15 @@ const myToolWithContext = tool('my_tool', {
 ### Request/Response Types
 
 ```typescript
-// Request: input keys from the agent's input schema, plus stream/context
+// Request: agent input is wrapped in an `input` key
 // For a calculator agent with input schema { a: number, b: number }:
 interface CalculatorRequest {
-  a: number;                          // From input schema
-  b: number;                          // From input schema
-  stream?: boolean;                   // Whether to stream the response
-  context?: Record<string, unknown>;  // Optional metadata
+  input: {                              // Agent input fields
+    a: number;
+    b: number;
+  };
+  stream?: boolean;                     // Whether to stream the response
+  context?: Record<string, unknown>;    // Optional metadata
 }
 
 // Response: { output: ... } (value from handler)
