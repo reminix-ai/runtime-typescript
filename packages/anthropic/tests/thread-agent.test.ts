@@ -46,13 +46,14 @@ function makeResponse(...blocks: unknown[]) {
 describe('AnthropicThreadAgent', () => {
   it('should be instantiable', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const agent = new AnthropicThreadAgent(mockClient as any, [makeMockTool()]);
+    const agent = new AnthropicThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     expect(agent).toBeInstanceOf(AnthropicThreadAgent);
   });
 
   it('should accept custom options', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const agent = new AnthropicThreadAgent(mockClient as any, [makeMockTool()], {
+    const agent = new AnthropicThreadAgent(mockClient as any, {
+      tools: [makeMockTool()],
       name: 'my-thread-agent',
       model: 'claude-opus-4-20250514',
       maxTurns: 5,
@@ -63,14 +64,14 @@ describe('AnthropicThreadAgent', () => {
 
   it('should use default values if not provided', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const agent = new AnthropicThreadAgent(mockClient as any, [makeMockTool()]);
+    const agent = new AnthropicThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     expect(agent.name).toBe('anthropic-thread-agent');
     expect(agent.model).toBe('claude-sonnet-4-20250514');
   });
 
   it('should have thread type metadata', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const agent = new AnthropicThreadAgent(mockClient as any, [makeMockTool()]);
+    const agent = new AnthropicThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     expect(agent.metadata.type).toBe('thread');
     expect(agent.metadata.input).toEqual(AGENT_TYPES['thread'].input);
     expect(agent.metadata.output).toEqual(AGENT_TYPES['thread'].output);
@@ -86,7 +87,7 @@ describe('AnthropicThreadAgent.invoke', () => {
       },
     };
 
-    const agent = new AnthropicThreadAgent(mockClient as any, [makeMockTool()]);
+    const agent = new AnthropicThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
@@ -117,7 +118,7 @@ describe('AnthropicThreadAgent.invoke', () => {
     };
 
     const tool = makeMockTool();
-    const agent = new AnthropicThreadAgent(mockClient as any, [tool]);
+    const agent = new AnthropicThreadAgent(mockClient as any, { tools: [tool] });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: "What's the weather in London?" }] },
     };
@@ -151,7 +152,7 @@ describe('AnthropicThreadAgent.invoke', () => {
     const tool = makeMockTool();
     (tool.call as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('API timeout'));
 
-    const agent = new AnthropicThreadAgent(mockClient as any, [tool]);
+    const agent = new AnthropicThreadAgent(mockClient as any, { tools: [tool] });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Weather?' }] },
     };
@@ -171,7 +172,10 @@ describe('AnthropicThreadAgent.invoke', () => {
       );
     const mockClient = { messages: { create: mockCreate } };
 
-    const agent = new AnthropicThreadAgent(mockClient as any, [makeMockTool()], { maxTurns: 3 });
+    const agent = new AnthropicThreadAgent(mockClient as any, {
+      tools: [makeMockTool()],
+      maxTurns: 3,
+    });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Loop' }] },
     };
@@ -185,7 +189,8 @@ describe('AnthropicThreadAgent.invoke', () => {
     const mockCreate = vi.fn().mockResolvedValue(makeResponse(makeTextBlock('Hi')));
     const mockClient = { messages: { create: mockCreate } };
 
-    const agent = new AnthropicThreadAgent(mockClient as any, [makeMockTool()], {
+    const agent = new AnthropicThreadAgent(mockClient as any, {
+      tools: [makeMockTool()],
       model: 'claude-opus-4-20250514',
     });
     const request: AgentRequest = {
@@ -202,7 +207,9 @@ describe('AnthropicThreadAgent.invoke', () => {
     const mockCreate = vi.fn().mockResolvedValue(makeResponse(makeTextBlock('Hi')));
     const mockClient = { messages: { create: mockCreate } };
 
-    const agent = new AnthropicThreadAgent(mockClient as any, [makeMockTool('get_weather')]);
+    const agent = new AnthropicThreadAgent(mockClient as any, {
+      tools: [makeMockTool('get_weather')],
+    });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
@@ -218,7 +225,7 @@ describe('AnthropicThreadAgent.invoke', () => {
     const mockCreate = vi.fn().mockResolvedValue(makeResponse(makeTextBlock('Hi')));
     const mockClient = { messages: { create: mockCreate } };
 
-    const agent = new AnthropicThreadAgent(mockClient as any, [makeMockTool()]);
+    const agent = new AnthropicThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     const request: AgentRequest = {
       input: {
         messages: [

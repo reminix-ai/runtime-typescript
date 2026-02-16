@@ -42,7 +42,7 @@ const schema = {
   },
   required: ['sentiment', 'confidence'],
 };
-const agent = new AnthropicTaskAgent(client, schema, { name: 'sentiment-analyzer' });
+const agent = new AnthropicTaskAgent(client, { outputSchema: schema, name: 'sentiment-analyzer' });
 serve({ agents: [agent] });
 ```
 
@@ -64,7 +64,7 @@ const getWeather = tool('get_weather', {
 });
 
 const client = new Anthropic();
-const agent = new AnthropicThreadAgent(client, [getWeather], { name: 'weather-assistant' });
+const agent = new AnthropicThreadAgent(client, { tools: [getWeather], name: 'weather-assistant' });
 serve({ agents: [agent] });
 ```
 
@@ -96,14 +96,14 @@ The chat agent:
 3. Returns the assistant's text response
 4. Supports streaming via Server-Sent Events
 
-### `new AnthropicTaskAgent(client, outputSchema, options?)`
+### `new AnthropicTaskAgent(client, options)`
 
 Create an Anthropic task agent. Returns structured output via tool-use. Does not support streaming.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `client` | `Anthropic` | required | An Anthropic client |
-| `outputSchema` | `Record<string, unknown>` | required | JSON Schema defining the structured output |
+| `options.outputSchema` | `Record<string, unknown>` | required | JSON Schema defining the structured output |
 | `options.name` | `string` | `"anthropic-task-agent"` | Name for the agent (used in URL path) |
 | `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
@@ -120,14 +120,14 @@ The task agent:
 3. Forces a tool call using the provided `outputSchema`
 4. Extracts and returns the structured result from the tool-use block
 
-### `new AnthropicThreadAgent(client, tools, options?)`
+### `new AnthropicThreadAgent(client, options)`
 
 Create an Anthropic thread agent with a tool-calling loop. Does not support streaming.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `client` | `Anthropic` | required | An Anthropic client |
-| `tools` | `Tool[]` | required | List of tools available to the agent |
+| `options.tools` | `Tool[]` | required | List of tools available to the agent |
 | `options.name` | `string` | `"anthropic-thread-agent"` | Name for the agent (used in URL path) |
 | `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |

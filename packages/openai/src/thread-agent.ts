@@ -18,6 +18,7 @@ import {
 } from '@reminix/runtime';
 
 export interface OpenAIThreadAgentOptions {
+  tools: Tool[];
   name?: string;
   model?: string;
   maxTurns?: number;
@@ -34,7 +35,7 @@ export class OpenAIThreadAgent extends Agent {
   private _model: string;
   private _maxTurns: number;
 
-  constructor(client: OpenAI, tools: Tool[], options: OpenAIThreadAgentOptions = {}) {
+  constructor(client: OpenAI, options: OpenAIThreadAgentOptions) {
     super(options.name ?? 'openai-thread-agent', {
       description: options.description ?? 'openai thread agent',
       streaming: false,
@@ -47,8 +48,8 @@ export class OpenAIThreadAgent extends Agent {
       metadata: options.metadata,
     });
     this.client = client;
-    this.toolMap = new Map(tools.map((t) => [t.name, t]));
-    this.toolDefinitions = tools.map((t) => this.toOpenAITool(t));
+    this.toolMap = new Map(options.tools.map((t) => [t.name, t]));
+    this.toolDefinitions = options.tools.map((t) => this.toOpenAITool(t));
     this._model = options.model ?? 'gpt-4o-mini';
     this._maxTurns = options.maxTurns ?? 10;
   }

@@ -44,7 +44,7 @@ const summarySchema = z.object({
 });
 
 const client = new OpenAI();
-const agent = new OpenAITaskAgent(client, summarySchema, { name: 'summarizer', model: 'gpt-4o' });
+const agent = new OpenAITaskAgent(client, { outputSchema: summarySchema, name: 'summarizer', model: 'gpt-4o' });
 serve({ agents: [agent] });
 ```
 
@@ -67,7 +67,7 @@ const tools = [
 ];
 
 const client = new OpenAI();
-const agent = new OpenAIThreadAgent(client, tools, { name: 'assistant', model: 'gpt-4o', maxTurns: 10 });
+const agent = new OpenAIThreadAgent(client, { tools, name: 'assistant', model: 'gpt-4o', maxTurns: 10 });
 serve({ agents: [agent] });
 ```
 
@@ -92,14 +92,14 @@ Create an OpenAI chat agent. Follows the chat type and supports streaming.
 
 **Returns:** `OpenAIChatAgent` - A Reminix chat agent instance
 
-### `new OpenAITaskAgent(client, outputSchema, options?)`
+### `new OpenAITaskAgent(client, options)`
 
 Create an OpenAI task agent. Follows the task type and returns structured output. Streaming is not supported.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `client` | `OpenAI` | required | An OpenAI client |
-| `outputSchema` | `ZodType` | required | A Zod schema defining the structured output |
+| `options.outputSchema` | `Record<string, unknown>` | required | JSON Schema defining the structured output |
 | `options.name` | `string` | `"openai-task-agent"` | Name for the agent (used in URL path) |
 | `options.model` | `string` | `"gpt-4o-mini"` | Model to use for completions |
 | `options.description` | `string` | `"openai task agent"` | Description shown in agent metadata |
@@ -109,14 +109,14 @@ Create an OpenAI task agent. Follows the task type and returns structured output
 
 **Returns:** `OpenAITaskAgent` - A Reminix task agent instance
 
-### `new OpenAIThreadAgent(client, tools, options?)`
+### `new OpenAIThreadAgent(client, options)`
 
 Create an OpenAI thread agent. Follows the thread type and supports tool use over multiple turns. Streaming is not supported.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `client` | `OpenAI` | required | An OpenAI client |
-| `tools` | `Tool[]` | required | A list of tool definitions the agent can call |
+| `options.tools` | `Tool[]` | required | A list of tool definitions the agent can call |
 | `options.name` | `string` | `"openai-thread-agent"` | Name for the agent (used in URL path) |
 | `options.model` | `string` | `"gpt-4o-mini"` | Model to use for completions |
 | `options.maxTurns` | `number` | `10` | Maximum number of tool-use turns before stopping |

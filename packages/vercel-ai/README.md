@@ -80,7 +80,8 @@ const getWeather = tool({
   handler: async ({ city }) => ({ city, temp: 72, condition: 'sunny' }),
 });
 
-const agent = new VercelAIThreadAgent(openai('gpt-4o'), [getWeather], {
+const agent = new VercelAIThreadAgent(openai('gpt-4o'), {
+  tools: [getWeather],
   name: 'weather-thread',
   maxTurns: 5,
 });
@@ -108,14 +109,14 @@ Create a Vercel AI chat agent for use with Reminix Runtime.
 
 **Returns:** `VercelAIChatAgent` - A Reminix chat agent instance
 
-### `new VercelAIThreadAgent(model, tools, options)`
+### `new VercelAIThreadAgent(model, options)`
 
 Create a Vercel AI thread agent for use with Reminix Runtime. The thread agent returns the full message history (including tool calls and tool results) rather than a single text output.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `model` | `LanguageModel` | required | A Vercel AI SDK language model |
-| `tools` | `Tool[]` | required | Array of Reminix Runtime tools |
+| `options.tools` | `Tool[]` | required | Array of Reminix Runtime tools |
 | `options.name` | `string` | `"vercel-ai-thread-agent"` | Name for the agent (used in URL path) |
 | `options.maxTurns` | `number` | `10` | Maximum number of tool-loop turns |
 | `options.description` | `string` | `"vercel ai thread agent"` | Description shown in agent metadata |

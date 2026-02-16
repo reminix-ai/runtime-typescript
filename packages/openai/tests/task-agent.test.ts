@@ -20,14 +20,15 @@ const SAMPLE_SCHEMA = {
 describe('OpenAITaskAgent', () => {
   it('should be instantiable', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new OpenAITaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
 
     expect(agent).toBeInstanceOf(OpenAITaskAgent);
   });
 
   it('should accept custom options', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA, {
+    const agent = new OpenAITaskAgent(mockClient as any, {
+      outputSchema: SAMPLE_SCHEMA,
       name: 'my-task-agent',
       model: 'gpt-4o',
     });
@@ -38,7 +39,7 @@ describe('OpenAITaskAgent', () => {
 
   it('should use default values if not provided', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new OpenAITaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
 
     expect(agent.name).toBe('openai-task-agent');
     expect(agent.model).toBe('gpt-4o-mini');
@@ -46,7 +47,7 @@ describe('OpenAITaskAgent', () => {
 
   it('should have task type metadata', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new OpenAITaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
 
     expect(agent.metadata.type).toBe('task');
     expect(agent.metadata.input).toEqual(AGENT_TYPES['task'].input);
@@ -67,7 +68,7 @@ describe('OpenAITaskAgent.invoke', () => {
       },
     };
 
-    const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new OpenAITaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
     const request: AgentRequest = { input: { task: 'Analyze sentiment' } };
 
     await agent.invoke(request);
@@ -87,7 +88,7 @@ describe('OpenAITaskAgent.invoke', () => {
       },
     };
 
-    const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new OpenAITaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
     const request: AgentRequest = { input: { task: 'Analyze sentiment' } };
 
     const response = await agent.invoke(request);
@@ -106,7 +107,7 @@ describe('OpenAITaskAgent.invoke', () => {
       },
     };
 
-    const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new OpenAITaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
     const request: AgentRequest = { input: { task: 'Do something' } };
 
     await agent.invoke(request);
@@ -127,7 +128,10 @@ describe('OpenAITaskAgent.invoke', () => {
       },
     };
 
-    const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA, { model: 'gpt-4o' });
+    const agent = new OpenAITaskAgent(mockClient as any, {
+      outputSchema: SAMPLE_SCHEMA,
+      model: 'gpt-4o',
+    });
     const request: AgentRequest = { input: { task: 'Do something' } };
 
     await agent.invoke(request);
@@ -147,7 +151,7 @@ describe('OpenAITaskAgent.invoke', () => {
       },
     };
 
-    const agent = new OpenAITaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new OpenAITaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
     const request: AgentRequest = {
       input: { task: 'Analyze', text: 'Hello world', language: 'en' },
     };

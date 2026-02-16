@@ -51,13 +51,14 @@ function makeToolCall(id = 'call_1', name = 'get_weather', args = '{}') {
 describe('OpenAIThreadAgent', () => {
   it('should be instantiable', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAIThreadAgent(mockClient as any, [makeMockTool()]);
+    const agent = new OpenAIThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     expect(agent).toBeInstanceOf(OpenAIThreadAgent);
   });
 
   it('should accept custom options', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAIThreadAgent(mockClient as any, [makeMockTool()], {
+    const agent = new OpenAIThreadAgent(mockClient as any, {
+      tools: [makeMockTool()],
       name: 'my-thread-agent',
       model: 'gpt-4o',
       maxTurns: 5,
@@ -68,14 +69,14 @@ describe('OpenAIThreadAgent', () => {
 
   it('should use default values if not provided', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAIThreadAgent(mockClient as any, [makeMockTool()]);
+    const agent = new OpenAIThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     expect(agent.name).toBe('openai-thread-agent');
     expect(agent.model).toBe('gpt-4o-mini');
   });
 
   it('should have thread type metadata', () => {
     const mockClient = { chat: { completions: { create: vi.fn() } } };
-    const agent = new OpenAIThreadAgent(mockClient as any, [makeMockTool()]);
+    const agent = new OpenAIThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     expect(agent.metadata.type).toBe('thread');
     expect(agent.metadata.input).toEqual(AGENT_TYPES['thread'].input);
     expect(agent.metadata.output).toEqual(AGENT_TYPES['thread'].output);
@@ -93,7 +94,7 @@ describe('OpenAIThreadAgent.invoke', () => {
       },
     };
 
-    const agent = new OpenAIThreadAgent(mockClient as any, [makeMockTool()]);
+    const agent = new OpenAIThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
@@ -120,7 +121,7 @@ describe('OpenAIThreadAgent.invoke', () => {
     };
 
     const tool = makeMockTool();
-    const agent = new OpenAIThreadAgent(mockClient as any, [tool]);
+    const agent = new OpenAIThreadAgent(mockClient as any, { tools: [tool] });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: "What's the weather in London?" }] },
     };
@@ -155,7 +156,7 @@ describe('OpenAIThreadAgent.invoke', () => {
     const tool = makeMockTool();
     (tool.call as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('API timeout'));
 
-    const agent = new OpenAIThreadAgent(mockClient as any, [tool]);
+    const agent = new OpenAIThreadAgent(mockClient as any, { tools: [tool] });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Weather?' }] },
     };
@@ -172,7 +173,10 @@ describe('OpenAIThreadAgent.invoke', () => {
     const mockCreate = vi.fn().mockResolvedValue(makeResponse('', [tc]));
     const mockClient = { chat: { completions: { create: mockCreate } } };
 
-    const agent = new OpenAIThreadAgent(mockClient as any, [makeMockTool()], { maxTurns: 3 });
+    const agent = new OpenAIThreadAgent(mockClient as any, {
+      tools: [makeMockTool()],
+      maxTurns: 3,
+    });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Loop' }] },
     };
@@ -186,7 +190,10 @@ describe('OpenAIThreadAgent.invoke', () => {
     const mockCreate = vi.fn().mockResolvedValue(makeResponse('Hi'));
     const mockClient = { chat: { completions: { create: mockCreate } } };
 
-    const agent = new OpenAIThreadAgent(mockClient as any, [makeMockTool()], { model: 'gpt-4o' });
+    const agent = new OpenAIThreadAgent(mockClient as any, {
+      tools: [makeMockTool()],
+      model: 'gpt-4o',
+    });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };
@@ -201,7 +208,9 @@ describe('OpenAIThreadAgent.invoke', () => {
     const mockCreate = vi.fn().mockResolvedValue(makeResponse('Hi'));
     const mockClient = { chat: { completions: { create: mockCreate } } };
 
-    const agent = new OpenAIThreadAgent(mockClient as any, [makeMockTool('get_weather')]);
+    const agent = new OpenAIThreadAgent(mockClient as any, {
+      tools: [makeMockTool('get_weather')],
+    });
     const request: AgentRequest = {
       input: { messages: [{ role: 'user', content: 'Hi' }] },
     };

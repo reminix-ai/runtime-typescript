@@ -7,6 +7,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { Agent, AGENT_TYPES, type AgentRequest, type AgentResponse } from '@reminix/runtime';
 
 export interface AnthropicTaskAgentOptions {
+  outputSchema: Record<string, unknown>;
   name?: string;
   model?: string;
   maxTokens?: number;
@@ -22,11 +23,7 @@ export class AnthropicTaskAgent extends Agent {
   private _model: string;
   private _maxTokens: number;
 
-  constructor(
-    client: Anthropic,
-    outputSchema: Record<string, unknown>,
-    options: AnthropicTaskAgentOptions = {}
-  ) {
+  constructor(client: Anthropic, options: AnthropicTaskAgentOptions) {
     super(options.name ?? 'anthropic-task-agent', {
       description: options.description ?? 'anthropic task agent',
       streaming: false,
@@ -39,7 +36,7 @@ export class AnthropicTaskAgent extends Agent {
       metadata: options.metadata,
     });
     this.client = client;
-    this._userOutputSchema = outputSchema;
+    this._userOutputSchema = options.outputSchema;
     this._model = options.model ?? 'claude-sonnet-4-20250514';
     this._maxTokens = options.maxTokens ?? 4096;
   }

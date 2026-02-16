@@ -7,6 +7,7 @@ import type OpenAI from 'openai';
 import { Agent, AGENT_TYPES, type AgentRequest, type AgentResponse } from '@reminix/runtime';
 
 export interface OpenAITaskAgentOptions {
+  outputSchema: Record<string, unknown>;
   name?: string;
   model?: string;
   description?: string;
@@ -20,11 +21,7 @@ export class OpenAITaskAgent extends Agent {
   private _userOutputSchema: Record<string, unknown>;
   private _model: string;
 
-  constructor(
-    client: OpenAI,
-    outputSchema: Record<string, unknown>,
-    options: OpenAITaskAgentOptions = {}
-  ) {
+  constructor(client: OpenAI, options: OpenAITaskAgentOptions) {
     super(options.name ?? 'openai-task-agent', {
       description: options.description ?? 'openai task agent',
       streaming: false,
@@ -37,7 +34,7 @@ export class OpenAITaskAgent extends Agent {
       metadata: options.metadata,
     });
     this.client = client;
-    this._userOutputSchema = outputSchema;
+    this._userOutputSchema = options.outputSchema;
     this._model = options.model ?? 'gpt-4o-mini';
   }
 

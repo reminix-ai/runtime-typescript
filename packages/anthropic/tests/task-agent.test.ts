@@ -20,14 +20,15 @@ const SAMPLE_SCHEMA = {
 describe('AnthropicTaskAgent', () => {
   it('should be instantiable', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new AnthropicTaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
 
     expect(agent).toBeInstanceOf(AnthropicTaskAgent);
   });
 
   it('should accept custom options', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA, {
+    const agent = new AnthropicTaskAgent(mockClient as any, {
+      outputSchema: SAMPLE_SCHEMA,
       name: 'my-task-agent',
       model: 'claude-opus-4-20250514',
     });
@@ -38,7 +39,7 @@ describe('AnthropicTaskAgent', () => {
 
   it('should use default values if not provided', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new AnthropicTaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
 
     expect(agent.name).toBe('anthropic-task-agent');
     expect(agent.model).toBe('claude-sonnet-4-20250514');
@@ -46,7 +47,7 @@ describe('AnthropicTaskAgent', () => {
 
   it('should have task type metadata', () => {
     const mockClient = { messages: { create: vi.fn() } };
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new AnthropicTaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
 
     expect(agent.metadata.type).toBe('task');
     expect(agent.metadata.input).toEqual(AGENT_TYPES['task'].input);
@@ -65,7 +66,7 @@ describe('AnthropicTaskAgent.invoke', () => {
       },
     };
 
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new AnthropicTaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
     const request: AgentRequest = { input: { task: 'Analyze sentiment' } };
 
     await agent.invoke(request);
@@ -83,7 +84,7 @@ describe('AnthropicTaskAgent.invoke', () => {
       },
     };
 
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new AnthropicTaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
     const request: AgentRequest = { input: { task: 'Analyze sentiment' } };
 
     const response = await agent.invoke(request);
@@ -100,7 +101,7 @@ describe('AnthropicTaskAgent.invoke', () => {
       },
     };
 
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new AnthropicTaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
     const request: AgentRequest = { input: { task: 'Do something' } };
 
     await agent.invoke(request);
@@ -121,7 +122,8 @@ describe('AnthropicTaskAgent.invoke', () => {
       },
     };
 
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA, {
+    const agent = new AnthropicTaskAgent(mockClient as any, {
+      outputSchema: SAMPLE_SCHEMA,
       model: 'claude-opus-4-20250514',
     });
     const request: AgentRequest = { input: { task: 'Do something' } };
@@ -141,7 +143,7 @@ describe('AnthropicTaskAgent.invoke', () => {
       },
     };
 
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new AnthropicTaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
     const request: AgentRequest = {
       input: { task: 'Analyze', text: 'Hello world', language: 'en' },
     };
@@ -163,7 +165,7 @@ describe('AnthropicTaskAgent.invoke', () => {
       },
     };
 
-    const agent = new AnthropicTaskAgent(mockClient as any, SAMPLE_SCHEMA);
+    const agent = new AnthropicTaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
     const request: AgentRequest = { input: { task: 'Do something' } };
 
     const response = await agent.invoke(request);

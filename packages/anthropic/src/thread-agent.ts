@@ -18,6 +18,7 @@ import {
 } from '@reminix/runtime';
 
 export interface AnthropicThreadAgentOptions {
+  tools: Tool[];
   name?: string;
   model?: string;
   maxTokens?: number;
@@ -36,7 +37,7 @@ export class AnthropicThreadAgent extends Agent {
   private _maxTokens: number;
   private _maxTurns: number;
 
-  constructor(client: Anthropic, tools: Tool[], options: AnthropicThreadAgentOptions = {}) {
+  constructor(client: Anthropic, options: AnthropicThreadAgentOptions) {
     super(options.name ?? 'anthropic-thread-agent', {
       description: options.description ?? 'anthropic thread agent',
       streaming: false,
@@ -49,8 +50,8 @@ export class AnthropicThreadAgent extends Agent {
       metadata: options.metadata,
     });
     this.client = client;
-    this.toolMap = new Map(tools.map((t) => [t.name, t]));
-    this.toolDefinitions = tools.map((t) => this.toAnthropicTool(t));
+    this.toolMap = new Map(options.tools.map((t) => [t.name, t]));
+    this.toolDefinitions = options.tools.map((t) => this.toAnthropicTool(t));
     this._model = options.model ?? 'claude-sonnet-4-20250514';
     this._maxTokens = options.maxTokens ?? 4096;
     this._maxTurns = options.maxTurns ?? 10;

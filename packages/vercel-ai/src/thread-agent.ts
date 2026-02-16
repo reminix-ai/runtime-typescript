@@ -19,6 +19,7 @@ import {
 } from '@reminix/runtime';
 
 export interface VercelAIThreadAgentOptions {
+  tools: Tool[];
   name?: string;
   maxTurns?: number;
   description?: string;
@@ -37,7 +38,7 @@ export class VercelAIThreadAgent extends Agent {
 
   protected _generateText = generateText;
 
-  constructor(model: LanguageModel, tools: Tool[], options: VercelAIThreadAgentOptions = {}) {
+  constructor(model: LanguageModel, options: VercelAIThreadAgentOptions) {
     super(options.name ?? 'vercel-ai-thread-agent', {
       description: options.description ?? 'vercel-ai thread agent',
       streaming: false,
@@ -50,7 +51,7 @@ export class VercelAIThreadAgent extends Agent {
       metadata: options.metadata,
     });
     this.model = model;
-    this.tools = tools;
+    this.tools = options.tools;
     this._maxTurns = options.maxTurns ?? 10;
   }
 
