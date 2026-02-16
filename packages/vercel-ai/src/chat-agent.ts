@@ -21,6 +21,8 @@ export interface VercelAIChatAgentOptions {
   name?: string;
   description?: string;
   instructions?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,6 +43,8 @@ export class VercelAIChatAgent {
   private _name: string;
   private _description: string;
   private _instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
 
   protected _generateText = generateText;
   protected _streamText = streamText;
@@ -54,6 +58,8 @@ export class VercelAIChatAgent {
     this._name = options.name ?? 'vercel-ai-agent';
     this._description = options.description ?? 'vercel-ai chat agent';
     this._instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
   }
 
   get name(): string {
@@ -61,7 +67,7 @@ export class VercelAIChatAgent {
   }
 
   get metadata(): AgentMetadata {
-    return {
+    const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: true },
       input: AGENT_TYPES['chat'].input,
@@ -69,6 +75,13 @@ export class VercelAIChatAgent {
       framework: 'vercel-ai',
       type: 'chat',
     };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
   }
 
   private toModelMessages(messages: Message[]): ModelMessage[] {

@@ -87,6 +87,8 @@ Create an OpenAI chat agent. Follows the chat template and supports streaming.
 | `options.model` | `string` | `"gpt-4o-mini"` | Model to use for completions |
 | `options.description` | `string` | `"openai chat agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions prepended to messages |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `OpenAIChatAgent` - A Reminix chat agent instance
 
@@ -102,6 +104,8 @@ Create an OpenAI task agent. Follows the task template and returns structured ou
 | `options.model` | `string` | `"gpt-4o-mini"` | Model to use for completions |
 | `options.description` | `string` | `"openai task agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions prepended to messages |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `OpenAITaskAgent` - A Reminix task agent instance
 
@@ -118,6 +122,8 @@ Create an OpenAI thread agent. Follows the thread template and supports tool use
 | `options.maxTurns` | `number` | `10` | Maximum number of tool-use turns before stopping |
 | `options.description` | `string` | `"openai thread agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions prepended to messages |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `OpenAIThreadAgent` - A Reminix thread agent instance
 

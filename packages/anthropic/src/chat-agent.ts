@@ -20,6 +20,8 @@ export interface AnthropicChatAgentOptions {
   maxTokens?: number;
   description?: string;
   instructions?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 interface AnthropicMessage {
@@ -34,6 +36,8 @@ export class AnthropicChatAgent {
   private _maxTokens: number;
   private _description: string;
   private _instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(client: Anthropic, options: AnthropicChatAgentOptions = {}) {
     this.client = client;
@@ -42,6 +46,8 @@ export class AnthropicChatAgent {
     this._maxTokens = options.maxTokens ?? 4096;
     this._description = options.description ?? 'anthropic chat agent';
     this._instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
   }
 
   get name(): string {
@@ -53,7 +59,7 @@ export class AnthropicChatAgent {
   }
 
   get metadata(): AgentMetadata {
-    return {
+    const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: true },
       input: AGENT_TYPES['chat'].input,
@@ -61,6 +67,13 @@ export class AnthropicChatAgent {
       framework: 'anthropic',
       type: 'chat',
     };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
   }
 
   private extractSystemAndMessages(messages: Message[]): {

@@ -23,6 +23,8 @@ export interface OpenAIThreadAgentOptions {
   maxTurns?: number;
   description?: string;
   instructions?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export class OpenAIThreadAgent {
@@ -34,6 +36,8 @@ export class OpenAIThreadAgent {
   private _maxTurns: number;
   private _description: string;
   private _instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(client: OpenAI, tools: ToolLike[], options: OpenAIThreadAgentOptions = {}) {
     this.client = client;
@@ -44,6 +48,8 @@ export class OpenAIThreadAgent {
     this._maxTurns = options.maxTurns ?? 10;
     this._description = options.description ?? 'openai thread agent';
     this._instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
   }
 
   get name(): string {
@@ -55,7 +61,7 @@ export class OpenAIThreadAgent {
   }
 
   get metadata(): AgentMetadata {
-    return {
+    const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: false },
       input: AGENT_TYPES['thread'].input,
@@ -63,6 +69,13 @@ export class OpenAIThreadAgent {
       framework: 'openai',
       type: 'thread',
     };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
   }
 
   private toOpenAITool(tool: ToolLike): OpenAI.Chat.ChatCompletionTool {

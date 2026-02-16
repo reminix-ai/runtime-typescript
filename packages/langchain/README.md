@@ -39,6 +39,8 @@ Create a LangChain chat agent for use with Reminix Runtime.
 | `options.name` | `string` | `"langchain-agent"` | Name for the agent (used in URL path) |
 | `options.description` | `string` | `"langchain chat agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions prepended to messages |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `LangChainChatAgent` - A Reminix chat agent instance
 

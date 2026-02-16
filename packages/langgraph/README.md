@@ -54,6 +54,8 @@ Create a LangGraph thread agent for chat-style interactions.
 | `options.name` | `string` | `"langgraph-agent"` | Name for the agent (used in URL path) |
 | `options.description` | `string` | `"langgraph thread agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions prepended to messages |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `LangGraphThreadAgent` - A Reminix thread agent instance
 
@@ -74,6 +76,8 @@ Create a LangGraph workflow agent for multi-step execution with interrupt/resume
 | `options.name` | `string` | `"langgraph-workflow-agent"` | Name for the agent (used in URL path) |
 | `options.description` | `string` | `"langgraph workflow agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | Stored in metadata (not injected into graph execution) |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `LangGraphWorkflowAgent` - A Reminix workflow agent instance
 

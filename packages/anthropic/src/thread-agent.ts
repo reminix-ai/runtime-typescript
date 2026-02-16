@@ -24,6 +24,8 @@ export interface AnthropicThreadAgentOptions {
   maxTurns?: number;
   description?: string;
   instructions?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export class AnthropicThreadAgent {
@@ -36,6 +38,8 @@ export class AnthropicThreadAgent {
   private _maxTurns: number;
   private _description: string;
   private _instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(client: Anthropic, tools: ToolLike[], options: AnthropicThreadAgentOptions = {}) {
     this.client = client;
@@ -47,6 +51,8 @@ export class AnthropicThreadAgent {
     this._maxTurns = options.maxTurns ?? 10;
     this._description = options.description ?? 'anthropic thread agent';
     this._instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
   }
 
   get name(): string {
@@ -58,7 +64,7 @@ export class AnthropicThreadAgent {
   }
 
   get metadata(): AgentMetadata {
-    return {
+    const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: false },
       input: AGENT_TYPES['thread'].input,
@@ -66,6 +72,13 @@ export class AnthropicThreadAgent {
       framework: 'anthropic',
       type: 'thread',
     };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
   }
 
   private toAnthropicTool(tool: ToolLike): Anthropic.Tool {

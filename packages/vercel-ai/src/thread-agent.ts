@@ -23,6 +23,8 @@ export interface VercelAIThreadAgentOptions {
   maxTurns?: number;
   description?: string;
   instructions?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,6 +37,8 @@ export class VercelAIThreadAgent {
   private _maxTurns: number;
   private _description: string;
   private _instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
 
   protected _generateText = generateText;
 
@@ -45,6 +49,8 @@ export class VercelAIThreadAgent {
     this._maxTurns = options.maxTurns ?? 10;
     this._description = options.description ?? 'vercel-ai thread agent';
     this._instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
   }
 
   get name(): string {
@@ -52,7 +58,7 @@ export class VercelAIThreadAgent {
   }
 
   get metadata(): AgentMetadata {
-    return {
+    const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: false },
       input: AGENT_TYPES['thread'].input,
@@ -60,6 +66,13 @@ export class VercelAIThreadAgent {
       framework: 'vercel-ai',
       type: 'thread',
     };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
   }
 
   private buildVercelTools(): AnyToolSet {

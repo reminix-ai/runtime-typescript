@@ -53,6 +53,8 @@ export interface LangGraphWorkflowAgentOptions {
   name?: string;
   description?: string;
   instructions?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export class LangGraphWorkflowAgent {
@@ -60,12 +62,16 @@ export class LangGraphWorkflowAgent {
   private _name: string;
   private _description: string;
   private _instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(graph: LangGraphStreamable, options: LangGraphWorkflowAgentOptions = {}) {
     this.graph = graph;
     this._name = options.name ?? 'langgraph-workflow-agent';
     this._description = options.description ?? 'langgraph workflow agent';
     this._instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
   }
 
   get name(): string {
@@ -73,7 +79,7 @@ export class LangGraphWorkflowAgent {
   }
 
   get metadata(): AgentMetadata {
-    return {
+    const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: false },
       input: AGENT_TYPES['workflow'].input,
@@ -81,6 +87,13 @@ export class LangGraphWorkflowAgent {
       framework: 'langgraph',
       type: 'workflow',
     };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
   }
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {

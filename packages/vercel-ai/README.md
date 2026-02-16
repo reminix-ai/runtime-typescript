@@ -103,6 +103,8 @@ Create a Vercel AI chat agent for use with Reminix Runtime.
 | `options.name` | `string` | `"vercel-ai-agent"` | Name for the agent (used in URL path) |
 | `options.description` | `string` | `"vercel ai chat agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions (used when passing a model, not a ToolLoopAgent) |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `VercelAIChatAgent` - A Reminix chat agent instance
 
@@ -118,6 +120,8 @@ Create a Vercel AI thread agent for use with Reminix Runtime. The thread agent r
 | `options.maxTurns` | `number` | `10` | Maximum number of tool-loop turns |
 | `options.description` | `string` | `"vercel ai thread agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions passed to `generateText` |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `VercelAIThreadAgent` - A Reminix thread agent instance
 

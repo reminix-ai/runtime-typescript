@@ -81,6 +81,8 @@ Create an Anthropic chat agent. Supports streaming.
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
 | `options.description` | `string` | `"anthropic chat agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions merged with system messages |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `AnthropicChatAgent` - A Reminix chat agent instance
 
@@ -103,6 +105,8 @@ Create an Anthropic task agent. Returns structured output via tool-use. Does not
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
 | `options.description` | `string` | `"anthropic task agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions passed as `system` parameter |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `AnthropicTaskAgent` - A Reminix task agent instance
 
@@ -126,6 +130,8 @@ Create an Anthropic thread agent with a tool-calling loop. Does not support stre
 | `options.maxTurns` | `number` | `10` | Maximum number of tool-calling turns |
 | `options.description` | `string` | `"anthropic thread agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions merged with system messages |
+| `options.tags` | `string[]` | — | Tags for categorizing/filtering agents |
+| `options.metadata` | `Record<string, unknown>` | — | Custom metadata merged into agent info |
 
 **Returns:** `AnthropicThreadAgent` - A Reminix thread agent instance
 

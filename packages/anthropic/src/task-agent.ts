@@ -17,6 +17,8 @@ export interface AnthropicTaskAgentOptions {
   maxTokens?: number;
   description?: string;
   instructions?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export class AnthropicTaskAgent {
@@ -27,6 +29,8 @@ export class AnthropicTaskAgent {
   private _maxTokens: number;
   private _description: string;
   private _instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(
     client: Anthropic,
@@ -40,6 +44,8 @@ export class AnthropicTaskAgent {
     this._maxTokens = options.maxTokens ?? 4096;
     this._description = options.description ?? 'anthropic task agent';
     this._instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
   }
 
   get name(): string {
@@ -51,7 +57,7 @@ export class AnthropicTaskAgent {
   }
 
   get metadata(): AgentMetadata {
-    return {
+    const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: false },
       input: AGENT_TYPES['task'].input,
@@ -59,6 +65,13 @@ export class AnthropicTaskAgent {
       framework: 'anthropic',
       type: 'task',
     };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
   }
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {

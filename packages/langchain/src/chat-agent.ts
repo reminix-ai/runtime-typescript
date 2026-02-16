@@ -52,6 +52,8 @@ export interface LangChainChatAgentOptions {
   name?: string;
   description?: string;
   instructions?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export class LangChainChatAgent {
@@ -59,12 +61,16 @@ export class LangChainChatAgent {
   private _name: string;
   private _description: string;
   private _instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(agent: Runnable, options: LangChainChatAgentOptions = {}) {
     this.agent = agent;
     this._name = options.name ?? 'langchain-agent';
     this._description = options.description ?? 'langchain chat agent';
     this._instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
   }
 
   get name(): string {
@@ -72,7 +78,7 @@ export class LangChainChatAgent {
   }
 
   get metadata(): AgentMetadata {
-    return {
+    const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: true },
       input: AGENT_TYPES['chat'].input,
@@ -80,6 +86,13 @@ export class LangChainChatAgent {
       framework: 'langchain',
       type: 'chat',
     };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
   }
 
   private buildLangChainInput(request: AgentRequest): unknown {

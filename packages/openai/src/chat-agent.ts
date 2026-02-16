@@ -19,6 +19,8 @@ export interface OpenAIChatAgentOptions {
   model?: string;
   description?: string;
   instructions?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export class OpenAIChatAgent {
@@ -27,6 +29,8 @@ export class OpenAIChatAgent {
   private _model: string;
   private _description: string;
   private _instructions: string | undefined;
+  private _tags: string[] | undefined;
+  private _extraMetadata: Record<string, unknown> | undefined;
 
   constructor(client: OpenAI, options: OpenAIChatAgentOptions = {}) {
     this.client = client;
@@ -34,6 +38,8 @@ export class OpenAIChatAgent {
     this._model = options.model ?? 'gpt-4o-mini';
     this._description = options.description ?? 'openai chat agent';
     this._instructions = options.instructions;
+    this._tags = options.tags;
+    this._extraMetadata = options.metadata;
   }
 
   get name(): string {
@@ -45,7 +51,7 @@ export class OpenAIChatAgent {
   }
 
   get metadata(): AgentMetadata {
-    return {
+    const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: true },
       input: AGENT_TYPES['chat'].input,
@@ -53,6 +59,13 @@ export class OpenAIChatAgent {
       framework: 'openai',
       type: 'chat',
     };
+    if (this._tags) {
+      result.tags = this._tags;
+    }
+    if (this._extraMetadata) {
+      Object.assign(result, this._extraMetadata);
+    }
+    return result;
   }
 
   private toOpenAIMessage(message: Message): OpenAI.Chat.ChatCompletionMessageParam {
