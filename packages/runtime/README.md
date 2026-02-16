@@ -72,30 +72,22 @@ Returns runtime information, available agents, and tools:
   "agents": [
     {
       "name": "calculator",
-      "type": "agent",
       "description": "Add two numbers",
+      "capabilities": { "streaming": false },
       "input": {
         "type": "object",
         "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
         "required": ["a", "b"]
       },
-      "output": {
-        "type": "object",
-        "properties": { "content": { "type": "number" } },
-        "required": ["content"]
-      },
-      "requestKeys": ["a", "b"],
-      "responseKeys": ["content"],
-      "streaming": false
+      "output": { "type": "number" }
     }
   ],
   "tools": [
     {
       "name": "get_weather",
-      "type": "tool",
       "description": "Get current weather for a location",
-      "input": { ... },
-      "output": { ... }
+      "input": { "type": "object", "properties": { "location": { "type": "string" } }, "required": ["location"] },
+      "output": { "type": "object", "properties": { "temp": { "type": "number" }, "condition": { "type": "string" } } }
     }
   ]
 }
@@ -117,7 +109,7 @@ curl -X POST http://localhost:8080/agents/calculator/invoke \
 **Response:**
 ```json
 {
-  "content": 8
+  "output": 8
 }
 ```
 
@@ -138,7 +130,7 @@ curl -X POST http://localhost:8080/agents/assistant/invoke \
 **Response (chat):**
 ```json
 {
-  "content": "You said: Hello!"
+  "output": "You said: Hello!"
 }
 ```
 
@@ -155,7 +147,7 @@ curl -X POST http://localhost:8080/tools/get_weather/call \
 **Response:**
 ```json
 {
-  "content": { "temp": 72, "condition": "sunny" }
+  "output": { "temp": 72, "condition": "sunny" }
 }
 ```
 
@@ -449,18 +441,18 @@ const myToolWithContext = tool('my_tool', {
 ### Request/Response Types
 
 ```typescript
-// Request: top-level keys based on agent's input schema
+// Request: input keys from the agent's input schema, plus stream/context
 // For a calculator agent with input schema { a: number, b: number }:
 interface CalculatorRequest {
-  a: number;                          // Top-level key from input schema
-  b: number;                          // Top-level key from input schema
+  a: number;                          // From input schema
+  b: number;                          // From input schema
   stream?: boolean;                   // Whether to stream the response
   context?: Record<string, unknown>;  // Optional metadata
 }
 
-// Response: keys based on agent's output schema
+// Response: { output: ... } (value from handler)
 interface AgentResponse {
-  content: unknown;
+  output: unknown;
 }
 ```
 

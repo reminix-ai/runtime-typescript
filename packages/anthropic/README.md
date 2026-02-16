@@ -53,10 +53,14 @@ import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicThreadAgent } from '@reminix/anthropic';
 import { serve, tool } from '@reminix/runtime';
 
-const getWeather = tool({
-  name: 'get_weather',
+const getWeather = tool('get_weather', {
   description: 'Get the current weather for a city',
-  handler: async ({ city }: { city: string }) => ({ temperature: 72, condition: 'sunny' }),
+  input: {
+    type: 'object',
+    properties: { city: { type: 'string' } },
+    required: ['city'],
+  },
+  handler: async (input) => ({ temperature: 72, condition: 'sunny' }),
 });
 
 const client = new Anthropic();
@@ -188,9 +192,7 @@ const request = {
 **Request:**
 ```json
 {
-  "input": {
-    "task": "Analyze the sentiment of this review: 'Great product, love it!'"
-  }
+  "task": "Analyze the sentiment of this review: 'Great product, love it!'"
 }
 ```
 
