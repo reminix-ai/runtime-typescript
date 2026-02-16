@@ -62,7 +62,7 @@ serve({ agents: [agent] });
 
 ## Quick Start with VercelAIThreadAgent
 
-For agents that need a full thread of messages (including tool call and tool result messages) in their output, use `VercelAIThreadAgent`. It accepts a `LanguageModel` and an array of Reminix `ToolLike` objects, and runs the Vercel AI SDK tool loop via `generateText` with `stopWhen`:
+For agents that need a full thread of messages (including tool call and tool result messages) in their output, use `VercelAIThreadAgent`. It accepts a `LanguageModel` and an array of Reminix `Tool` objects, and runs the Vercel AI SDK tool loop via `generateText` with `stopWhen`:
 
 ```typescript
 import { openai } from '@ai-sdk/openai';
@@ -115,7 +115,7 @@ Create a Vercel AI thread agent for use with Reminix Runtime. The thread agent r
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `model` | `LanguageModel` | required | A Vercel AI SDK language model |
-| `tools` | `ToolLike[]` | required | Array of Reminix Runtime tools |
+| `tools` | `Tool[]` | required | Array of Reminix Runtime tools |
 | `options.name` | `string` | `"vercel-ai-thread-agent"` | Name for the agent (used in URL path) |
 | `options.maxTurns` | `number` | `10` | Maximum number of tool-loop turns |
 | `options.description` | `string` | `"vercel ai thread agent"` | Description shown in agent metadata |

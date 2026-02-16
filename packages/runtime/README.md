@@ -466,24 +466,20 @@ interface AgentResponse {
 
 ## Advanced
 
-### AgentLike Interface
+### Agent Base Class
 
-For building framework integrations, implement the `AgentLike` interface. See the [framework agent packages](#framework-agents) for examples.
+For building framework integrations, extend the `Agent` base class. See the [framework agent packages](#framework-agents) for examples.
 
 ```typescript
-import type { AgentLike, AgentRequest, AgentResponse, AgentMetadata } from '@reminix/runtime';
+import { Agent } from '@reminix/runtime';
+import type { AgentRequest, AgentResponse } from '@reminix/runtime';
 
-class MyFrameworkAgent implements AgentLike {
-  readonly name: string;
-  readonly metadata: AgentMetadata;
+class MyFrameworkAgent extends Agent {
+  private client: MyClient;
 
-  constructor(private client: MyClient, name = 'my-framework') {
-    this.name = name;
-    this.metadata = {
-      description: 'My framework agent',
-      capabilities: {},
-      input: { type: 'object', properties: { prompt: { type: 'string' } } },
-    };
+  constructor(client: MyClient, name = 'my-framework') {
+    super(name, { description: 'My framework agent' });
+    this.client = client;
   }
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {

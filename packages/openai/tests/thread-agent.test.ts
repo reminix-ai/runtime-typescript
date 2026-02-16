@@ -4,14 +4,14 @@
 
 import { describe, it, expect, vi } from 'vitest';
 
-import type { AgentRequest, ToolLike } from '@reminix/runtime';
+import type { AgentRequest, Tool } from '@reminix/runtime';
 import { AGENT_TYPES } from '@reminix/runtime';
 import { OpenAIThreadAgent } from '../src/thread-agent.js';
 
 function makeMockTool(
   name = 'get_weather',
   result: unknown = { temp: 22, condition: 'sunny' }
-): ToolLike {
+): Tool {
   return {
     name,
     metadata: {
