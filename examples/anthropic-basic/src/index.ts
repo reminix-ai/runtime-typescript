@@ -48,7 +48,7 @@ const client = new Anthropic();
 // Create and serve the agent
 const agent = new AnthropicChatAgent(client, {
   name: 'anthropic-basic',
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-sonnet-4-5-20250929',
 });
 serve({ agents: [agent] });
 

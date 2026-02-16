@@ -138,7 +138,7 @@ import { VercelAIChatAgent } from '@reminix/vercel-ai';
 import { serve } from '@reminix/runtime';
 
 const gpt = new VercelAIChatAgent(openai('gpt-4o'), { name: 'gpt' });
-const claude = new VercelAIChatAgent(anthropic('claude-sonnet-4-20250514'), { name: 'claude' });
+const claude = new VercelAIChatAgent(anthropic('claude-sonnet-4-5-20250929'), { name: 'claude' });
 const gemini = new VercelAIChatAgent(google('gemini-pro'), { name: 'gemini' });
 
 serve({ agents: [gpt, claude, gemini] });

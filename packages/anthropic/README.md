@@ -81,7 +81,7 @@ Create an Anthropic chat agent. Supports streaming.
 |-----------|------|---------|-------------|
 | `client` | `Anthropic` | required | An Anthropic client |
 | `options.name` | `string` | `"anthropic-agent"` | Name for the agent (used in URL path) |
-| `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
+| `options.model` | `string` | `"claude-sonnet-4-5-20250929"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
 | `options.description` | `string` | `"anthropic chat agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions merged with system messages |
@@ -105,7 +105,7 @@ Create an Anthropic task agent. Returns structured output via tool-use. Does not
 | `client` | `Anthropic` | required | An Anthropic client |
 | `options.outputSchema` | `Record<string, unknown>` | required | JSON Schema defining the structured output |
 | `options.name` | `string` | `"anthropic-task-agent"` | Name for the agent (used in URL path) |
-| `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
+| `options.model` | `string` | `"claude-sonnet-4-5-20250929"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
 | `options.description` | `string` | `"anthropic task agent"` | Description shown in agent metadata |
 | `options.instructions` | `string` | — | System instructions passed as `system` parameter |
@@ -129,7 +129,7 @@ Create an Anthropic thread agent with a tool-calling loop. Does not support stre
 | `client` | `Anthropic` | required | An Anthropic client |
 | `options.tools` | `Tool[]` | required | List of tools available to the agent |
 | `options.name` | `string` | `"anthropic-thread-agent"` | Name for the agent (used in URL path) |
-| `options.model` | `string` | `"claude-sonnet-4-20250514"` | Model to use |
+| `options.model` | `string` | `"claude-sonnet-4-5-20250929"` | Model to use |
 | `options.maxTokens` | `number` | `4096` | Maximum tokens in response |
 | `options.maxTurns` | `number` | `10` | Maximum number of tool-calling turns |
 | `options.description` | `string` | `"anthropic thread agent"` | Description shown in agent metadata |

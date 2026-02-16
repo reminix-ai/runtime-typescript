@@ -37,7 +37,7 @@ export class AnthropicTaskAgent extends Agent {
     });
     this.client = client;
     this._userOutputSchema = options.outputSchema;
-    this._model = options.model ?? 'claude-sonnet-4-20250514';
+    this._model = options.model ?? 'claude-sonnet-4-5-20250929';
     this._maxTokens = options.maxTokens ?? 4096;
   }
 

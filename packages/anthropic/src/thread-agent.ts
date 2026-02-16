@@ -52,7 +52,7 @@ export class AnthropicThreadAgent extends Agent {
     this.client = client;
     this.toolMap = new Map(options.tools.map((t) => [t.name, t]));
     this.toolDefinitions = options.tools.map((t) => this.toAnthropicTool(t));
-    this._model = options.model ?? 'claude-sonnet-4-20250514';
+    this._model = options.model ?? 'claude-sonnet-4-5-20250929';
     this._maxTokens = options.maxTokens ?? 4096;
     this._maxTurns = options.maxTurns ?? 10;
   }

@@ -17,7 +17,7 @@ describe('Anthropic Agent Integration', () => {
     const client = new Anthropic({ apiKey });
     const agent = new AnthropicChatAgent(client, {
       name: 'test-anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5-20250929',
       maxTokens: 100,
     });
     app = createApp({ agents: [agent] });

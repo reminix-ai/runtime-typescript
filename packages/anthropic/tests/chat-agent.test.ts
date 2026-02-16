@@ -32,7 +32,7 @@ describe('AnthropicChatAgent', () => {
     const agent = new AnthropicChatAgent(mockClient as any);
 
     expect(agent.name).toBe('anthropic-agent');
-    expect(agent.model).toBe('claude-sonnet-4-20250514');
+    expect(agent.model).toBe('claude-sonnet-4-5-20250929');
   });
 
   it('should have chat type metadata', () => {

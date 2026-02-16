@@ -15,7 +15,7 @@ describe('OpenAI Agent Integration', () => {
   beforeAll(() => {
     const apiKey = getOpenAIApiKey();
     const client = new OpenAI({ apiKey });
-    const agent = new OpenAIChatAgent(client, { name: 'test-openai', model: 'gpt-4o-mini' });
+    const agent = new OpenAIChatAgent(client, { name: 'test-openai', model: 'gpt-4.1-nano' });
     app = createApp({ agents: [agent] });
   });
 

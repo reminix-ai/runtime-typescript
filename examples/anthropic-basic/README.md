@@ -68,6 +68,6 @@ import { serve } from '@reminix/runtime';
 
 const client = new Anthropic();
 
-const agent = new AnthropicChatAgent(client, { name: 'anthropic-basic', model: 'claude-sonnet-4-20250514' });
+const agent = new AnthropicChatAgent(client, { name: 'anthropic-basic', model: 'claude-sonnet-4-5-20250929' });
 serve({ agents: [agent] });
 ```
