@@ -34,14 +34,17 @@ The task agent follows the task type and returns structured output. Streaming is
 
 ```typescript
 import OpenAI from 'openai';
-import { z } from 'zod';
 import { OpenAITaskAgent } from '@reminix/openai';
 import { serve } from '@reminix/runtime';
 
-const summarySchema = z.object({
-  title: z.string(),
-  bulletPoints: z.array(z.string()),
-});
+const summarySchema = {
+  type: 'object',
+  properties: {
+    title: { type: 'string' },
+    bulletPoints: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['title', 'bulletPoints'],
+};
 
 const client = new OpenAI();
 const agent = new OpenAITaskAgent(client, { outputSchema: summarySchema, name: 'summarizer', model: 'gpt-4o' });

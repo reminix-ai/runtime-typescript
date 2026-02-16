@@ -31,7 +31,7 @@ describe('Vercel AI Agent Integration', () => {
     });
 
     const agent = new ToolLoopAgent({
-      model: openai('gpt-4.1-nano'),
+      model: openai('gpt-4o-mini'),
       tools: { getWeather },
     });
 
