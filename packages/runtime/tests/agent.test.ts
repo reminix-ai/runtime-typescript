@@ -170,8 +170,8 @@ describe('agent() Factory', () => {
   });
 });
 
-describe('Agent Templates', () => {
-  it('template prompt: metadata and invoke', async () => {
+describe('Agent Types', () => {
+  it('type prompt: metadata and invoke', async () => {
     const echo = agent('echo', {
       type: 'prompt',
       description: 'Echo the prompt',
@@ -192,7 +192,7 @@ describe('Agent Templates', () => {
     expect(response.output).toBe('You said: hello');
   });
 
-  it('template chat: metadata and invoke', async () => {
+  it('type chat: metadata and invoke', async () => {
     const chat = agent('chat', {
       type: 'chat',
       description: 'Reply to messages',
@@ -218,7 +218,7 @@ describe('Agent Templates', () => {
     expect(response.output).toBe('Reply to: Hi');
   });
 
-  it('template task: metadata and invoke', async () => {
+  it('type task: metadata and invoke', async () => {
     const taskAgent = agent('summarizer', {
       type: 'task',
       description: 'Run a task',
@@ -237,7 +237,7 @@ describe('Agent Templates', () => {
     expect(response.output).toBe('Task "summarize" on: Some content');
   });
 
-  it('explicit input overrides template', () => {
+  it('explicit input overrides type defaults', () => {
     const custom = agent('custom', {
       type: 'prompt',
       input: {
@@ -252,7 +252,7 @@ describe('Agent Templates', () => {
     expect(custom.metadata.input?.required).toEqual(['q']);
   });
 
-  it('no template or input/output uses default prompt template', () => {
+  it('no type or input/output uses default prompt type', () => {
     const def = agent('def', {
       handler: async ({ prompt }) => String(prompt),
     });
@@ -261,7 +261,7 @@ describe('Agent Templates', () => {
     expect(def.metadata.input?.required).toEqual(['prompt']);
   });
 
-  it('template rag: metadata and invoke', async () => {
+  it('type rag: metadata and invoke', async () => {
     const ragAgent = agent('rag', {
       type: 'rag',
       description: 'Answer from documents',
@@ -277,7 +277,7 @@ describe('Agent Templates', () => {
     expect(response.output).toBe('Answer for: What is X?');
   });
 
-  it('template thread: metadata and invoke (output is messages)', async () => {
+  it('type thread: metadata and invoke (output is messages)', async () => {
     const threadAgent = agent('thread-agent', {
       type: 'thread',
       description: 'Message thread in, updated thread out',
@@ -312,7 +312,7 @@ describe('Agent Templates', () => {
     expect(outputMessages[1]?.content).toBe('Reply to: Hello');
   });
 
-  it('template workflow: metadata and invoke', async () => {
+  it('type workflow: metadata and invoke', async () => {
     const workflowAgent = agent('workflow-agent', {
       type: 'workflow',
       description: 'Multi-step workflow',

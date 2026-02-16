@@ -16,7 +16,7 @@ This will also install `@reminix/runtime` as a dependency.
 
 ### Chat Agent
 
-The chat agent follows the chat template and supports streaming responses.
+The chat agent follows the chat type and supports streaming responses.
 
 ```typescript
 import OpenAI from 'openai';
@@ -30,7 +30,7 @@ serve({ agents: [agent] });
 
 ### Task Agent
 
-The task agent follows the task template and returns structured output. Streaming is not supported.
+The task agent follows the task type and returns structured output. Streaming is not supported.
 
 ```typescript
 import OpenAI from 'openai';
@@ -50,7 +50,7 @@ serve({ agents: [agent] });
 
 ### Thread Agent
 
-The thread agent follows the thread template and supports tool use over multiple turns. Streaming is not supported.
+The thread agent follows the thread type and supports tool use over multiple turns. Streaming is not supported.
 
 ```typescript
 import OpenAI from 'openai';
@@ -78,7 +78,7 @@ Your agents are now available at:
 
 ### `new OpenAIChatAgent(client, options?)`
 
-Create an OpenAI chat agent. Follows the chat template and supports streaming.
+Create an OpenAI chat agent. Follows the chat type and supports streaming.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -94,7 +94,7 @@ Create an OpenAI chat agent. Follows the chat template and supports streaming.
 
 ### `new OpenAITaskAgent(client, outputSchema, options?)`
 
-Create an OpenAI task agent. Follows the task template and returns structured output. Streaming is not supported.
+Create an OpenAI task agent. Follows the task type and returns structured output. Streaming is not supported.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -111,7 +111,7 @@ Create an OpenAI task agent. Follows the task template and returns structured ou
 
 ### `new OpenAIThreadAgent(client, tools, options?)`
 
-Create an OpenAI thread agent. Follows the thread template and supports tool use over multiple turns. Streaming is not supported.
+Create an OpenAI thread agent. Follows the thread type and supports tool use over multiple turns. Streaming is not supported.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
