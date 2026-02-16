@@ -28,9 +28,9 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
-  // Base adapter - allow abstract method patterns
+  // Base classes - allow abstract method patterns
   {
-    files: ['**/adapters/base.ts'],
+    files: ['**/agent.ts', '**/tool.ts'],
     rules: {
       'require-yield': 'off',
       '@typescript-eslint/no-this-alias': 'off',

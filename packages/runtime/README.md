@@ -41,7 +41,7 @@ The runtime creates a REST server (powered by [Hono](https://hono.dev)) with the
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/info` | GET | Runtime discovery (version, agents, tools) |
+| `/manifest` | GET | Runtime discovery (version, agents, tools) |
 | `/agents/{name}/invoke` | POST | Invoke an agent |
 | `/tools/{name}/call` | POST | Call a tool |
 
@@ -56,7 +56,7 @@ Returns `{"status": "ok"}` if the server is running.
 ### Discovery Endpoint
 
 ```bash
-curl http://localhost:8080/info
+curl http://localhost:8080/manifest
 ```
 
 Returns runtime information, available agents, and tools:
