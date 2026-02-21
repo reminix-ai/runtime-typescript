@@ -336,7 +336,7 @@ describe('Agent Types', () => {
     const inputSchema = workflowAgent.metadata.input;
     expect(inputSchema?.required).toEqual(['task']);
     expect((inputSchema?.properties as Record<string, unknown>)?.task).toBeDefined();
-    expect((inputSchema?.properties as Record<string, unknown>)?.steps).toBeDefined();
+    expect((inputSchema?.properties as Record<string, unknown>)?.state).toBeDefined();
     expect((inputSchema?.properties as Record<string, unknown>)?.resume).toBeDefined();
     expect(inputSchema?.additionalProperties).toBe(true);
 

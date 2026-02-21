@@ -212,21 +212,10 @@ export const AGENT_TYPES: Record<AgentType, { input: JSONSchema; output: JSONSch
           type: 'string',
           description: 'Workflow task or description',
         },
-        steps: {
-          type: 'array',
-          description: 'Optional sequence of named steps to execute',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', description: 'Step name' },
-              input: {
-                type: 'object',
-                description: 'Optional step input',
-                additionalProperties: true,
-              },
-            },
-            required: ['name'],
-          },
+        state: {
+          type: 'object',
+          description: 'Previous execution output passed back on resume (steps, result, etc.)',
+          additionalProperties: true,
         },
         resume: {
           type: 'object',
@@ -267,6 +256,7 @@ export const AGENT_TYPES: Record<AgentType, { input: JSONSchema; output: JSONSch
                 description: 'Step execution status',
               },
               output: { description: 'Step output (any JSON value)' },
+              error: { type: 'string', description: 'Error message when step status is failed' },
             },
             required: ['name', 'status'],
           },
@@ -275,6 +265,10 @@ export const AGENT_TYPES: Record<AgentType, { input: JSONSchema; output: JSONSch
           type: 'object',
           description: 'Final workflow result',
           additionalProperties: true,
+        },
+        error: {
+          type: 'string',
+          description: 'Error message (when status is failed)',
         },
         pendingAction: {
           type: 'object',
@@ -293,6 +287,15 @@ export const AGENT_TYPES: Record<AgentType, { input: JSONSchema; output: JSONSch
               type: 'array',
               items: { type: 'string' },
               description: 'Available choices (for decision-type actions)',
+            },
+            inputSchema: {
+              type: 'object',
+              description: 'JSON Schema describing expected input (for type: input actions)',
+              additionalProperties: true,
+            },
+            assignee: {
+              type: 'string',
+              description: 'Who should handle this action (email, user ID, or role)',
             },
           },
           required: ['step', 'type', 'message'],
