@@ -69,6 +69,67 @@ Your agent is now available at:
 
 See the [runtime package docs](./packages/runtime) for agent types, tools, streaming, and advanced usage.
 
+## Using Platform Tools via MCP
+
+When deployed to Reminix Cloud, your agents can access platform tools (memory, knowledge search) and your project tools via the MCP server. The environment variables `REMINIX_MCP_URL` and `REMINIX_API_KEY` are injected automatically.
+
+Any framework with MCP client support works — no Reminix-specific SDK needed.
+
+### Vercel AI SDK
+
+```typescript
+import { experimental_createMCPClient as createMCPClient } from "ai";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
+const headers: Record<string, string> = {
+  Authorization: `Bearer ${process.env.REMINIX_API_KEY}`,
+};
+// Optional: scope memory to a specific user
+headers["X-Reminix-Identity"] = JSON.stringify({ user_id: "u_123" });
+
+const client = await createMCPClient({
+  transport: new StreamableHTTPClientTransport(
+    new URL(process.env.REMINIX_MCP_URL!),
+    { requestInit: { headers } }
+  ),
+});
+
+const tools = await client.tools();
+const result = await generateText({
+  model: openai("gpt-4o"),
+  tools,
+  prompt: "Store my preferred language as TypeScript",
+});
+
+await client.close();
+```
+
+### Anthropic SDK
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic();
+
+const response = await client.messages.create({
+  model: "claude-sonnet-4-20250514",
+  max_tokens: 1024,
+  mcp_servers: [
+    {
+      type: "url",
+      url: process.env.REMINIX_MCP_URL!,
+      headers: {
+        Authorization: `Bearer ${process.env.REMINIX_API_KEY}`,
+        "X-Reminix-Identity": JSON.stringify({ user_id: "u_123" }),
+      },
+    },
+  ],
+  messages: [{ role: "user", content: "Search the knowledge base for auth docs" }],
+});
+```
+
 ## Development
 
 ### Prerequisites
