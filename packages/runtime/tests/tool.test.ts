@@ -103,14 +103,14 @@ describe('Tool Metadata', () => {
     expect(myTool.metadata.outputSchema).toEqual(outputSchema);
   });
 
-  it('should have default output schema when not provided', () => {
+  it('should omit outputSchema when not provided', () => {
     const myTool = tool('my-tool', {
       description: 'Test',
       inputSchema: { type: 'object', properties: {} },
       handler: async () => ({}),
     });
 
-    expect(myTool.metadata.outputSchema).toEqual({ type: 'string' });
+    expect(myTool.metadata.outputSchema).toBeUndefined();
   });
 });
 

@@ -83,6 +83,18 @@ function jsonSchemaToZodShape(schema: JSONSchema | null | undefined): Record<str
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * MCP spec requires outputSchema to be `type: "object"`.
+ * Only expose it when the tool's schema qualifies.
+ */
+function isObjectSchema(schema?: JSONSchema): schema is JSONSchema {
+  return schema?.type === 'object';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MCP routes
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -104,14 +116,23 @@ export function createMcpRoutes(tools: Tool[]): Hono {
     // Register each tool on the MCP server
     for (const tool of tools) {
       const meta = tool.metadata;
-      server.tool(
+      const hasObjectOutput = isObjectSchema(meta.outputSchema);
+
+      server.registerTool(
         tool.name,
-        meta.description || `Tool: ${tool.name}`,
-        jsonSchemaToZodShape(meta.inputSchema),
+        {
+          description: meta.description || `Tool: ${tool.name}`,
+          inputSchema: jsonSchemaToZodShape(meta.inputSchema),
+          ...(hasObjectOutput ? { outputSchema: jsonSchemaToZodShape(meta.outputSchema) } : {}),
+        },
         async (args) => {
           const result = await tool.call({ arguments: args as Record<string, unknown> });
+          const serialized = JSON.stringify(result.output);
           return {
-            content: [{ type: 'text' as const, text: JSON.stringify(result.output) }],
+            content: [{ type: 'text' as const, text: serialized }],
+            ...(hasObjectOutput
+              ? { structuredContent: result.output as Record<string, unknown> }
+              : {}),
           };
         }
       );

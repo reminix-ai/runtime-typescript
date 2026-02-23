@@ -4,20 +4,13 @@
 
 import type { ToolRequest, ToolResponse, JSONSchema } from './types.js';
 
-/**
- * Default output schema for tools.
- */
-const DEFAULT_TOOL_OUTPUT: JSONSchema = {
-  type: 'string',
-};
-
 // === ToolMetadata ===
 
 /** Metadata for a tool */
 export interface ToolMetadata {
   description: string;
   inputSchema: JSONSchema;
-  outputSchema: JSONSchema;
+  outputSchema?: JSONSchema;
   tags?: string[];
   [key: string]: unknown;
 }
@@ -39,7 +32,7 @@ export abstract class Tool {
   private _name: string;
   private _description: string;
   private _inputSchema: JSONSchema;
-  private _outputSchema: JSONSchema;
+  private _outputSchema: JSONSchema | undefined;
   private _tags: string[] | undefined;
   private _extraMetadata: Record<string, unknown> | undefined;
 
@@ -56,7 +49,7 @@ export abstract class Tool {
     this._name = name;
     this._description = options.description ?? '';
     this._inputSchema = options.inputSchema ?? { type: 'object', properties: {} };
-    this._outputSchema = options.outputSchema ?? DEFAULT_TOOL_OUTPUT;
+    this._outputSchema = options.outputSchema;
     this._tags = options.tags;
     this._extraMetadata = options.metadata;
   }
@@ -69,8 +62,10 @@ export abstract class Tool {
     const result: ToolMetadata = {
       description: this._description,
       inputSchema: this._inputSchema,
-      outputSchema: this._outputSchema,
     };
+    if (this._outputSchema) {
+      result.outputSchema = this._outputSchema;
+    }
     if (this._tags) {
       result.tags = this._tags;
     }
