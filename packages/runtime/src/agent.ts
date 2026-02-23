@@ -22,8 +22,8 @@ export type { AgentType };
 export interface AgentMetadata {
   description?: string;
   capabilities: Capabilities;
-  input: JSONSchema;
-  output?: JSONSchema;
+  inputSchema: JSONSchema;
+  outputSchema?: JSONSchema;
   /** Named type (prompt, chat, task, rag, thread, workflow) when agent uses a type. */
   type?: AgentType;
   [key: string]: unknown;
@@ -83,8 +83,8 @@ export abstract class Agent {
     const result: AgentMetadata = {
       description: this._description,
       capabilities: { streaming: this._streaming },
-      input: this._inputSchema,
-      output: this._outputSchema,
+      inputSchema: this._inputSchema,
+      outputSchema: this._outputSchema,
     };
     if (this._type) {
       result.type = this._type;
@@ -115,17 +115,17 @@ export interface AgentOptions {
   /** Human-readable description of what the agent does */
   description?: string;
   /**
-   * Named type (prompt, chat, task, rag, thread, workflow). When set, input/output default to the type's schemas
-   * unless overridden by explicit input/output.
+   * Named type (prompt, chat, task, rag, thread, workflow). When set, inputSchema/outputSchema default to the type's schemas
+   * unless overridden by explicit inputSchema/outputSchema.
    */
   type?: AgentType;
   /**
    * JSON Schema for input.
    * Defaults to type schema if type is set, else { prompt: string }.
    */
-  input?: JSONSchema;
+  inputSchema?: JSONSchema;
   /** JSON Schema for output. Defaults to type schema if set, else string. */
-  output?: JSONSchema;
+  outputSchema?: JSONSchema;
   /**
    * Set to true if handler is an async generator for streaming.
    * When true, non-streaming requests collect all chunks into a single response.
@@ -155,7 +155,7 @@ export interface AgentOptions {
  * Create an agent from a configuration object.
  *
  * By default, agents expect `{ input: { prompt: string } }` in the request body and
- * return `{ output: string }`. You can customize by providing `input` schema.
+ * return `{ output: string }`. You can customize by providing `inputSchema`.
  *
  * @example
  * ```typescript
@@ -168,12 +168,12 @@ export interface AgentOptions {
  * // Agent with custom input schema
  * const calculator = agent('calculator', {
  *   description: 'Add two numbers',
- *   input: {
+ *   inputSchema: {
  *     type: 'object',
  *     properties: { a: { type: 'number' }, b: { type: 'number' } },
  *     required: ['a', 'b'],
  *   },
- *   output: { type: 'number' },
+ *   outputSchema: { type: 'number' },
  *   handler: async ({ a, b }) => (a as number) + (b as number),
  * });
  *
@@ -192,15 +192,19 @@ export interface AgentOptions {
 export function agent(name: string, options: AgentOptions): Agent {
   const isStreaming = options.stream === true;
 
-  // Default type is 'prompt' when no type and no custom input/output
+  // Default type is 'prompt' when no type and no custom inputSchema/outputSchema
   const effectiveType: AgentType | undefined =
     options.type ??
-    (options.input === undefined && options.output === undefined ? DEFAULT_AGENT_TYPE : undefined);
+    (options.inputSchema === undefined && options.outputSchema === undefined
+      ? DEFAULT_AGENT_TYPE
+      : undefined);
 
   const inputSchema =
-    options.input ?? (effectiveType ? AGENT_TYPES[effectiveType].input : DEFAULT_AGENT_INPUT);
+    options.inputSchema ??
+    (effectiveType ? AGENT_TYPES[effectiveType].inputSchema : DEFAULT_AGENT_INPUT);
   const outputSchema =
-    options.output ?? (effectiveType ? AGENT_TYPES[effectiveType].output : DEFAULT_AGENT_OUTPUT);
+    options.outputSchema ??
+    (effectiveType ? AGENT_TYPES[effectiveType].outputSchema : DEFAULT_AGENT_OUTPUT);
 
   if (isStreaming) {
     const streamFn = options.handler as (

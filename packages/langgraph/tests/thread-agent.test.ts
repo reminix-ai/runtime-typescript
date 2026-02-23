@@ -36,7 +36,7 @@ describe('LangGraphThreadAgent', () => {
     const agent = new LangGraphThreadAgent(mockGraph as any);
 
     expect(agent.metadata.type).toBe('thread');
-    expect(agent.metadata.input).toEqual(AGENT_TYPES['thread'].input);
+    expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['thread'].inputSchema);
   });
 });
 

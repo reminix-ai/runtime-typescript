@@ -50,8 +50,8 @@ describe('GoogleTaskAgent', () => {
     const agent = new GoogleTaskAgent(mockClient as any, { outputSchema: SAMPLE_SCHEMA });
 
     expect(agent.metadata.type).toBe('task');
-    expect(agent.metadata.input).toEqual(AGENT_TYPES['task'].input);
-    expect(agent.metadata.output).toEqual(AGENT_TYPES['task'].output);
+    expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['task'].inputSchema);
+    expect(agent.metadata.outputSchema).toEqual(AGENT_TYPES['task'].outputSchema);
     expect(agent.metadata.capabilities.streaming).toBe(false);
   });
 });

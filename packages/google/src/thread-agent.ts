@@ -46,8 +46,8 @@ export class GoogleThreadAgent extends Agent {
     super(options.name ?? 'google-thread-agent', {
       description: options.description ?? 'google thread agent',
       streaming: false,
-      inputSchema: AGENT_TYPES['thread'].input,
-      outputSchema: AGENT_TYPES['thread'].output,
+      inputSchema: AGENT_TYPES['thread'].inputSchema,
+      outputSchema: AGENT_TYPES['thread'].outputSchema,
       type: 'thread',
       framework: 'google',
       instructions: options.instructions,

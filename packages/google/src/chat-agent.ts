@@ -38,8 +38,8 @@ export class GoogleChatAgent extends Agent {
     super(options.name ?? 'google-agent', {
       description: options.description ?? 'google chat agent',
       streaming: true,
-      inputSchema: AGENT_TYPES['chat'].input,
-      outputSchema: AGENT_TYPES['chat'].output,
+      inputSchema: AGENT_TYPES['chat'].inputSchema,
+      outputSchema: AGENT_TYPES['chat'].outputSchema,
       type: 'chat',
       framework: 'google',
       instructions: options.instructions,

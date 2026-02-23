@@ -25,8 +25,8 @@ export class OpenAITaskAgent extends Agent {
     super(options.name ?? 'openai-task-agent', {
       description: options.description ?? 'openai task agent',
       streaming: false,
-      inputSchema: AGENT_TYPES['task'].input,
-      outputSchema: AGENT_TYPES['task'].output,
+      inputSchema: AGENT_TYPES['task'].inputSchema,
+      outputSchema: AGENT_TYPES['task'].outputSchema,
       type: 'task',
       framework: 'openai',
       instructions: options.instructions,

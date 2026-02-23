@@ -9,7 +9,7 @@ describe('agent() Factory', () => {
   it('should create an agent with name and metadata', () => {
     const calculator = agent('calculator', {
       description: 'Add two numbers',
-      input: {
+      inputSchema: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
@@ -23,7 +23,7 @@ describe('agent() Factory', () => {
   it('should set description in metadata', () => {
     const calculator = agent('calculator', {
       description: 'Add two numbers',
-      input: {
+      inputSchema: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
@@ -34,10 +34,10 @@ describe('agent() Factory', () => {
     expect(calculator.metadata.description).toBe('Add two numbers');
   });
 
-  it('should set input in metadata', () => {
+  it('should set inputSchema in metadata', () => {
     const calculator = agent('calculator', {
       description: 'Add two numbers',
-      input: {
+      inputSchema: {
         type: 'object',
         properties: {
           a: { type: 'number' },
@@ -48,7 +48,7 @@ describe('agent() Factory', () => {
       handler: async () => 0,
     });
 
-    expect(calculator.metadata.input).toEqual({
+    expect(calculator.metadata.inputSchema).toEqual({
       type: 'object',
       properties: {
         a: { type: 'number' },
@@ -58,24 +58,24 @@ describe('agent() Factory', () => {
     });
   });
 
-  it('should set output in metadata when provided', () => {
+  it('should set outputSchema in metadata when provided', () => {
     const calculator = agent('calculator', {
       description: 'Add two numbers',
-      input: {
+      inputSchema: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
       },
-      output: { type: 'number' },
+      outputSchema: { type: 'number' },
       handler: async () => 0,
     });
 
-    expect(calculator.metadata.output).toEqual({ type: 'number' });
+    expect(calculator.metadata.outputSchema).toEqual({ type: 'number' });
   });
 
   it('should have default output schema when not provided', () => {
     const calculator = agent('calculator', {
-      input: {
+      inputSchema: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
@@ -83,12 +83,12 @@ describe('agent() Factory', () => {
       handler: async () => 0,
     });
 
-    expect(calculator.metadata.output).toEqual({ type: 'string' });
+    expect(calculator.metadata.outputSchema).toEqual({ type: 'string' });
   });
 
   it('should handle invoke requests', async () => {
     const calculator = agent('calculator', {
-      input: {
+      inputSchema: {
         type: 'object',
         properties: { a: { type: 'number' }, b: { type: 'number' } },
         required: ['a', 'b'],
@@ -104,7 +104,7 @@ describe('agent() Factory', () => {
     let receivedContext: Record<string, unknown> | undefined;
 
     const myAgent = agent('my-agent', {
-      input: {
+      inputSchema: {
         type: 'object',
         properties: { task: { type: 'string' } },
         required: ['task'],
@@ -125,7 +125,7 @@ describe('agent() Factory', () => {
 
   it('should handle streaming with async generator', async () => {
     const streamer = agent('streamer', {
-      input: {
+      inputSchema: {
         type: 'object',
         properties: { text: { type: 'string' } },
         required: ['text'],
@@ -152,7 +152,7 @@ describe('agent() Factory', () => {
 
   it('should collect chunks for non-streaming requests', async () => {
     const streamer = agent('streamer', {
-      input: {
+      inputSchema: {
         type: 'object',
         properties: { text: { type: 'string' } },
         required: ['text'],
@@ -179,14 +179,14 @@ describe('Agent Types', () => {
     });
 
     expect(echo.metadata.type).toBe('prompt');
-    expect(echo.metadata.input).toEqual({
+    expect(echo.metadata.inputSchema).toEqual({
       type: 'object',
       properties: {
         prompt: { type: 'string', description: 'The prompt or task for the agent' },
       },
       required: ['prompt'],
     });
-    expect(echo.metadata.output).toEqual({ type: 'string' });
+    expect(echo.metadata.outputSchema).toEqual({ type: 'string' });
 
     const response = await echo.invoke({ input: { prompt: 'hello' } });
     expect(response.output).toBe('You said: hello');
@@ -205,10 +205,12 @@ describe('Agent Types', () => {
     });
 
     expect(chat.metadata.type).toBe('chat');
-    expect(chat.metadata.input?.type).toBe('object');
-    expect(chat.metadata.input?.required).toEqual(['messages']);
-    expect((chat.metadata.input?.properties as Record<string, unknown>)?.messages).toBeDefined();
-    expect(chat.metadata.output).toEqual({ type: 'string' });
+    expect(chat.metadata.inputSchema?.type).toBe('object');
+    expect(chat.metadata.inputSchema?.required).toEqual(['messages']);
+    expect(
+      (chat.metadata.inputSchema?.properties as Record<string, unknown>)?.messages
+    ).toBeDefined();
+    expect(chat.metadata.outputSchema).toEqual({ type: 'string' });
 
     const response = await chat.invoke({
       input: {
@@ -226,10 +228,12 @@ describe('Agent Types', () => {
     });
 
     expect(taskAgent.metadata.type).toBe('task');
-    expect(taskAgent.metadata.input?.type).toBe('object');
-    expect(taskAgent.metadata.input?.required).toEqual(['task']);
-    expect((taskAgent.metadata.input?.properties as Record<string, unknown>)?.task).toBeDefined();
-    expect(taskAgent.metadata.output?.description).toContain('stateless, single-shot');
+    expect(taskAgent.metadata.inputSchema?.type).toBe('object');
+    expect(taskAgent.metadata.inputSchema?.required).toEqual(['task']);
+    expect(
+      (taskAgent.metadata.inputSchema?.properties as Record<string, unknown>)?.task
+    ).toBeDefined();
+    expect(taskAgent.metadata.outputSchema?.description).toContain('stateless, single-shot');
 
     const response = await taskAgent.invoke({
       input: { task: 'summarize', text: 'Some content' },
@@ -237,10 +241,10 @@ describe('Agent Types', () => {
     expect(response.output).toBe('Task "summarize" on: Some content');
   });
 
-  it('explicit input overrides type defaults', () => {
+  it('explicit inputSchema overrides type defaults', () => {
     const custom = agent('custom', {
       type: 'prompt',
-      input: {
+      inputSchema: {
         type: 'object',
         properties: { q: { type: 'string' } },
         required: ['q'],
@@ -249,7 +253,7 @@ describe('Agent Types', () => {
     });
 
     expect(custom.metadata.type).toBe('prompt');
-    expect(custom.metadata.input?.required).toEqual(['q']);
+    expect(custom.metadata.inputSchema?.required).toEqual(['q']);
   });
 
   it('no type or input/output uses default prompt type', () => {
@@ -258,7 +262,7 @@ describe('Agent Types', () => {
     });
 
     expect(def.metadata.type).toBe('prompt');
-    expect(def.metadata.input?.required).toEqual(['prompt']);
+    expect(def.metadata.inputSchema?.required).toEqual(['prompt']);
   });
 
   it('type rag: metadata and invoke', async () => {
@@ -269,9 +273,11 @@ describe('Agent Types', () => {
     });
 
     expect(ragAgent.metadata.type).toBe('rag');
-    expect(ragAgent.metadata.input?.required).toEqual(['query']);
-    expect((ragAgent.metadata.input?.properties as Record<string, unknown>)?.query).toBeDefined();
-    expect(ragAgent.metadata.output).toEqual({ type: 'string' });
+    expect(ragAgent.metadata.inputSchema?.required).toEqual(['query']);
+    expect(
+      (ragAgent.metadata.inputSchema?.properties as Record<string, unknown>)?.query
+    ).toBeDefined();
+    expect(ragAgent.metadata.outputSchema).toEqual({ type: 'string' });
 
     const response = await ragAgent.invoke({ input: { query: 'What is X?' } });
     expect(response.output).toBe('Answer for: What is X?');
@@ -294,12 +300,12 @@ describe('Agent Types', () => {
     });
 
     expect(threadAgent.metadata.type).toBe('thread');
-    expect(threadAgent.metadata.input?.required).toEqual(['messages']);
+    expect(threadAgent.metadata.inputSchema?.required).toEqual(['messages']);
     expect(
-      (threadAgent.metadata.input?.properties as Record<string, unknown>)?.messages
+      (threadAgent.metadata.inputSchema?.properties as Record<string, unknown>)?.messages
     ).toBeDefined();
-    expect(threadAgent.metadata.output?.type).toBe('array');
-    expect((threadAgent.metadata.output as { items?: unknown })?.items).toBeDefined();
+    expect(threadAgent.metadata.outputSchema?.type).toBe('array');
+    expect((threadAgent.metadata.outputSchema as { items?: unknown })?.items).toBeDefined();
 
     const response = await threadAgent.invoke({
       input: { messages: [{ role: 'user', content: 'Hello' }] },
@@ -333,14 +339,14 @@ describe('Agent Types', () => {
 
     // Verify metadata
     expect(workflowAgent.metadata.type).toBe('workflow');
-    const inputSchema = workflowAgent.metadata.input;
+    const inputSchema = workflowAgent.metadata.inputSchema;
     expect(inputSchema?.required).toEqual(['task']);
     expect((inputSchema?.properties as Record<string, unknown>)?.task).toBeDefined();
     expect((inputSchema?.properties as Record<string, unknown>)?.state).toBeDefined();
     expect((inputSchema?.properties as Record<string, unknown>)?.resume).toBeDefined();
     expect(inputSchema?.additionalProperties).toBe(true);
 
-    const outputSchema = workflowAgent.metadata.output;
+    const outputSchema = workflowAgent.metadata.outputSchema;
     expect(outputSchema?.required).toEqual(['status', 'steps']);
     expect((outputSchema?.properties as Record<string, { enum?: string[] }>)?.status?.enum).toEqual(
       ['completed', 'failed', 'paused', 'running']

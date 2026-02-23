@@ -59,8 +59,8 @@ export class LangGraphWorkflowAgent extends Agent {
     super(options.name ?? 'langgraph-workflow-agent', {
       description: options.description ?? 'langgraph workflow agent',
       streaming: false,
-      inputSchema: AGENT_TYPES['workflow'].input,
-      outputSchema: AGENT_TYPES['workflow'].output,
+      inputSchema: AGENT_TYPES['workflow'].inputSchema,
+      outputSchema: AGENT_TYPES['workflow'].outputSchema,
       type: 'workflow',
       framework: 'langgraph',
       instructions: options.instructions,

@@ -40,7 +40,7 @@ import { agent, serve } from '@reminix/runtime';
 // Create an agent with the agent() factory
 const echo = agent('echo', {
   description: 'A simple echo agent that demonstrates the factory pattern',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: {
       message: { type: 'string' },

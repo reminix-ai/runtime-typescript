@@ -38,8 +38,8 @@ export class AnthropicChatAgent extends Agent {
     super(options.name ?? 'anthropic-agent', {
       description: options.description ?? 'anthropic chat agent',
       streaming: true,
-      inputSchema: AGENT_TYPES['chat'].input,
-      outputSchema: AGENT_TYPES['chat'].output,
+      inputSchema: AGENT_TYPES['chat'].inputSchema,
+      outputSchema: AGENT_TYPES['chat'].outputSchema,
       type: 'chat',
       framework: 'anthropic',
       instructions: options.instructions,

@@ -38,8 +38,8 @@ export class LangGraphThreadAgent extends Agent {
     super(options.name ?? 'langgraph-agent', {
       description: options.description ?? 'langgraph thread agent',
       streaming: true,
-      inputSchema: AGENT_TYPES['thread'].input,
-      outputSchema: AGENT_TYPES['thread'].output,
+      inputSchema: AGENT_TYPES['thread'].inputSchema,
+      outputSchema: AGENT_TYPES['thread'].outputSchema,
       type: 'thread',
       framework: 'langgraph',
       instructions: options.instructions,

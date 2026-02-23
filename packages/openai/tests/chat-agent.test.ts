@@ -37,7 +37,7 @@ describe('OpenAIChatAgent', () => {
     const agent = new OpenAIChatAgent(mockClient as any);
 
     expect(agent.metadata.type).toBe('chat');
-    expect(agent.metadata.input).toEqual(AGENT_TYPES['chat'].input);
+    expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['chat'].inputSchema);
   });
 });
 

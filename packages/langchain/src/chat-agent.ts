@@ -63,8 +63,8 @@ export class LangChainChatAgent extends Agent {
     super(options.name ?? 'langchain-agent', {
       description: options.description ?? 'langchain chat agent',
       streaming: true,
-      inputSchema: AGENT_TYPES['chat'].input,
-      outputSchema: AGENT_TYPES['chat'].output,
+      inputSchema: AGENT_TYPES['chat'].inputSchema,
+      outputSchema: AGENT_TYPES['chat'].outputSchema,
       type: 'chat',
       framework: 'langchain',
       instructions: options.instructions,

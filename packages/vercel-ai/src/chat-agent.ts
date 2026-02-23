@@ -51,8 +51,8 @@ export class VercelAIChatAgent extends Agent {
     super(options.name ?? 'vercel-ai-agent', {
       description: options.description ?? 'vercel-ai chat agent',
       streaming: true,
-      inputSchema: AGENT_TYPES['chat'].input,
-      outputSchema: AGENT_TYPES['chat'].output,
+      inputSchema: AGENT_TYPES['chat'].inputSchema,
+      outputSchema: AGENT_TYPES['chat'].outputSchema,
       type: 'chat',
       framework: 'vercel-ai',
       instructions: options.instructions,

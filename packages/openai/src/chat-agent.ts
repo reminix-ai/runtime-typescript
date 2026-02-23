@@ -31,8 +31,8 @@ export class OpenAIChatAgent extends Agent {
     super(options.name ?? 'openai-agent', {
       description: options.description ?? 'openai chat agent',
       streaming: true,
-      inputSchema: AGENT_TYPES['chat'].input,
-      outputSchema: AGENT_TYPES['chat'].output,
+      inputSchema: AGENT_TYPES['chat'].inputSchema,
+      outputSchema: AGENT_TYPES['chat'].outputSchema,
       type: 'chat',
       framework: 'openai',
       instructions: options.instructions,

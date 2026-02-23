@@ -73,8 +73,8 @@ describe('AnthropicThreadAgent', () => {
     const mockClient = { messages: { create: vi.fn() } };
     const agent = new AnthropicThreadAgent(mockClient as any, { tools: [makeMockTool()] });
     expect(agent.metadata.type).toBe('thread');
-    expect(agent.metadata.input).toEqual(AGENT_TYPES['thread'].input);
-    expect(agent.metadata.output).toEqual(AGENT_TYPES['thread'].output);
+    expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['thread'].inputSchema);
+    expect(agent.metadata.outputSchema).toEqual(AGENT_TYPES['thread'].outputSchema);
     expect(agent.metadata.capabilities.streaming).toBe(false);
   });
 });

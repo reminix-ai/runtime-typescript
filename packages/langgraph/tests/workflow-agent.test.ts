@@ -54,8 +54,8 @@ describe('LangGraphWorkflowAgent', () => {
     const agent = new LangGraphWorkflowAgent(mockGraph as any);
 
     expect(agent.metadata.type).toBe('workflow');
-    expect(agent.metadata.input).toEqual(AGENT_TYPES['workflow'].input);
-    expect(agent.metadata.output).toEqual(AGENT_TYPES['workflow'].output);
+    expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['workflow'].inputSchema);
+    expect(agent.metadata.outputSchema).toEqual(AGENT_TYPES['workflow'].outputSchema);
     expect(agent.metadata.framework).toBe('langgraph');
   });
 });

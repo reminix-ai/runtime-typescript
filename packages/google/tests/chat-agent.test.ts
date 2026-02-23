@@ -40,7 +40,7 @@ describe('GoogleChatAgent', () => {
     const agent = new GoogleChatAgent(mockClient as any);
 
     expect(agent.metadata.type).toBe('chat');
-    expect(agent.metadata.input).toEqual(AGENT_TYPES['chat'].input);
+    expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['chat'].inputSchema);
   });
 });
 

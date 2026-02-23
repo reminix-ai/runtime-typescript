@@ -1,7 +1,7 @@
 /**
  * Agent type schemas for Reminix Runtime.
  *
- * Defines named types with predefined input/output JSON schemas.
+ * Defines named types with predefined inputSchema/outputSchema JSON schemas.
  * These types standardize common agent patterns (prompt, chat, task, etc.)
  * so that clients and tooling can interoperate without inspecting individual schemas.
  */
@@ -122,190 +122,191 @@ export const MESSAGE_SCHEMA: JSONSchema = {
   },
 };
 
-export const AGENT_TYPES: Record<AgentType, { input: JSONSchema; output: JSONSchema }> = {
-  prompt: {
-    input: {
-      type: 'object',
-      properties: {
-        prompt: { type: 'string', description: 'The prompt or task for the agent' },
+export const AGENT_TYPES: Record<AgentType, { inputSchema: JSONSchema; outputSchema: JSONSchema }> =
+  {
+    prompt: {
+      inputSchema: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: 'The prompt or task for the agent' },
+        },
+        required: ['prompt'],
       },
-      required: ['prompt'],
+      outputSchema: { type: 'string' },
     },
-    output: { type: 'string' },
-  },
-  chat: {
-    input: {
-      type: 'object',
-      properties: {
-        messages: {
-          type: 'array',
-          description: 'Chat messages (OpenAI-style)',
-          items: MESSAGE_SCHEMA,
-        },
-      },
-      required: ['messages'],
-    },
-    output: { type: 'string' },
-  },
-  task: {
-    input: {
-      type: 'object',
-      properties: {
-        task: {
-          type: 'string',
-          description: 'Task name or description for stateless, single-shot execution',
-        },
-      },
-      required: ['task'],
-      additionalProperties: true,
-    },
-    output: {
-      description: 'Structured JSON result of stateless, single-shot execution',
-      type: 'object',
-      additionalProperties: true,
-    },
-  },
-  rag: {
-    input: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'The question to answer from documents' },
-        messages: {
-          type: 'array',
-          description: 'Optional prior conversation (chat-style RAG)',
-          items: MESSAGE_SCHEMA,
-        },
-        collectionIds: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Optional knowledge collection IDs to scope the search',
-        },
-      },
-      required: ['query'],
-    },
-    output: { type: 'string' },
-  },
-  thread: {
-    input: {
-      type: 'object',
-      properties: {
-        messages: {
-          type: 'array',
-          description: 'Chat messages with tool_calls and tool results (OpenAI-style)',
-          items: MESSAGE_SCHEMA,
-        },
-      },
-      required: ['messages'],
-    },
-    output: {
-      type: 'array',
-      description:
-        'Updated message thread (OpenAI-style, may include assistant message and tool_calls)',
-      items: MESSAGE_SCHEMA,
-    },
-  },
-  workflow: {
-    input: {
-      type: 'object',
-      properties: {
-        task: {
-          type: 'string',
-          description: 'Workflow task or description',
-        },
-        state: {
-          type: 'object',
-          description: 'Previous execution output passed back on resume (steps, result, etc.)',
-          additionalProperties: true,
-        },
-        resume: {
-          type: 'object',
-          description: 'Resume a paused workflow from a specific step',
-          properties: {
-            step: { type: 'string', description: 'Step name to resume from' },
-            input: {
-              type: 'object',
-              description: 'Optional input for the resumed step',
-              additionalProperties: true,
-            },
+    chat: {
+      inputSchema: {
+        type: 'object',
+        properties: {
+          messages: {
+            type: 'array',
+            description: 'Chat messages (OpenAI-style)',
+            items: MESSAGE_SCHEMA,
           },
-          required: ['step'],
         },
+        required: ['messages'],
       },
-      required: ['task'],
-      additionalProperties: true,
+      outputSchema: { type: 'string' },
     },
-    output: {
-      type: 'object',
-      description: 'Workflow execution result with step-level status tracking',
-      properties: {
-        status: {
-          type: 'string',
-          enum: ['completed', 'failed', 'paused', 'running'],
-          description: 'Overall workflow status',
+    task: {
+      inputSchema: {
+        type: 'object',
+        properties: {
+          task: {
+            type: 'string',
+            description: 'Task name or description for stateless, single-shot execution',
+          },
         },
-        steps: {
-          type: 'array',
-          description: 'Step-level execution results',
-          items: {
+        required: ['task'],
+        additionalProperties: true,
+      },
+      outputSchema: {
+        description: 'Structured JSON result of stateless, single-shot execution',
+        type: 'object',
+        additionalProperties: true,
+      },
+    },
+    rag: {
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'The question to answer from documents' },
+          messages: {
+            type: 'array',
+            description: 'Optional prior conversation (chat-style RAG)',
+            items: MESSAGE_SCHEMA,
+          },
+          collectionIds: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Optional knowledge collection IDs to scope the search',
+          },
+        },
+        required: ['query'],
+      },
+      outputSchema: { type: 'string' },
+    },
+    thread: {
+      inputSchema: {
+        type: 'object',
+        properties: {
+          messages: {
+            type: 'array',
+            description: 'Chat messages with tool_calls and tool results (OpenAI-style)',
+            items: MESSAGE_SCHEMA,
+          },
+        },
+        required: ['messages'],
+      },
+      outputSchema: {
+        type: 'array',
+        description:
+          'Updated message thread (OpenAI-style, may include assistant message and tool_calls)',
+        items: MESSAGE_SCHEMA,
+      },
+    },
+    workflow: {
+      inputSchema: {
+        type: 'object',
+        properties: {
+          task: {
+            type: 'string',
+            description: 'Workflow task or description',
+          },
+          state: {
             type: 'object',
+            description: 'Previous execution output passed back on resume (steps, result, etc.)',
+            additionalProperties: true,
+          },
+          resume: {
+            type: 'object',
+            description: 'Resume a paused workflow from a specific step',
             properties: {
-              name: { type: 'string', description: 'Step name' },
-              status: {
-                type: 'string',
-                enum: ['completed', 'failed', 'paused', 'skipped', 'pending'],
-                description: 'Step execution status',
+              step: { type: 'string', description: 'Step name to resume from' },
+              input: {
+                type: 'object',
+                description: 'Optional input for the resumed step',
+                additionalProperties: true,
               },
-              output: { description: 'Step output (any JSON value)' },
-              error: { type: 'string', description: 'Error message when step status is failed' },
             },
-            required: ['name', 'status'],
+            required: ['step'],
           },
         },
-        result: {
-          type: 'object',
-          description: 'Final workflow result',
-          additionalProperties: true,
-        },
-        error: {
-          type: 'string',
-          description: 'Error message (when status is failed)',
-        },
-        pendingAction: {
-          type: 'object',
-          description: 'Action required to continue (present when status is paused)',
-          properties: {
-            step: { type: 'string', description: 'Step awaiting action' },
-            type: {
-              type: 'string',
-              description: 'Action type (e.g. approval, input, decision)',
-            },
-            message: {
-              type: 'string',
-              description: 'Human-readable description of the required action',
-            },
-            options: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Available choices (for decision-type actions)',
-            },
-            inputSchema: {
-              type: 'object',
-              description: 'JSON Schema describing expected input (for type: input actions)',
-              additionalProperties: true,
-            },
-            assignee: {
-              type: 'string',
-              description: 'Who should handle this action (email, user ID, or role)',
-            },
-          },
-          required: ['step', 'type', 'message'],
-        },
+        required: ['task'],
+        additionalProperties: true,
       },
-      required: ['status', 'steps'],
+      outputSchema: {
+        type: 'object',
+        description: 'Workflow execution result with step-level status tracking',
+        properties: {
+          status: {
+            type: 'string',
+            enum: ['completed', 'failed', 'paused', 'running'],
+            description: 'Overall workflow status',
+          },
+          steps: {
+            type: 'array',
+            description: 'Step-level execution results',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', description: 'Step name' },
+                status: {
+                  type: 'string',
+                  enum: ['completed', 'failed', 'paused', 'skipped', 'pending'],
+                  description: 'Step execution status',
+                },
+                output: { description: 'Step output (any JSON value)' },
+                error: { type: 'string', description: 'Error message when step status is failed' },
+              },
+              required: ['name', 'status'],
+            },
+          },
+          result: {
+            type: 'object',
+            description: 'Final workflow result',
+            additionalProperties: true,
+          },
+          error: {
+            type: 'string',
+            description: 'Error message (when status is failed)',
+          },
+          pendingAction: {
+            type: 'object',
+            description: 'Action required to continue (present when status is paused)',
+            properties: {
+              step: { type: 'string', description: 'Step awaiting action' },
+              type: {
+                type: 'string',
+                description: 'Action type (e.g. approval, input, decision)',
+              },
+              message: {
+                type: 'string',
+                description: 'Human-readable description of the required action',
+              },
+              options: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Available choices (for decision-type actions)',
+              },
+              inputSchema: {
+                type: 'object',
+                description: 'JSON Schema describing expected input (for type: input actions)',
+                additionalProperties: true,
+              },
+              assignee: {
+                type: 'string',
+                description: 'Who should handle this action (email, user ID, or role)',
+              },
+            },
+            required: ['step', 'type', 'message'],
+          },
+        },
+        required: ['status', 'steps'],
+      },
     },
-  },
-};
+  };
 
 /** Default input/output schemas (same as prompt type). */
-export const DEFAULT_AGENT_INPUT = AGENT_TYPES[DEFAULT_AGENT_TYPE].input;
-export const DEFAULT_AGENT_OUTPUT = AGENT_TYPES[DEFAULT_AGENT_TYPE].output;
+export const DEFAULT_AGENT_INPUT = AGENT_TYPES[DEFAULT_AGENT_TYPE].inputSchema;
+export const DEFAULT_AGENT_OUTPUT = AGENT_TYPES[DEFAULT_AGENT_TYPE].outputSchema;

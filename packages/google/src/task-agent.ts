@@ -28,8 +28,8 @@ export class GoogleTaskAgent extends Agent {
     super(options.name ?? 'google-task-agent', {
       description: options.description ?? 'google task agent',
       streaming: false,
-      inputSchema: AGENT_TYPES['task'].input,
-      outputSchema: AGENT_TYPES['task'].output,
+      inputSchema: AGENT_TYPES['task'].inputSchema,
+      outputSchema: AGENT_TYPES['task'].outputSchema,
       type: 'task',
       framework: 'google',
       instructions: options.instructions,
