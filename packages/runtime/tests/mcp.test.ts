@@ -40,19 +40,19 @@ async function mcpRequest(
 function createTestTools() {
   const greetTool = tool('greet', {
     description: 'Greet someone by name',
-    input: {
+    inputSchema: {
       type: 'object',
       properties: {
         name: { type: 'string', description: 'Name to greet' },
       },
       required: ['name'],
     },
-    handler: async (input) => ({ message: `Hello, ${input.name}!` }),
+    handler: async (args) => ({ message: `Hello, ${args.name}!` }),
   });
 
   const addTool = tool('add', {
     description: 'Add two numbers',
-    input: {
+    inputSchema: {
       type: 'object',
       properties: {
         a: { type: 'number' },
@@ -60,7 +60,7 @@ function createTestTools() {
       },
       required: ['a', 'b'],
     },
-    handler: (input) => (input.a as number) + (input.b as number),
+    handler: (args) => (args.a as number) + (args.b as number),
   });
 
   return { greetTool, addTool };
@@ -165,7 +165,7 @@ describe('MCP Endpoint', () => {
     it('should handle tool execution errors', async () => {
       const failingTool = tool('failing', {
         description: 'A tool that always fails',
-        input: { type: 'object', properties: {} },
+        inputSchema: { type: 'object', properties: {} },
         handler: async () => {
           throw new Error('Something went wrong');
         },

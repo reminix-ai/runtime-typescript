@@ -64,7 +64,7 @@ export class OpenAIThreadAgent extends Agent {
       function: {
         name: tool.name,
         description: tool.metadata.description,
-        parameters: tool.metadata.input as OpenAI.FunctionParameters,
+        parameters: tool.metadata.inputSchema as OpenAI.FunctionParameters,
       },
     };
   }
@@ -187,7 +187,7 @@ export class OpenAIThreadAgent extends Agent {
           const args: Record<string, unknown> = JSON.parse(tc.function.arguments);
           const tool = this.toolMap.get(tc.function.name);
           if (!tool) throw new Error(`Tool not found: ${tc.function.name}`);
-          const toolRequest: ToolRequest = { input: args };
+          const toolRequest: ToolRequest = { arguments: args };
           const result = await tool.call(toolRequest);
           toolResult = JSON.stringify(result.output);
         } catch (e) {

@@ -65,7 +65,7 @@ export class AnthropicThreadAgent extends Agent {
     return {
       name: tool.name,
       description: tool.metadata.description,
-      input_schema: tool.metadata.input as Anthropic.Tool['input_schema'],
+      input_schema: tool.metadata.inputSchema as Anthropic.Tool['input_schema'],
     };
   }
 
@@ -154,7 +154,7 @@ export class AnthropicThreadAgent extends Agent {
         try {
           const tool = this.toolMap.get(block.name);
           if (!tool) throw new Error(`Tool not found: ${block.name}`);
-          const toolRequest: ToolRequest = { input: block.input as Record<string, unknown> };
+          const toolRequest: ToolRequest = { arguments: block.input as Record<string, unknown> };
           const result = await tool.call(toolRequest);
           toolResult = JSON.stringify(result.output);
         } catch (e) {

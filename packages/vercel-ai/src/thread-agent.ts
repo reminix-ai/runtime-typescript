@@ -60,9 +60,9 @@ export class VercelAIThreadAgent extends Agent {
     for (const t of this.tools) {
       result[t.name] = vercelTool({
         description: t.metadata.description,
-        inputSchema: jsonSchema(t.metadata.input as Record<string, unknown>),
+        inputSchema: jsonSchema(t.metadata.inputSchema as Record<string, unknown>),
         execute: async (args: Record<string, unknown>) => {
-          const toolRequest: ToolRequest = { input: args };
+          const toolRequest: ToolRequest = { arguments: args };
           const response = await t.call(toolRequest);
           return response.output;
         },

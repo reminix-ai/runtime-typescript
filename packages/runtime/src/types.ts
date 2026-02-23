@@ -79,7 +79,7 @@ export interface AgentResponse {
 
 /** Request type for tool call operations. */
 export interface ToolRequest {
-  input: Record<string, unknown>;
+  arguments: Record<string, unknown>;
   context?: Record<string, unknown>;
 }
 

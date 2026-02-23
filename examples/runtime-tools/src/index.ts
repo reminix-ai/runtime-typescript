@@ -18,12 +18,12 @@
  *     # Execute the weather tool
  *     curl -X POST http://localhost:8080/tools/get_weather/call \
  *       -H "Content-Type: application/json" \
- *       -d '{"input": {"location": "San Francisco"}}'
+ *       -d '{"arguments": {"location": "San Francisco"}}'
  *
  *     # Execute the calculator tool
  *     curl -X POST http://localhost:8080/tools/calculate/call \
  *       -H "Content-Type: application/json" \
- *       -d '{"input": {"a": 10, "b": 5, "operation": "add"}}'
+ *       -d '{"arguments": {"a": 10, "b": 5, "operation": "add"}}'
  */
 
 import { tool, serve } from '@reminix/runtime';
@@ -40,7 +40,7 @@ const weatherData: Record<string, { temp: number; condition: string }> = {
 // Tool 1: Get weather for a location (with output schema)
 const getWeather = tool('get_weather', {
   description: 'Get the current weather for a city',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: {
       location: {
@@ -57,7 +57,7 @@ const getWeather = tool('get_weather', {
     required: ['location'],
   },
   // Optional: define the output schema for documentation
-  output: {
+  outputSchema: {
     type: 'object',
     properties: {
       location: { type: 'string' },
@@ -66,14 +66,14 @@ const getWeather = tool('get_weather', {
       condition: { type: 'string' },
     },
   },
-  handler: async (input) => {
-    const location = (input.location as string).toLowerCase();
-    const units = (input.units as string) || 'fahrenheit';
+  handler: async (args) => {
+    const location = (args.location as string).toLowerCase();
+    const units = (args.units as string) || 'fahrenheit';
 
     const weather = weatherData[location];
     if (!weather) {
       return {
-        error: `Weather data not available for "${input.location}"`,
+        error: `Weather data not available for "${args.location}"`,
         available_cities: Object.keys(weatherData),
       };
     }
@@ -84,7 +84,7 @@ const getWeather = tool('get_weather', {
     }
 
     return {
-      location: input.location,
+      location: args.location,
       temperature: temp,
       units,
       condition: weather.condition,
@@ -95,7 +95,7 @@ const getWeather = tool('get_weather', {
 // Tool 2: Simple calculator
 const calculate = tool('calculate', {
   description: 'Perform basic math operations',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: {
       a: { type: 'number', description: 'First operand' },
@@ -108,10 +108,10 @@ const calculate = tool('calculate', {
     },
     required: ['a', 'b', 'operation'],
   },
-  handler: async (input) => {
-    const a = input.a as number;
-    const b = input.b as number;
-    const op = input.operation as string;
+  handler: async (args) => {
+    const a = args.a as number;
+    const b = args.b as number;
+    const op = args.operation as string;
 
     let result: number;
     switch (op) {
@@ -141,7 +141,7 @@ const calculate = tool('calculate', {
 // Tool 3: String utilities
 const stringUtils = tool('string_utils', {
   description: 'Perform string operations',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: {
       text: { type: 'string', description: 'Input text' },
@@ -153,9 +153,9 @@ const stringUtils = tool('string_utils', {
     },
     required: ['text', 'operation'],
   },
-  handler: async (input) => {
-    const text = input.text as string;
-    const op = input.operation as string;
+  handler: async (args) => {
+    const text = args.text as string;
+    const op = args.operation as string;
 
     switch (op) {
       case 'uppercase':

@@ -107,9 +107,9 @@ export function createMcpRoutes(tools: Tool[]): Hono {
       server.tool(
         tool.name,
         meta.description || `Tool: ${tool.name}`,
-        jsonSchemaToZodShape(meta.input),
+        jsonSchemaToZodShape(meta.inputSchema),
         async (args) => {
-          const result = await tool.call({ input: args as Record<string, unknown> });
+          const result = await tool.call({ arguments: args as Record<string, unknown> });
           return {
             content: [{ type: 'text' as const, text: JSON.stringify(result.output) }],
           };

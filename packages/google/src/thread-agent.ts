@@ -70,7 +70,7 @@ export class GoogleThreadAgent extends Agent {
     return {
       name: tool.name,
       description: tool.metadata.description,
-      parameters: tool.metadata.input,
+      parameters: tool.metadata.inputSchema,
     };
   }
 
@@ -170,7 +170,7 @@ export class GoogleThreadAgent extends Agent {
         try {
           const tool = this.toolMap.get(fc.name);
           if (!tool) throw new Error(`Tool not found: ${fc.name}`);
-          const toolRequest: ToolRequest = { input: fc.args };
+          const toolRequest: ToolRequest = { arguments: fc.args };
           const result = await tool.call(toolRequest);
           toolResult = result.output;
         } catch (e) {

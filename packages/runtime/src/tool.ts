@@ -16,15 +16,15 @@ const DEFAULT_TOOL_OUTPUT: JSONSchema = {
 /** Metadata for a tool */
 export interface ToolMetadata {
   description: string;
-  input: JSONSchema;
-  output: JSONSchema;
+  inputSchema: JSONSchema;
+  outputSchema: JSONSchema;
   tags?: string[];
   [key: string]: unknown;
 }
 
 /** Handler function type */
 export type ToolHandler = (
-  input: Record<string, unknown>,
+  args: Record<string, unknown>,
   context?: Record<string, unknown>
 ) => Promise<unknown> | unknown;
 
@@ -68,8 +68,8 @@ export abstract class Tool {
   get metadata(): ToolMetadata {
     const result: ToolMetadata = {
       description: this._description,
-      input: this._inputSchema,
-      output: this._outputSchema,
+      inputSchema: this._inputSchema,
+      outputSchema: this._outputSchema,
     };
     if (this._tags) {
       result.tags = this._tags;
@@ -90,9 +90,9 @@ export interface ToolOptions {
   /** Human-readable description of what the tool does */
   description: string;
   /** JSON Schema for input */
-  input: JSONSchema;
+  inputSchema: JSONSchema;
   /** Optional JSON Schema for output (defaults to string) */
-  output?: JSONSchema;
+  outputSchema?: JSONSchema;
   /** Optional list of tags for categorization */
   tags?: string[];
   /** Optional extra metadata */
@@ -112,7 +112,7 @@ export interface ToolOptions {
  *
  * const getWeather = tool('get_weather', {
  *   description: 'Get current weather for a location',
- *   input: {
+ *   inputSchema: {
  *     type: 'object',
  *     properties: {
  *       location: { type: 'string', description: 'City name' },
@@ -120,15 +120,15 @@ export interface ToolOptions {
  *     },
  *     required: ['location'],
  *   },
- *   output: {
+ *   outputSchema: {
  *     type: 'object',
  *     properties: {
  *       temp: { type: 'number' },
  *       condition: { type: 'string' },
  *     },
  *   },
- *   handler: async (input) => {
- *     const location = input.location as string;
+ *   handler: async (args) => {
+ *     const location = args.location as string;
  *     return { temp: 22, condition: 'sunny' };
  *   },
  * });
@@ -137,8 +137,8 @@ export interface ToolOptions {
 export function tool(name: string, options: ToolOptions): Tool {
   return new _FunctionTool(name, {
     description: options.description,
-    inputSchema: options.input,
-    outputSchema: options.output,
+    inputSchema: options.inputSchema,
+    outputSchema: options.outputSchema,
     tags: options.tags,
     metadata: options.metadata,
     handler: options.handler,
@@ -172,7 +172,7 @@ class _FunctionTool extends Tool {
   }
 
   async call(request: ToolRequest): Promise<ToolResponse> {
-    const result = await this._handler(request.input, request.context);
+    const result = await this._handler(request.arguments, request.context);
     return { output: result };
   }
 }
