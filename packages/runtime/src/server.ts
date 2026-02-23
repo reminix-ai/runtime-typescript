@@ -7,8 +7,9 @@ import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
 import type { Agent } from './agent.js';
 import type { Tool } from './tool.js';
-import type { AgentRequest, ToolRequest, RuntimeErrorResponse } from './types.js';
+import type { AgentRequest, RuntimeErrorResponse } from './types.js';
 import { VERSION } from './version.js';
+import { createMcpRoutes } from './mcp.js';
 
 /**
  * Enable debug mode via environment variable to include stack traces in error responses
@@ -103,10 +104,6 @@ export function createApp(options: CreateAppOptions): Hono {
         name: agent.name,
         ...agent.metadata,
       })),
-      tools: tools.map((tool) => ({
-        name: tool.name,
-        ...tool.metadata,
-      })),
     });
   });
 
@@ -181,43 +178,8 @@ export function createApp(options: CreateAppOptions): Hono {
     }
   });
 
-  // Tool call endpoint
-  app.post('/tools/:toolName/call', async (c) => {
-    const toolName = c.req.param('toolName');
-    const tool = toolMap.get(toolName);
-
-    if (!tool) {
-      return c.json(
-        createErrorResponse(new Error(`Tool '${toolName}' not found`), 'NotFoundError'),
-        404
-      );
-    }
-
-    const body = await c.req.json<ToolRequest>();
-
-    const request: ToolRequest = {
-      input: body.input ?? {},
-      context: body.context,
-    };
-
-    try {
-      const result = await tool.call(request);
-      return c.json(result);
-    } catch (error) {
-      // Determine error type and status code
-      let statusCode = 500;
-      let errorType = error instanceof Error ? error.constructor.name : 'ExecutionError';
-
-      if (error instanceof Error) {
-        if (error.name === 'ValidationError' || error.message.includes('validation')) {
-          statusCode = 400;
-          errorType = 'ValidationError';
-        }
-      }
-
-      return c.json(createErrorResponse(error, errorType), statusCode as 400 | 500);
-    }
-  });
+  // Mount MCP endpoint for tool discovery and execution
+  app.route('/mcp', createMcpRoutes(tools));
 
   return app;
 }
