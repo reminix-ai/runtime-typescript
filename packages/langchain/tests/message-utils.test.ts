@@ -30,12 +30,6 @@ describe('toLangChainMessage', () => {
     expect(result.content).toBe('You are helpful');
   });
 
-  it('should convert developer message to SystemMessage', () => {
-    const msg: Message = { role: 'developer', content: 'Instructions' };
-    const result = toLangChainMessage(msg);
-    expect(result).toBeInstanceOf(SystemMessage);
-  });
-
   it('should convert tool message to ToolMessage', () => {
     const msg: Message = { role: 'tool', content: 'Tool output', tool_call_id: 'call_1' };
     const result = toLangChainMessage(msg);

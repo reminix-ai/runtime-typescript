@@ -48,11 +48,10 @@ export class OpenAIChatAgent extends Agent {
   }
 
   private toOpenAIMessage(message: Message): OpenAI.Chat.ChatCompletionMessageParam {
-    const role = message.role === 'developer' ? 'system' : message.role;
-    if (role !== 'user' && role !== 'assistant' && role !== 'system')
+    if (message.role !== 'user' && message.role !== 'assistant' && message.role !== 'system')
       return { role: 'user', content: messageContentToText(message.content) };
     const result: OpenAI.Chat.ChatCompletionMessageParam = {
-      role,
+      role: message.role,
       content: messageContentToText(message.content) || '',
     };
     return result;

@@ -65,12 +65,11 @@ export class VercelAIChatAgent extends Agent {
 
   private toModelMessages(messages: Message[]): ModelMessage[] {
     return messages.map((m) => {
-      const role = m.role === 'developer' ? 'system' : m.role;
-      if (role !== 'user' && role !== 'assistant' && role !== 'system') {
+      if (m.role !== 'user' && m.role !== 'assistant' && m.role !== 'system') {
         return { role: 'user' as const, content: messageContentToText(m.content) };
       }
       return {
-        role,
+        role: m.role,
         content: messageContentToText(m.content) || '',
       };
     });

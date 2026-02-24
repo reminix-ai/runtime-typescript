@@ -35,7 +35,6 @@ export function toLangChainMessage(message: Message): BaseMessage {
       });
     }
     case 'system':
-    case 'developer':
       return new SystemMessage({ content: contentStr });
     case 'tool':
       return new ToolMessage({

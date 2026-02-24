@@ -70,10 +70,9 @@ export class OpenAIThreadAgent extends Agent {
   }
 
   private toOpenAIMessage(message: Message): OpenAI.Chat.ChatCompletionMessageParam {
-    const role = message.role === 'developer' ? 'system' : message.role;
     const content = messageContentToText(message.content) || '';
 
-    if (role === 'tool') {
+    if (message.role === 'tool') {
       return {
         role: 'tool',
         content,
@@ -81,7 +80,7 @@ export class OpenAIThreadAgent extends Agent {
       };
     }
 
-    if (role === 'assistant') {
+    if (message.role === 'assistant') {
       const result: OpenAI.Chat.ChatCompletionAssistantMessageParam = {
         role: 'assistant',
         content,
@@ -99,7 +98,7 @@ export class OpenAIThreadAgent extends Agent {
       return result;
     }
 
-    if (role === 'system') {
+    if (message.role === 'system') {
       return { role: 'system', content };
     }
 

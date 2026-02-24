@@ -64,7 +64,7 @@ export class AnthropicChatAgent extends Agent {
 
     for (const message of messages) {
       const text = messageContentToText(message.content);
-      if (message.role === 'system' || message.role === 'developer') {
+      if (message.role === 'system') {
         system = text;
       } else if (message.role === 'user' || message.role === 'assistant') {
         anthropicMessages.push({ role: message.role, content: text });

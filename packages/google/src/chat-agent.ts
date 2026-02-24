@@ -64,7 +64,7 @@ export class GoogleChatAgent extends Agent {
 
     for (const message of messages) {
       const text = messageContentToText(message.content);
-      if (message.role === 'system' || message.role === 'developer') {
+      if (message.role === 'system') {
         system = text;
       } else if (message.role === 'user') {
         contents.push({ role: 'user', parts: [{ text }] });

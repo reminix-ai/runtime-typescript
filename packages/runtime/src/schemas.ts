@@ -97,7 +97,7 @@ export const MESSAGE_SCHEMA: JSONSchema = {
   properties: {
     role: {
       type: 'string',
-      enum: ['developer', 'system', 'user', 'assistant', 'tool'],
+      enum: ['system', 'user', 'assistant', 'tool'],
       description: 'Message role',
     },
     content: {

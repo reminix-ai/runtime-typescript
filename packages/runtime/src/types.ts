@@ -2,8 +2,8 @@
  * Reminix Runtime Types
  */
 
-/** Valid message roles (OpenAI current; no legacy function role). */
-export type Role = 'developer' | 'system' | 'user' | 'assistant' | 'tool';
+/** Valid message roles. */
+export type Role = 'system' | 'user' | 'assistant' | 'tool';
 
 export interface ToolCall {
   id: string;
