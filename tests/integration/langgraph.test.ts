@@ -7,7 +7,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
-import { LangGraphThreadAgent } from '@reminix/langgraph';
+import { LangChainThreadAgent } from '@reminix/langchain';
 import { createApp } from '@reminix/runtime';
 import type { Hono } from 'hono';
 import { getOpenAIApiKey } from './setup.js';
@@ -35,7 +35,7 @@ describe('LangGraph Agent Integration', () => {
     const apiKey = getOpenAIApiKey();
     const llm = new ChatOpenAI({ model: 'gpt-4.1-nano', apiKey });
     const graph = createReactAgent({ llm, tools: [getWeather] });
-    const agent = new LangGraphThreadAgent(graph, { name: 'test-langgraph' });
+    const agent = new LangChainThreadAgent(graph, { name: 'test-langgraph' });
     app = createApp({ agents: [agent] });
   });
 
