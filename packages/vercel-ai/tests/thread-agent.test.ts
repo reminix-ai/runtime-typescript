@@ -4,55 +4,40 @@
 
 import { describe, it, expect, vi } from 'vitest';
 
-import type { AgentRequest, Tool } from '@reminix/runtime';
+import type { AgentRequest } from '@reminix/runtime';
 import { AGENT_TYPES } from '@reminix/runtime';
 import { VercelAIThreadAgent } from '../src/thread-agent.js';
 
-function makeMockTool(
-  name = 'get_weather',
-  result: unknown = { temp: 22, condition: 'sunny' }
-): Tool {
-  return {
-    name,
-    metadata: {
-      description: `Mock ${name} tool`,
-      input: {
-        type: 'object',
-        properties: { location: { type: 'string' } },
-        required: ['location'],
-      },
-      output: { type: 'object' },
-    },
-    call: vi.fn().mockResolvedValue({ output: result }),
-  };
-}
-
 describe('VercelAIThreadAgent', () => {
-  it('should be instantiable', () => {
+  it('should be instantiable with a LanguageModel', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIThreadAgent(mockModel as any, { tools: [makeMockTool()] });
+    const agent = new VercelAIThreadAgent(mockModel as any);
+    expect(agent).toBeInstanceOf(VercelAIThreadAgent);
+  });
+
+  it('should be instantiable with a ToolLoopAgent', () => {
+    const mockAgent = { generate: vi.fn(), stream: vi.fn() };
+    const agent = new VercelAIThreadAgent(mockAgent as any);
     expect(agent).toBeInstanceOf(VercelAIThreadAgent);
   });
 
   it('should accept custom options', () => {
     const mockModel = { modelId: 'gpt-4o' };
     const agent = new VercelAIThreadAgent(mockModel as any, {
-      tools: [makeMockTool()],
       name: 'my-thread-agent',
-      maxTurns: 5,
     });
     expect(agent.name).toBe('my-thread-agent');
   });
 
   it('should use default values if not provided', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIThreadAgent(mockModel as any, { tools: [makeMockTool()] });
+    const agent = new VercelAIThreadAgent(mockModel as any);
     expect(agent.name).toBe('vercel-ai-thread-agent');
   });
 
   it('should have thread type metadata', () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIThreadAgent(mockModel as any, { tools: [makeMockTool()] });
+    const agent = new VercelAIThreadAgent(mockModel as any);
     expect(agent.metadata.type).toBe('thread');
     expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['thread'].inputSchema);
     expect(agent.metadata.outputSchema).toEqual(AGENT_TYPES['thread'].outputSchema);
@@ -60,11 +45,10 @@ describe('VercelAIThreadAgent', () => {
   });
 });
 
-describe('VercelAIThreadAgent.invoke', () => {
-  it('should call generateText with tools and stopWhen', async () => {
+describe('VercelAIThreadAgent.invoke with LanguageModel', () => {
+  it('should call generateText with messages', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const tool = makeMockTool();
-    const agent = new VercelAIThreadAgent(mockModel as any, { tools: [tool] });
+    const agent = new VercelAIThreadAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({
       text: 'Hello!',
@@ -88,13 +72,12 @@ describe('VercelAIThreadAgent.invoke', () => {
     expect(mockGenerateText).toHaveBeenCalledOnce();
     const callArg = mockGenerateText.mock.calls[0][0];
     expect(callArg.model).toBe(mockModel);
-    expect(callArg.tools).toBeDefined();
-    expect(callArg.stopWhen).toBeDefined();
+    expect(callArg.messages).toBeDefined();
   });
 
   it('should return messages including input and response', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIThreadAgent(mockModel as any, { tools: [makeMockTool()] });
+    const agent = new VercelAIThreadAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({
       text: 'Hello!',
@@ -124,8 +107,7 @@ describe('VercelAIThreadAgent.invoke', () => {
 
   it('should include tool call and tool result messages', async () => {
     const mockModel = { modelId: 'gpt-4o' };
-    const tool = makeMockTool();
-    const agent = new VercelAIThreadAgent(mockModel as any, { tools: [tool] });
+    const agent = new VercelAIThreadAgent(mockModel as any);
 
     const mockGenerateText = vi.fn().mockResolvedValue({
       text: 'The weather in London is sunny, 22°C.',
@@ -179,29 +161,60 @@ describe('VercelAIThreadAgent.invoke', () => {
     expect(messages[3].role).toBe('assistant');
     expect(messages[3].content).toBe('The weather in London is sunny, 22°C.');
   });
+});
 
-  it('should use custom maxTurns in stopWhen', async () => {
-    const mockModel = { modelId: 'gpt-4o' };
-    const agent = new VercelAIThreadAgent(mockModel as any, {
-      tools: [makeMockTool()],
-      maxTurns: 5,
-    });
-
-    const mockGenerateText = vi.fn().mockResolvedValue({
-      text: 'Hi',
+describe('VercelAIThreadAgent.invoke with ToolLoopAgent', () => {
+  it('should call agent.generate with messages', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({
+      text: 'Done!',
       response: {
-        messages: [{ role: 'assistant', content: [{ type: 'text', text: 'Hi' }] }],
+        messages: [
+          {
+            role: 'assistant',
+            content: [{ type: 'text', text: 'Done!' }],
+          },
+        ],
       },
     });
-    (agent as any)._generateText = mockGenerateText;
+    const mockAgent = { generate: mockGenerate, stream: vi.fn() };
+    const agent = new VercelAIThreadAgent(mockAgent as any);
 
     const request: AgentRequest = {
-      input: { messages: [{ role: 'user', content: 'Hi' }] },
+      input: { messages: [{ role: 'user', content: 'Do something' }] },
     };
 
     await agent.invoke(request);
 
-    const callArg = mockGenerateText.mock.calls[0][0];
-    expect(callArg.stopWhen).toBeDefined();
+    expect(mockGenerate).toHaveBeenCalledOnce();
+    const callArg = mockGenerate.mock.calls[0][0];
+    expect(callArg.messages).toBeDefined();
+  });
+
+  it('should return messages from ToolLoopAgent response', async () => {
+    const mockGenerate = vi.fn().mockResolvedValue({
+      text: 'Result',
+      response: {
+        messages: [
+          {
+            role: 'assistant',
+            content: [{ type: 'text', text: 'Result' }],
+          },
+        ],
+      },
+    });
+    const mockAgent = { generate: mockGenerate, stream: vi.fn() };
+    const agent = new VercelAIThreadAgent(mockAgent as any);
+
+    const request: AgentRequest = {
+      input: { messages: [{ role: 'user', content: 'Hello' }] },
+    };
+
+    const result = await agent.invoke(request);
+    const messages = result.output as Record<string, unknown>[];
+
+    expect(messages).toHaveLength(2);
+    expect(messages[0].role).toBe('user');
+    expect(messages[1].role).toBe('assistant');
+    expect(messages[1].content).toBe('Result');
   });
 });

@@ -1,52 +1,21 @@
 /**
  * LangChain chat agent for Reminix Runtime.
+ *
+ * Accepts a CompiledStateGraph (from createAgent, with tools) or a plain Runnable.
  */
 
-import {
-  HumanMessage,
-  AIMessage,
-  SystemMessage,
-  ToolMessage,
-  type BaseMessage,
-} from '@langchain/core/messages';
+import { SystemMessage, type BaseMessage } from '@langchain/core/messages';
 import type { Runnable } from '@langchain/core/runnables';
 
 import {
   Agent,
   AGENT_TYPES,
-  messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
-  type Message,
 } from '@reminix/runtime';
 
-/**
- * Convert a Reminix message to a LangChain message.
- *
- * Exported for reuse by the langgraph agent.
- */
-export function toLangChainMessage(message: Message): BaseMessage {
-  const { role } = message;
-  const contentStr = messageContentToText(message.content);
-
-  switch (role) {
-    case 'user':
-      return new HumanMessage({ content: contentStr });
-    case 'assistant':
-      return new AIMessage({ content: contentStr });
-    case 'system':
-    case 'developer':
-      return new SystemMessage({ content: contentStr });
-    case 'tool':
-      return new ToolMessage({
-        content: contentStr,
-        tool_call_id: message.tool_call_id || 'unknown',
-      });
-    default:
-      return new HumanMessage({ content: contentStr });
-  }
-}
+import { toLangChainMessage } from './message-utils.js';
 
 export interface LangChainChatAgentOptions {
   name?: string;
@@ -56,8 +25,19 @@ export interface LangChainChatAgentOptions {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Detect if a runnable is a CompiledStateGraph (from langgraph createAgent).
+ */
+function isCompiledStateGraph(agent: Runnable): agent is Runnable & { getGraph: () => unknown } {
+  return (
+    'getGraph' in agent &&
+    typeof (agent as unknown as Record<string, unknown>).getGraph === 'function'
+  );
+}
+
 export class LangChainChatAgent extends Agent {
   private agent: Runnable;
+  private _isGraph: boolean;
 
   constructor(agent: Runnable, options: LangChainChatAgentOptions = {}) {
     super(options.name ?? 'langchain-agent', {
@@ -72,6 +52,7 @@ export class LangChainChatAgent extends Agent {
       metadata: options.metadata,
     });
     this.agent = agent;
+    this._isGraph = isCompiledStateGraph(agent);
   }
 
   private buildLangChainInput(request: AgentRequest): unknown {
@@ -82,28 +63,49 @@ export class LangChainChatAgent extends Agent {
       if (this.instructions) {
         lcMessages.unshift(new SystemMessage({ content: this.instructions }));
       }
+      if (this._isGraph) {
+        return { messages: lcMessages };
+      }
       return lcMessages;
     } else if ('prompt' in request.input) {
-      return (request.input as Record<string, unknown>).prompt;
+      const prompt = (request.input as Record<string, unknown>).prompt;
+      if (this._isGraph) {
+        return { messages: [new SystemMessage({ content: String(prompt) })] };
+      }
+      return prompt;
     } else {
+      if (this._isGraph) {
+        return { messages: [new SystemMessage({ content: JSON.stringify(request.input) })] };
+      }
       return request.input;
     }
+  }
+
+  private extractOutput(response: unknown): unknown {
+    if (this._isGraph) {
+      // CompiledStateGraph returns { messages: BaseMessage[] }
+      const messages = (response as { messages: BaseMessage[] }).messages;
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg) {
+        const content = lastMsg.content;
+        return typeof content === 'string' ? content : String(content);
+      }
+      return '';
+    }
+
+    if (response && typeof response === 'object' && 'content' in response) {
+      const content = (response as { content: unknown }).content;
+      return typeof content === 'string' ? content : String(content);
+    } else if (response && typeof response === 'object') {
+      return response;
+    }
+    return String(response);
   }
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {
     const invokeInput = this.buildLangChainInput(request);
     const response = await this.agent.invoke(invokeInput);
-
-    let output: unknown;
-    if (response && typeof response === 'object' && 'content' in response) {
-      output = typeof response.content === 'string' ? response.content : String(response.content);
-    } else if (response && typeof response === 'object') {
-      output = response;
-    } else {
-      output = String(response);
-    }
-
-    return { output };
+    return { output: this.extractOutput(response) };
   }
 
   async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
@@ -111,8 +113,25 @@ export class LangChainChatAgent extends Agent {
 
     for await (const chunk of await this.agent.stream(streamInput)) {
       let content: string;
-      if (chunk && typeof chunk === 'object' && 'content' in chunk) {
-        content = typeof chunk.content === 'string' ? chunk.content : String(chunk.content);
+      if (this._isGraph) {
+        // Graph streams events — extract text content from message chunks
+        if (chunk && typeof chunk === 'object' && 'messages' in chunk) {
+          const messages = (chunk as { messages: BaseMessage[] }).messages;
+          const lastMsg = messages[messages.length - 1];
+          if (lastMsg) {
+            content =
+              typeof lastMsg.content === 'string' ? lastMsg.content : String(lastMsg.content);
+          } else {
+            continue;
+          }
+        } else {
+          continue;
+        }
+      } else if (chunk && typeof chunk === 'object' && 'content' in chunk) {
+        content =
+          typeof (chunk as { content: unknown }).content === 'string'
+            ? ((chunk as { content: string }).content as string)
+            : String((chunk as { content: unknown }).content);
       } else if (typeof chunk === 'object') {
         content = JSON.stringify(chunk);
       } else {

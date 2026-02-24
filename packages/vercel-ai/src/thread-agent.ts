@@ -1,27 +1,25 @@
 /**
  * Vercel AI SDK thread agent for Reminix Runtime.
  *
- * Uses generateText() with tools and stopWhen — Vercel AI SDK handles the tool loop natively.
+ * Accepts a ToolLoopAgent (pre-configured with tools) or a plain LanguageModel.
+ * The framework handles the tool loop — this adapter just maps messages in/out.
  */
 
-import { generateText, tool as vercelTool, jsonSchema, stepCountIs, type LanguageModel } from 'ai';
+import type { ToolLoopAgent } from 'ai';
+import { generateText, type LanguageModel, type ModelMessage } from 'ai';
 
 import {
   Agent,
   AGENT_TYPES,
-  type Tool,
   buildMessagesFromInput,
   messageContentToText,
   type AgentRequest,
   type AgentResponse,
   type Message,
-  type ToolRequest,
 } from '@reminix/runtime';
 
 export interface VercelAIThreadAgentOptions {
-  tools: Tool[];
   name?: string;
-  maxTurns?: number;
   description?: string;
   instructions?: string;
   tags?: string[];
@@ -29,16 +27,27 @@ export interface VercelAIThreadAgentOptions {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyToolSet = Record<string, ReturnType<typeof vercelTool<any, any>>>;
+type AnyToolLoopAgent = ToolLoopAgent<any, any, any>;
+
+function isToolLoopAgent(input: unknown): input is AnyToolLoopAgent {
+  return (
+    input !== null &&
+    typeof input === 'object' &&
+    'generate' in input &&
+    typeof (input as AnyToolLoopAgent).generate === 'function'
+  );
+}
 
 export class VercelAIThreadAgent extends Agent {
-  private model: LanguageModel;
-  private tools: Tool[];
-  private _maxTurns: number;
+  private modelOrAgent: LanguageModel | AnyToolLoopAgent;
+  private isAgent: boolean;
 
   protected _generateText = generateText;
 
-  constructor(model: LanguageModel, options: VercelAIThreadAgentOptions) {
+  constructor(
+    modelOrAgent: LanguageModel | AnyToolLoopAgent,
+    options: VercelAIThreadAgentOptions = {}
+  ) {
     super(options.name ?? 'vercel-ai-thread-agent', {
       description: options.description ?? 'vercel-ai thread agent',
       streaming: false,
@@ -50,67 +59,39 @@ export class VercelAIThreadAgent extends Agent {
       tags: options.tags,
       metadata: options.metadata,
     });
-    this.model = model;
-    this.tools = options.tools;
-    this._maxTurns = options.maxTurns ?? 10;
+    this.modelOrAgent = modelOrAgent;
+    this.isAgent = isToolLoopAgent(modelOrAgent);
   }
 
-  private buildVercelTools(): AnyToolSet {
-    const result: AnyToolSet = {};
-    for (const t of this.tools) {
-      result[t.name] = vercelTool({
-        description: t.metadata.description,
-        inputSchema: jsonSchema(t.metadata.inputSchema as Record<string, unknown>),
-        execute: async (args: Record<string, unknown>) => {
-          const toolRequest: ToolRequest = { arguments: args };
-          const response = await t.call(toolRequest);
-          return response.output;
-        },
-      });
-    }
-    return result;
-  }
-
-  private toModelMessages(messages: Message[]): Array<{
-    role: 'system' | 'user' | 'assistant';
-    content: string;
-  }> {
+  private toModelMessages(messages: Message[]): ModelMessage[] {
     return messages.map((m) => {
       const role = m.role === 'developer' ? 'system' : m.role;
-      const validRole =
-        role === 'user' || role === 'assistant' || role === 'system' ? role : 'user';
+      if (role !== 'user' && role !== 'assistant' && role !== 'system') {
+        return { role: 'user' as const, content: messageContentToText(m.content) };
+      }
       return {
-        role: validRole,
+        role,
         content: messageContentToText(m.content) || '',
       };
     });
   }
 
-  async invoke(request: AgentRequest): Promise<AgentResponse> {
-    const inputMessages = buildMessagesFromInput(request);
-    const modelMessages = this.toModelMessages(inputMessages);
-    const vercelTools = this.buildVercelTools();
+  /**
+   * Convert Vercel AI SDK response messages to Reminix Message format.
+   */
+  private convertResponseMessages(
+    responseMessages: Array<{ role: string; content: unknown }>
+  ): Message[] {
+    const result: Message[] = [];
 
-    const result = await this._generateText({
-      model: this.model,
-      messages: modelMessages,
-      tools: vercelTools,
-      stopWhen: stepCountIs(this._maxTurns),
-      ...(this.instructions && { system: this.instructions }),
-    });
-
-    // Build output messages from the input + response messages
-    const outputMessages: Message[] = [...inputMessages];
-
-    // Add response messages from Vercel AI SDK
-    for (const msg of result.response.messages) {
+    for (const msg of responseMessages) {
       if (msg.role === 'assistant') {
         const textParts: string[] = [];
         const toolCalls: Message['tool_calls'] = [];
 
         if (typeof msg.content === 'string') {
           textParts.push(msg.content);
-        } else {
+        } else if (Array.isArray(msg.content)) {
           for (const part of msg.content) {
             if (part.type === 'text') {
               textParts.push(part.text);
@@ -127,12 +108,12 @@ export class VercelAIThreadAgent extends Agent {
           }
         }
 
-        outputMessages.push({
+        result.push({
           role: 'assistant',
           content: textParts.join(' ') || '',
           ...(toolCalls.length > 0 && { tool_calls: toolCalls }),
         });
-      } else if (msg.role === 'tool') {
+      } else if (msg.role === 'tool' && Array.isArray(msg.content)) {
         for (const part of msg.content) {
           if (part.type === 'tool-result') {
             const outputVal = part.output;
@@ -142,7 +123,7 @@ export class VercelAIThreadAgent extends Agent {
             } else {
               content = JSON.stringify(outputVal);
             }
-            outputMessages.push({
+            result.push({
               role: 'tool',
               content,
               tool_call_id: part.toolCallId,
@@ -151,6 +132,33 @@ export class VercelAIThreadAgent extends Agent {
         }
       }
     }
+
+    return result;
+  }
+
+  async invoke(request: AgentRequest): Promise<AgentResponse> {
+    const inputMessages = buildMessagesFromInput(request);
+    const modelMessages = this.toModelMessages(inputMessages);
+
+    let responseMessages: Array<{ role: string; content: unknown }>;
+
+    if (this.isAgent) {
+      const agent = this.modelOrAgent as AnyToolLoopAgent;
+      const result = await agent.generate({ messages: modelMessages, options: {} });
+      responseMessages = result.response.messages;
+    } else {
+      const model = this.modelOrAgent as LanguageModel;
+      const result = await this._generateText({
+        model,
+        messages: modelMessages,
+        ...(this.instructions && { system: this.instructions }),
+      });
+      responseMessages = result.response.messages;
+    }
+
+    // Build output: input messages + converted response messages
+    const converted = this.convertResponseMessages(responseMessages);
+    const outputMessages = [...inputMessages, ...converted];
 
     // Strip undefined fields from messages
     const output = outputMessages.map((m) => {

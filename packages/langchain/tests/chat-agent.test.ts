@@ -40,7 +40,7 @@ describe('LangChainChatAgent', () => {
   });
 });
 
-describe('LangChainChatAgent.invoke', () => {
+describe('LangChainChatAgent.invoke with Runnable', () => {
   it('should call the runnable with the input', async () => {
     const mockRunnable = {
       invoke: vi.fn().mockResolvedValue(new AIMessage({ content: 'Hello!' })),
@@ -105,5 +105,36 @@ describe('LangChainChatAgent.invoke', () => {
     expect(callArg[1]).toBeInstanceOf(HumanMessage);
     expect(callArg[2]).toBeInstanceOf(AIMessage);
     expect(callArg[3]).toBeInstanceOf(HumanMessage);
+  });
+});
+
+describe('LangChainChatAgent.invoke with CompiledStateGraph', () => {
+  it('should detect CompiledStateGraph and wrap input as { messages }', async () => {
+    const mockGraph = {
+      invoke: vi.fn().mockResolvedValue({
+        messages: [
+          new HumanMessage({ content: 'Hello' }),
+          new AIMessage({ content: 'Hi from graph!' }),
+        ],
+      }),
+      getGraph: vi.fn(),
+    };
+
+    const agent = new LangChainChatAgent(mockGraph as any);
+    const request: AgentRequest = {
+      input: {
+        messages: [{ role: 'user', content: 'Hello' }],
+      },
+    };
+
+    const response = await agent.invoke(request);
+
+    // Should wrap as { messages: [...] } for graph
+    const callArg = mockGraph.invoke.mock.calls[0][0];
+    expect(callArg).toHaveProperty('messages');
+    expect(Array.isArray(callArg.messages)).toBe(true);
+
+    // Should extract text from last AI message
+    expect(response.output).toBe('Hi from graph!');
   });
 });
