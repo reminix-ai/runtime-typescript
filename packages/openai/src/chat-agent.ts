@@ -7,12 +7,12 @@ import type OpenAI from 'openai';
 import {
   Agent,
   AGENT_TYPES,
-  messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
-  type Message,
 } from '@reminix/runtime';
+
+import { toOpenAIMessage } from './message-utils.js';
 
 export interface OpenAIChatAgentOptions {
   name?: string;
@@ -47,19 +47,9 @@ export class OpenAIChatAgent extends Agent {
     return this._model;
   }
 
-  private toOpenAIMessage(message: Message): OpenAI.Chat.ChatCompletionMessageParam {
-    if (message.role !== 'user' && message.role !== 'assistant' && message.role !== 'system')
-      return { role: 'user', content: messageContentToText(message.content) };
-    const result: OpenAI.Chat.ChatCompletionMessageParam = {
-      role: message.role,
-      content: messageContentToText(message.content) || '',
-    };
-    return result;
-  }
-
   async invoke(request: AgentRequest): Promise<AgentResponse> {
     const messages = buildMessagesFromInput(request);
-    const openaiMessages = messages.map((m) => this.toOpenAIMessage(m));
+    const openaiMessages = messages.map((m) => toOpenAIMessage(m));
     if (this.instructions) {
       openaiMessages.unshift({ role: 'system', content: this.instructions });
     }
@@ -75,7 +65,7 @@ export class OpenAIChatAgent extends Agent {
 
   async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
     const messages = buildMessagesFromInput(request);
-    const openaiMessages = messages.map((m) => this.toOpenAIMessage(m));
+    const openaiMessages = messages.map((m) => toOpenAIMessage(m));
     if (this.instructions) {
       openaiMessages.unshift({ role: 'system', content: this.instructions });
     }

@@ -10,12 +10,12 @@ import { generateText, streamText, type LanguageModel, type ModelMessage } from 
 import {
   Agent,
   AGENT_TYPES,
-  messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
-  type Message,
 } from '@reminix/runtime';
+
+import { toModelMessages } from './message-utils.js';
 
 export interface VercelAIChatAgentOptions {
   name?: string;
@@ -63,18 +63,6 @@ export class VercelAIChatAgent extends Agent {
     this.isAgent = isToolLoopAgent(modelOrAgent);
   }
 
-  private toModelMessages(messages: Message[]): ModelMessage[] {
-    return messages.map((m) => {
-      if (m.role !== 'user' && m.role !== 'assistant' && m.role !== 'system') {
-        return { role: 'user' as const, content: messageContentToText(m.content) };
-      }
-      return {
-        role: m.role,
-        content: messageContentToText(m.content) || '',
-      };
-    });
-  }
-
   private buildInputFromRequest(request: AgentRequest): {
     prompt?: string;
     messages?: ModelMessage[];
@@ -82,7 +70,7 @@ export class VercelAIChatAgent extends Agent {
     const messages = buildMessagesFromInput(request);
 
     if ('messages' in request.input) {
-      return { messages: this.toModelMessages(messages) };
+      return { messages: toModelMessages(messages) };
     } else if ('prompt' in request.input) {
       return { prompt: String((request.input as Record<string, unknown>).prompt) };
     } else {

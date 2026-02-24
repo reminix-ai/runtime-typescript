@@ -7,12 +7,12 @@ import type Anthropic from '@anthropic-ai/sdk';
 import {
   Agent,
   AGENT_TYPES,
-  messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
-  type Message,
 } from '@reminix/runtime';
+
+import { toAnthropicMessages } from './message-utils.js';
 
 export interface AnthropicChatAgentOptions {
   name?: string;
@@ -22,11 +22,6 @@ export interface AnthropicChatAgentOptions {
   instructions?: string;
   tags?: string[];
   metadata?: Record<string, unknown>;
-}
-
-interface AnthropicMessage {
-  role: 'user' | 'assistant';
-  content: string;
 }
 
 export class AnthropicChatAgent extends Agent {
@@ -55,25 +50,6 @@ export class AnthropicChatAgent extends Agent {
     return this._model;
   }
 
-  private extractSystemAndMessages(messages: Message[]): {
-    system: string | undefined;
-    messages: AnthropicMessage[];
-  } {
-    let system: string | undefined;
-    const anthropicMessages: AnthropicMessage[] = [];
-
-    for (const message of messages) {
-      const text = messageContentToText(message.content);
-      if (message.role === 'system') {
-        system = text;
-      } else if (message.role === 'user' || message.role === 'assistant') {
-        anthropicMessages.push({ role: message.role, content: text });
-      }
-    }
-
-    return { system, messages: anthropicMessages };
-  }
-
   private extractContent(response: Anthropic.Message): string {
     for (const block of response.content) {
       if (block.type === 'text') {
@@ -85,7 +61,7 @@ export class AnthropicChatAgent extends Agent {
 
   async invoke(request: AgentRequest): Promise<AgentResponse> {
     const messages = buildMessagesFromInput(request);
-    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
+    const { system, messages: anthropicMessages } = toAnthropicMessages(messages);
     const effectiveSystem = this.instructions
       ? system
         ? this.instructions + '\n\n' + system
@@ -105,7 +81,7 @@ export class AnthropicChatAgent extends Agent {
 
   async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
     const messages = buildMessagesFromInput(request);
-    const { system, messages: anthropicMessages } = this.extractSystemAndMessages(messages);
+    const { system, messages: anthropicMessages } = toAnthropicMessages(messages);
     const effectiveSystem = this.instructions
       ? system
         ? this.instructions + '\n\n' + system

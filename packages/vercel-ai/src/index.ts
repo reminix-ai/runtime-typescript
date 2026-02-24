@@ -4,3 +4,4 @@ export { VercelAIThreadAgent } from './thread-agent.js';
 export type { VercelAIThreadAgentOptions } from './thread-agent.js';
 export { VercelAITaskAgent } from './task-agent.js';
 export type { VercelAITaskAgentOptions } from './task-agent.js';
+export { toModelMessages, fromModelMessages } from './message-utils.js';

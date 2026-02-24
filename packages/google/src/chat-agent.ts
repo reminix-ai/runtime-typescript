@@ -7,12 +7,12 @@ import type { GoogleGenAI } from '@google/genai';
 import {
   Agent,
   AGENT_TYPES,
-  messageContentToText,
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
-  type Message,
 } from '@reminix/runtime';
+
+import { toGeminiContents } from './message-utils.js';
 
 export interface GoogleChatAgentOptions {
   name?: string;
@@ -22,11 +22,6 @@ export interface GoogleChatAgentOptions {
   instructions?: string;
   tags?: string[];
   metadata?: Record<string, unknown>;
-}
-
-interface GeminiContent {
-  role: 'user' | 'model';
-  parts: { text: string }[];
 }
 
 export class GoogleChatAgent extends Agent {
@@ -55,30 +50,9 @@ export class GoogleChatAgent extends Agent {
     return this._model;
   }
 
-  private extractSystemAndContents(messages: Message[]): {
-    system: string | undefined;
-    contents: GeminiContent[];
-  } {
-    let system: string | undefined;
-    const contents: GeminiContent[] = [];
-
-    for (const message of messages) {
-      const text = messageContentToText(message.content);
-      if (message.role === 'system') {
-        system = text;
-      } else if (message.role === 'user') {
-        contents.push({ role: 'user', parts: [{ text }] });
-      } else if (message.role === 'assistant') {
-        contents.push({ role: 'model', parts: [{ text }] });
-      }
-    }
-
-    return { system, contents };
-  }
-
   async invoke(request: AgentRequest): Promise<AgentResponse> {
     const messages = buildMessagesFromInput(request);
-    const { system, contents } = this.extractSystemAndContents(messages);
+    const { system, contents } = toGeminiContents(messages);
     const effectiveSystem = this.instructions
       ? system
         ? this.instructions + '\n\n' + system
@@ -99,7 +73,7 @@ export class GoogleChatAgent extends Agent {
 
   async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
     const messages = buildMessagesFromInput(request);
-    const { system, contents } = this.extractSystemAndContents(messages);
+    const { system, contents } = toGeminiContents(messages);
     const effectiveSystem = this.instructions
       ? system
         ? this.instructions + '\n\n' + system
