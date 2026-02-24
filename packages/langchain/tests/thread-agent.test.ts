@@ -40,7 +40,7 @@ describe('LangChainThreadAgent', () => {
     expect(agent.metadata.type).toBe('thread');
     expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['thread'].inputSchema);
     expect(agent.metadata.outputSchema).toEqual(AGENT_TYPES['thread'].outputSchema);
-    expect(agent.metadata.capabilities.streaming).toBe(false);
+    expect(agent.metadata.capabilities.streaming).toBe(true);
   });
 });
 
@@ -121,5 +121,32 @@ describe('LangChainThreadAgent.invoke with Runnable', () => {
     expect(messages.length).toBeGreaterThanOrEqual(2);
     expect(messages[messages.length - 1].role).toBe('assistant');
     expect(messages[messages.length - 1].content).toBe('Response');
+  });
+});
+
+describe('LangChainThreadAgent.invokeStream', () => {
+  it('should yield MessageEvent for each message from graph', async () => {
+    const mockGraph = {
+      invoke: vi.fn().mockResolvedValue({
+        messages: [new HumanMessage({ content: 'Hello' }), new AIMessage({ content: 'Hi!' })],
+      }),
+      getGraph: vi.fn(),
+    };
+
+    const agent = new LangChainThreadAgent(mockGraph as any);
+    const request: AgentRequest = {
+      input: { messages: [{ role: 'user', content: 'Hello' }] },
+    };
+
+    const events: unknown[] = [];
+    for await (const event of agent.invokeStream!(request)) {
+      events.push(event);
+    }
+
+    expect(events).toHaveLength(2);
+    expect((events[0] as any).type).toBe('message');
+    expect((events[0] as any).message.role).toBe('user');
+    expect((events[1] as any).type).toBe('message');
+    expect((events[1] as any).message.role).toBe('assistant');
   });
 });

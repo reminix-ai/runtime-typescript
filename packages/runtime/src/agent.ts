@@ -3,6 +3,7 @@
  */
 
 import type { AgentRequest, AgentResponse, JSONSchema, Capabilities } from './types.js';
+import type { StreamEvent } from './stream-events.js';
 import {
   AGENT_TYPES,
   DEFAULT_AGENT_INPUT,
@@ -103,7 +104,7 @@ export abstract class Agent {
 
   abstract invoke(request: AgentRequest): Promise<AgentResponse>;
 
-  invokeStream?(request: AgentRequest): AsyncIterable<string>;
+  invokeStream?(request: AgentRequest): AsyncIterable<string | StreamEvent>;
 }
 
 // === Agent Options ===
@@ -146,7 +147,7 @@ export interface AgentOptions {
     | ((
         input: Record<string, unknown>,
         context?: Record<string, unknown>
-      ) => AsyncGenerator<string, void, unknown>);
+      ) => AsyncGenerator<string | StreamEvent, void, unknown>);
 }
 
 // === agent() factory ===
@@ -210,7 +211,7 @@ export function agent(name: string, options: AgentOptions): Agent {
     const streamFn = options.handler as (
       input: Record<string, unknown>,
       context?: Record<string, unknown>
-    ) => AsyncGenerator<string, void, unknown>;
+    ) => AsyncGenerator<string | StreamEvent, void, unknown>;
 
     return new _FunctionAgent(name, {
       description: options.description,
@@ -223,13 +224,18 @@ export function agent(name: string, options: AgentOptions): Agent {
       invokeFn: async (request: AgentRequest): Promise<AgentResponse> => {
         const chunks: string[] = [];
         for await (const chunk of streamFn(request.input, request.context)) {
-          chunks.push(chunk);
+          if (typeof chunk === 'string') {
+            chunks.push(chunk);
+          } else if (chunk.type === 'text_delta') {
+            chunks.push(chunk.delta);
+          }
+          // Skip non-text events when collecting for non-streaming requests
         }
         return { output: chunks.join('') };
       },
       invokeStreamFn: async function* (
         request: AgentRequest
-      ): AsyncGenerator<string, void, unknown> {
+      ): AsyncGenerator<string | StreamEvent, void, unknown> {
         yield* streamFn(request.input, request.context);
       },
     });
@@ -259,7 +265,9 @@ export function agent(name: string, options: AgentOptions): Agent {
 
 class _FunctionAgent extends Agent {
   private _invokeFn: (request: AgentRequest) => Promise<AgentResponse>;
-  private _invokeStreamFn?: (request: AgentRequest) => AsyncGenerator<string, void, unknown>;
+  private _invokeStreamFn?: (
+    request: AgentRequest
+  ) => AsyncGenerator<string | StreamEvent, void, unknown>;
 
   constructor(
     name: string,
@@ -272,7 +280,9 @@ class _FunctionAgent extends Agent {
       tags?: string[];
       metadata?: Record<string, unknown>;
       invokeFn: (request: AgentRequest) => Promise<AgentResponse>;
-      invokeStreamFn?: (request: AgentRequest) => AsyncGenerator<string, void, unknown>;
+      invokeStreamFn?: (
+        request: AgentRequest
+      ) => AsyncGenerator<string | StreamEvent, void, unknown>;
     }
   ) {
     super(name, {
@@ -292,7 +302,7 @@ class _FunctionAgent extends Agent {
     return this._invokeFn(request);
   }
 
-  async *invokeStream(request: AgentRequest): AsyncGenerator<string, void, unknown> {
+  async *invokeStream(request: AgentRequest): AsyncGenerator<string | StreamEvent, void, unknown> {
     if (!this._invokeStreamFn) {
       throw new Error(`Streaming not supported for agent '${this.name}'`);
     }

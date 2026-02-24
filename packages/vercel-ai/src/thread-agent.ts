@@ -14,6 +14,9 @@ import {
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
+  type StreamEvent,
+  type MessageEvent,
+  type Message,
 } from '@reminix/runtime';
 
 import { toModelMessages, fromModelMessages } from './message-utils.js';
@@ -50,7 +53,7 @@ export class VercelAIThreadAgent extends Agent {
   ) {
     super(options.name ?? 'vercel-ai-thread-agent', {
       description: options.description ?? 'vercel-ai thread agent',
-      streaming: false,
+      streaming: true,
       inputSchema: AGENT_TYPES['thread'].inputSchema,
       outputSchema: AGENT_TYPES['thread'].outputSchema,
       type: 'thread',
@@ -97,5 +100,14 @@ export class VercelAIThreadAgent extends Agent {
     });
 
     return { output };
+  }
+
+  async *invokeStream(request: AgentRequest): AsyncGenerator<string | StreamEvent, void, unknown> {
+    const result = await this.invoke(request);
+    const messages = result.output as Message[];
+    for (const message of messages) {
+      const event: MessageEvent = { type: 'message', message };
+      yield event;
+    }
   }
 }

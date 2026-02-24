@@ -7,9 +7,21 @@ import { streamSSE } from 'hono/streaming';
 import { serve as honoServe } from '@hono/node-server';
 import type { Agent } from './agent.js';
 import type { Tool } from './tool.js';
+import type { StreamEvent } from './stream-events.js';
 import type { AgentRequest, RuntimeErrorResponse } from './types.js';
 import { VERSION } from './version.js';
 import { createMcpRoutes } from './mcp.js';
+
+/**
+ * Normalize a stream chunk to a StreamEvent.
+ * Raw strings are wrapped as text_delta events; StreamEvent objects pass through.
+ */
+export function normalizeStreamChunk(chunk: string | StreamEvent): StreamEvent {
+  if (typeof chunk === 'string') {
+    return { type: 'text_delta', delta: chunk };
+  }
+  return chunk;
+}
 
 /**
  * Enable debug mode via environment variable to include stack traces in error responses
@@ -142,15 +154,16 @@ export function createApp(options: CreateAppOptions): Hono {
       return streamSSE(c, async (stream) => {
         try {
           for await (const chunk of agent.invokeStream!(request)) {
-            await stream.writeSSE({ data: JSON.stringify({ delta: chunk }) });
+            const event = normalizeStreamChunk(chunk);
+            await stream.writeSSE({ data: JSON.stringify(event) });
           }
-          await stream.writeSSE({ data: JSON.stringify({ done: true }) });
+          await stream.writeSSE({ data: '[DONE]' });
         } catch (error) {
           const errorResponse = createErrorResponse(
             error,
             error instanceof Error ? error.constructor.name : 'ExecutionError'
           );
-          await stream.writeSSE({ data: JSON.stringify(errorResponse) });
+          await stream.writeSSE({ event: 'error', data: JSON.stringify(errorResponse.error) });
         }
       });
     }

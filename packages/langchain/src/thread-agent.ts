@@ -14,6 +14,9 @@ import {
   buildMessagesFromInput,
   type AgentRequest,
   type AgentResponse,
+  type StreamEvent,
+  type MessageEvent,
+  type Message,
 } from '@reminix/runtime';
 
 import { toLangChainMessage, fromLangChainMessage } from './message-utils.js';
@@ -44,7 +47,7 @@ export class LangChainThreadAgent extends Agent {
   constructor(agent: Runnable, options: LangChainThreadAgentOptions = {}) {
     super(options.name ?? 'langchain-thread-agent', {
       description: options.description ?? 'langchain thread agent',
-      streaming: false,
+      streaming: true,
       inputSchema: AGENT_TYPES['thread'].inputSchema,
       outputSchema: AGENT_TYPES['thread'].outputSchema,
       type: 'thread',
@@ -93,5 +96,15 @@ export class LangChainThreadAgent extends Agent {
     });
 
     return { output };
+  }
+
+  async *invokeStream(request: AgentRequest): AsyncGenerator<string | StreamEvent, void, unknown> {
+    // Reuse invoke logic to get full message thread, then yield each message as an event
+    const result = await this.invoke(request);
+    const messages = result.output as Message[];
+    for (const message of messages) {
+      const event: MessageEvent = { type: 'message', message };
+      yield event;
+    }
   }
 }

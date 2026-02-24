@@ -159,3 +159,92 @@ describe('Invoke Endpoint', () => {
     });
   });
 });
+
+describe('Streaming SSE', () => {
+  it('should stream typed events and end with [DONE]', async () => {
+    const streamingAgent = new MockTaskAgent('stream-agent');
+    // Override invokeStream to yield text chunks
+    streamingAgent.invokeStream = async function* () {
+      yield 'Hello ';
+      yield 'world';
+    };
+
+    const app = createApp({ agents: [streamingAgent] });
+    const response = await app.request('/agents/stream-agent/invoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: { task: 'test' }, stream: true }),
+    });
+
+    expect(response.status).toBe(200);
+    const text = await response.text();
+
+    // Should contain typed text_delta events
+    expect(text).toContain('"type":"text_delta"');
+    expect(text).toContain('"delta":"Hello "');
+    expect(text).toContain('"delta":"world"');
+    // Should end with [DONE]
+    expect(text).toContain('[DONE]');
+  });
+
+  it('should stream StreamEvent objects directly', async () => {
+    const streamingAgent = new MockTaskAgent('event-agent');
+    streamingAgent.invokeStream = async function* () {
+      yield { type: 'message' as const, message: { role: 'assistant' as const, content: 'Hi' } };
+    };
+
+    const app = createApp({ agents: [streamingAgent] });
+    const response = await app.request('/agents/event-agent/invoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: {}, stream: true }),
+    });
+
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    expect(text).toContain('"type":"message"');
+    expect(text).toContain('"role":"assistant"');
+  });
+
+  it('should send errors as event: error', async () => {
+    const streamingAgent = new MockTaskAgent('error-agent');
+    streamingAgent.invokeStream = async function* () {
+      yield 'partial';
+      throw new Error('Stream failed');
+    };
+
+    const app = createApp({ agents: [streamingAgent] });
+    const response = await app.request('/agents/error-agent/invoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: {}, stream: true }),
+    });
+
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    expect(text).toContain('event: error');
+    expect(text).toContain('"type":"Error"');
+    expect(text).toContain('Stream failed');
+  });
+
+  it('should return 501 for non-streaming agent', async () => {
+    // Create a non-streaming agent (no invokeStream method)
+    class NonStreamingAgent extends Agent {
+      constructor() {
+        super('no-stream', { streaming: false });
+      }
+      async invoke(): Promise<AgentResponse> {
+        return { output: 'ok' };
+      }
+    }
+
+    const app = createApp({ agents: [new NonStreamingAgent()] });
+    const response = await app.request('/agents/no-stream/invoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: {}, stream: true }),
+    });
+
+    expect(response.status).toBe(501);
+  });
+});

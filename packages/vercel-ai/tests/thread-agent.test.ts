@@ -41,7 +41,7 @@ describe('VercelAIThreadAgent', () => {
     expect(agent.metadata.type).toBe('thread');
     expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['thread'].inputSchema);
     expect(agent.metadata.outputSchema).toEqual(AGENT_TYPES['thread'].outputSchema);
-    expect(agent.metadata.capabilities.streaming).toBe(false);
+    expect(agent.metadata.capabilities.streaming).toBe(true);
   });
 });
 
@@ -216,5 +216,40 @@ describe('VercelAIThreadAgent.invoke with ToolLoopAgent', () => {
     expect(messages[0].role).toBe('user');
     expect(messages[1].role).toBe('assistant');
     expect(messages[1].content).toBe('Result');
+  });
+});
+
+describe('VercelAIThreadAgent.invokeStream', () => {
+  it('should yield MessageEvent for each message', async () => {
+    const mockModel = { modelId: 'gpt-4o' };
+    const agent = new VercelAIThreadAgent(mockModel as any);
+
+    const mockGenerateText = vi.fn().mockResolvedValue({
+      text: 'Hello!',
+      response: {
+        messages: [
+          {
+            role: 'assistant',
+            content: [{ type: 'text', text: 'Hello!' }],
+          },
+        ],
+      },
+    });
+    (agent as any)._generateText = mockGenerateText;
+
+    const request: AgentRequest = {
+      input: { messages: [{ role: 'user', content: 'Hi' }] },
+    };
+
+    const events: unknown[] = [];
+    for await (const event of agent.invokeStream!(request)) {
+      events.push(event);
+    }
+
+    expect(events.length).toBeGreaterThanOrEqual(2);
+    expect((events[0] as any).type).toBe('message');
+    expect((events[0] as any).message.role).toBe('user');
+    expect((events[events.length - 1] as any).type).toBe('message');
+    expect((events[events.length - 1] as any).message.role).toBe('assistant');
   });
 });

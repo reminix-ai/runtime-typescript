@@ -57,6 +57,7 @@ describe('LangGraphWorkflowAgent', () => {
     expect(agent.metadata.inputSchema).toEqual(AGENT_TYPES['workflow'].inputSchema);
     expect(agent.metadata.outputSchema).toEqual(AGENT_TYPES['workflow'].outputSchema);
     expect(agent.metadata.framework).toBe('langgraph');
+    expect(agent.metadata.capabilities.streaming).toBe(true);
   });
 });
 
@@ -244,5 +245,80 @@ describe('LangGraphWorkflowAgent.invoke', () => {
     await agent.invoke(request);
 
     expect(mockGraph.stream).toHaveBeenCalledWith({ task: 'test' }, {});
+  });
+});
+
+describe('LangGraphWorkflowAgent.invokeStream', () => {
+  it('should yield StepEvent per completed node', async () => {
+    const mockGraph = createMockGraph([
+      { fetch_data: { records: 10 } },
+      { process: { summary: 'done' } },
+    ]);
+
+    const agent = new LangGraphWorkflowAgent(mockGraph as any);
+    const request: AgentRequest = { input: { task: 'process data' } };
+
+    const events: unknown[] = [];
+    for await (const event of agent.invokeStream!(request)) {
+      events.push(event);
+    }
+
+    expect(events).toHaveLength(2);
+    expect((events[0] as any).type).toBe('step');
+    expect((events[0] as any).name).toBe('fetch_data');
+    expect((events[0] as any).status).toBe('completed');
+    expect((events[0] as any).output).toEqual({ records: 10 });
+    expect((events[1] as any).type).toBe('step');
+    expect((events[1] as any).name).toBe('process');
+    expect((events[1] as any).status).toBe('completed');
+  });
+
+  it('should yield paused StepEvent on GraphInterrupt', async () => {
+    const mockGraph = {
+      stream: vi.fn().mockReturnValue(
+        (async function* () {
+          yield { step1: { data: 'partial' } };
+          throw createInterruptError('Please approve');
+        })()
+      ),
+    };
+
+    const agent = new LangGraphWorkflowAgent(mockGraph as any);
+    const request: AgentRequest = { input: { task: 'approval' } };
+
+    const events: unknown[] = [];
+    for await (const event of agent.invokeStream!(request)) {
+      events.push(event);
+    }
+
+    expect(events).toHaveLength(2);
+    expect((events[0] as any).type).toBe('step');
+    expect((events[0] as any).status).toBe('completed');
+    expect((events[1] as any).type).toBe('step');
+    expect((events[1] as any).status).toBe('paused');
+    expect((events[1] as any).pendingAction.message).toBe('Please approve');
+  });
+
+  it('should throw on non-interrupt errors', async () => {
+    const mockGraph = {
+      stream: vi.fn().mockReturnValue(
+        (async function* () {
+          yield { step1: { data: 'partial' } };
+          throw new Error('Graph failed');
+        })()
+      ),
+    };
+
+    const agent = new LangGraphWorkflowAgent(mockGraph as any);
+    const request: AgentRequest = { input: { task: 'failing' } };
+
+    const events: unknown[] = [];
+    await expect(async () => {
+      for await (const event of agent.invokeStream!(request)) {
+        events.push(event);
+      }
+    }).rejects.toThrow('Graph failed');
+    // The first step should have been yielded before the error
+    expect(events).toHaveLength(1);
   });
 });
