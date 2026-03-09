@@ -180,15 +180,15 @@ export function createApp(options: CreateAppOptions): Hono {
       const response = await agent.invoke(request);
       return c.json(response);
     } catch (error) {
-      // Determine error type and status code
       let statusCode = 500;
-      let errorType = error instanceof Error ? error.constructor.name : 'ExecutionError';
+      let errorType = 'ExecutionError';
 
       if (error instanceof Error) {
-        if (error.message.includes('not implemented') || error.name === 'NotImplementedError') {
+        errorType = error.constructor.name;
+        if (error.name === 'NotImplementedError') {
           statusCode = 501;
           errorType = 'NotImplementedError';
-        } else if (error.name === 'ValidationError' || error.message.includes('validation')) {
+        } else if (error.name === 'ValidationError') {
           statusCode = 400;
           errorType = 'ValidationError';
         }
