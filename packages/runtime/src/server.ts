@@ -185,12 +185,10 @@ export function createApp(options: CreateAppOptions): Hono {
 
       if (error instanceof Error) {
         errorType = error.constructor.name;
-        if (error.name === 'NotImplementedError') {
+        if (errorType === 'NotImplementedError') {
           statusCode = 501;
-          errorType = 'NotImplementedError';
-        } else if (error.name === 'ValidationError') {
+        } else if (errorType === 'ValidationError') {
           statusCode = 400;
-          errorType = 'ValidationError';
         }
       }
 
