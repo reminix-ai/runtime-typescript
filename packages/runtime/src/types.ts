@@ -113,7 +113,7 @@ export interface Capabilities {
 /**
  * Structured runtime error information
  */
-export interface RuntimeError {
+export interface RuntimeErrorInfo {
   /** Error type/category (e.g., 'ValidationError', 'ExecutionError') */
   type: string;
   /** Human-readable error message */
@@ -126,5 +126,5 @@ export interface RuntimeError {
  * Error response from runtime endpoints
  */
 export interface RuntimeErrorResponse {
-  error: RuntimeError;
+  error: RuntimeErrorInfo;
 }

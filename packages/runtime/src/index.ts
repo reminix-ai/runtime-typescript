@@ -18,7 +18,7 @@ export type {
   ToolResponse,
   JSONSchema,
   Capabilities,
-  RuntimeError,
+  RuntimeErrorInfo,
   RuntimeErrorResponse,
 } from './types.js';
 // Schema exports

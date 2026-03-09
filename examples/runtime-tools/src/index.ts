@@ -12,18 +12,18 @@
  *     # Health check
  *     curl http://localhost:8080/health
  *
- *     # Discovery (shows available tools)
+ *     # Discovery
  *     curl http://localhost:8080/manifest
  *
- *     # Execute the weather tool
- *     curl -X POST http://localhost:8080/tools/get_weather/call \
+ *     # List tools via MCP
+ *     curl -X POST http://localhost:8080/mcp \
  *       -H "Content-Type: application/json" \
- *       -d '{"arguments": {"location": "San Francisco"}}'
+ *       -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
  *
- *     # Execute the calculator tool
- *     curl -X POST http://localhost:8080/tools/calculate/call \
+ *     # Call a tool via MCP
+ *     curl -X POST http://localhost:8080/mcp \
  *       -H "Content-Type: application/json" \
- *       -d '{"arguments": {"a": 10, "b": 5, "operation": "add"}}'
+ *       -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "get_weather", "arguments": {"location": "San Francisco"}}, "id": 2}'
  */
 
 import { tool, serve } from '@reminix/runtime';
@@ -185,9 +185,7 @@ console.log();
 console.log('Endpoints:');
 console.log('  GET  /health');
 console.log('  GET  /manifest');
-console.log('  POST /tools/get_weather/call');
-console.log('  POST /tools/calculate/call');
-console.log('  POST /tools/string_utils/call');
+console.log('  POST /mcp (MCP Streamable HTTP - tool discovery and execution)');
 console.log();
 
 serve({ tools: [getWeather, calculate, stringUtils] });

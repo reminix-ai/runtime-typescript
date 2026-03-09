@@ -22,7 +22,7 @@ import { agent, serve } from '@reminix/runtime';
 // Create an agent for task-oriented operations
 const calculator = agent('calculator', {
   description: 'Add two numbers',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: { a: { type: 'number' }, b: { type: 'number' } },
     required: ['a', 'b'],
@@ -41,9 +41,9 @@ The runtime creates a REST server (powered by [Hono](https://hono.dev)) with the
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/health` | GET | Health check |
-| `/manifest` | GET | Runtime discovery (version, agents, tools) |
+| `/manifest` | GET | Runtime discovery (version, endpoints) |
 | `/agents/{name}/invoke` | POST | Invoke an agent |
-| `/tools/{name}/call` | POST | Call a tool |
+| `/mcp` | POST | MCP Streamable HTTP (tool discovery and execution) |
 
 ### Health Endpoint
 
@@ -59,35 +59,32 @@ Returns `{"status": "ok"}` if the server is running.
 curl http://localhost:8080/manifest
 ```
 
-Returns runtime information, available agents, and tools:
+Returns runtime information and available endpoints:
 
 ```json
 {
   "runtime": {
     "name": "reminix-runtime",
     "version": "0.0.18",
-    "language": "typescript",
-    "framework": "hono"
+    "language": "typescript"
   },
-  "agents": [
+  "endpoints": [
     {
+      "kind": "agent",
+      "path": "/agents/calculator/invoke",
       "name": "calculator",
       "description": "Add two numbers",
       "capabilities": { "streaming": false },
-      "input": {
+      "inputSchema": {
         "type": "object",
         "properties": { "a": { "type": "number" }, "b": { "type": "number" } },
         "required": ["a", "b"]
       },
-      "output": { "type": "number" }
-    }
-  ],
-  "tools": [
+      "outputSchema": { "type": "number" }
+    },
     {
-      "name": "get_weather",
-      "description": "Get current weather for a location",
-      "input": { "type": "object", "properties": { "location": { "type": "string" } }, "required": ["location"] },
-      "output": { "type": "object", "properties": { "temp": { "type": "number" }, "condition": { "type": "string" } } }
+      "kind": "mcp",
+      "path": "/mcp"
     }
   ]
 }
@@ -136,21 +133,22 @@ curl -X POST http://localhost:8080/agents/assistant/invoke \
 }
 ```
 
-### Tool Call Endpoint
+### MCP Endpoint
 
-`POST /tools/{name}/call` - Call a standalone tool.
+`POST /mcp` - MCP Streamable HTTP endpoint for tool discovery and execution.
+
+Tools are exposed via [MCP (Model Context Protocol)](https://modelcontextprotocol.io) at `/mcp`. Use any MCP client, or call directly with JSON-RPC:
 
 ```bash
-curl -X POST http://localhost:8080/tools/get_weather/call \
+# Discover available tools
+curl -X POST http://localhost:8080/mcp \
   -H "Content-Type: application/json" \
-  -d '{"input": {"location": "San Francisco"}}'
-```
+  -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 
-**Response:**
-```json
-{
-  "output": { "temp": 72, "condition": "sunny" }
-}
+# Call a tool
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "get_weather", "arguments": {"location": "San Francisco"}}, "id": 2}'
 ```
 
 ## Agents
@@ -196,7 +194,7 @@ import { agent, serve } from '@reminix/runtime';
 
 const calculator = agent('calculator', {
   description: 'Add two numbers',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: {
       a: { type: 'number' },
@@ -209,7 +207,7 @@ const calculator = agent('calculator', {
 
 const textProcessor = agent('text-processor', {
   description: 'Process text in various ways',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: {
       text: { type: 'string' },
@@ -235,7 +233,7 @@ import { agent, serve } from '@reminix/runtime';
 
 const streamer = agent('streamer', {
   description: 'Stream text word by word',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: { text: { type: 'string' } },
     required: ['text'],
@@ -256,7 +254,7 @@ For streaming agents:
 
 ## Tools
 
-Tools are standalone functions served via `/tools/{name}/call`. They're useful for exposing utility functions, external API integrations, or any reusable logic.
+Tools are standalone functions exposed via [MCP](https://modelcontextprotocol.io) at `/mcp`. They're useful for exposing utility functions, external API integrations, or any reusable logic. MCP clients (including LLMs and other agents) can discover and call tools using the standard MCP protocol.
 
 ### Creating Tools
 
@@ -267,7 +265,7 @@ import { tool, serve } from '@reminix/runtime';
 
 const getWeather = tool('get_weather', {
   description: 'Get current weather for a location',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: {
       location: { type: 'string', description: 'City name' },
@@ -275,7 +273,7 @@ const getWeather = tool('get_weather', {
     },
     required: ['location'],
   },
-  output: {
+  outputSchema: {
     type: 'object',
     properties: {
       temp: { type: 'number' },
@@ -300,7 +298,7 @@ import { agent, tool, serve } from '@reminix/runtime';
 
 const summarizer = agent('summarizer', {
   description: 'Summarize text',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: { text: { type: 'string' } },
     required: ['text'],
@@ -310,7 +308,7 @@ const summarizer = agent('summarizer', {
 
 const calculator = tool('calculate', {
   description: 'Perform basic math operations',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: { expression: { type: 'string' } },
     required: ['expression'],
@@ -361,15 +359,15 @@ const app = createApp({ agents: [myAgent], tools: [myTool] });
 
 ### `agent(name, options)`
 
-Factory function to create an agent. Use `type` for standard I/O shapes, or provide custom `input`/`output` schemas.
+Factory function to create an agent. Use `type` for standard I/O shapes, or provide custom `inputSchema`/`outputSchema`.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | `string` | Unique identifier for the agent |
 | `options.type` | `'prompt' \| 'chat' \| 'task' \| 'rag' \| 'thread' \| 'workflow'` | Optional. Standard input/output schema (default: `prompt` when no custom input/output). |
 | `options.description` | `string` | Human-readable description |
-| `options.input` | `object` | JSON Schema for input (ignored if `type` is set) |
-| `options.output` | `object` | Optional JSON Schema for output (ignored if `type` is set) |
+| `options.inputSchema` | `object` | JSON Schema for input (ignored if `type` is set) |
+| `options.outputSchema` | `object` | Optional JSON Schema for output (ignored if `type` is set) |
 | `options.handler` | `function` | Async function or async generator |
 
 ```typescript
@@ -378,7 +376,7 @@ import { agent } from '@reminix/runtime';
 // Regular agent
 const myAgent = agent('my-agent', {
   description: 'Does something useful',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: { input: { type: 'string' } },
     required: ['input'],
@@ -389,7 +387,7 @@ const myAgent = agent('my-agent', {
 // Streaming agent
 const streamingAgent = agent('streaming-agent', {
   description: 'Streams output',
-  input: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
+  inputSchema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
   handler: async function* ({ text }) {
     for (const word of (text as string).split(' ')) {
       yield word + ' ';
@@ -408,8 +406,8 @@ Factory function to create a tool.
 |-----------|------|-------------|
 | `name` | `string` | Unique identifier for the tool |
 | `options.description` | `string` | Human-readable description |
-| `options.input` | `object` | JSON Schema for input |
-| `options.output` | `object` | Optional JSON Schema for output |
+| `options.inputSchema` | `object` | JSON Schema for input |
+| `options.outputSchema` | `object` | Optional JSON Schema for output |
 | `options.handler` | `function` | Async function to call when invoked |
 
 ```typescript
@@ -417,7 +415,7 @@ import { tool } from '@reminix/runtime';
 
 const myTool = tool('my_tool', {
   description: 'Does something useful',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: { input: { type: 'string' } },
     required: ['input'],
@@ -428,7 +426,7 @@ const myTool = tool('my_tool', {
 // With context (optional second argument receives request context)
 const myToolWithContext = tool('my_tool', {
   description: 'Example with context',
-  input: {
+  inputSchema: {
     type: 'object',
     properties: { param: { type: 'string' } },
     required: ['param'],
