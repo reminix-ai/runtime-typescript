@@ -13,6 +13,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { z } from 'zod';
 import type { Tool } from './tool.js';
 import type { JSONSchema } from './types.js';
+import { VERSION } from './version.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // JSON Schema → Zod conversion
@@ -110,7 +111,7 @@ export function createMcpRoutes(tools: Tool[]): Hono {
   mcp.post('/', async (c) => {
     const server = new McpServer({
       name: 'reminix-runtime',
-      version: '1.0.0',
+      version: VERSION,
     });
 
     // Register each tool on the MCP server

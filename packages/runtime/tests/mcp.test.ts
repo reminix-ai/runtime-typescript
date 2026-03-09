@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { tool } from '../src/index.js';
 import { createApp } from '../src/server.js';
+import { VERSION } from '../src/version.js';
 
 /**
  * Send a JSON-RPC message to POST /mcp and return the parsed response.
@@ -83,7 +84,7 @@ describe('MCP Endpoint', () => {
       expect(result.protocolVersion).toBe('2025-03-26');
       expect(result.serverInfo).toEqual({
         name: 'reminix-runtime',
-        version: '1.0.0',
+        version: VERSION,
       });
     });
   });
@@ -228,7 +229,7 @@ describe('MCP Endpoint', () => {
       const result = response.result as Record<string, unknown>;
       expect(result.serverInfo).toEqual({
         name: 'reminix-runtime',
-        version: '1.0.0',
+        version: VERSION,
       });
     });
   });
