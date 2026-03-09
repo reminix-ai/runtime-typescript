@@ -105,17 +105,24 @@ export function createApp(options: CreateAppOptions): Hono {
 
   // Runtime discovery endpoint
   app.get('/manifest', (c) => {
+    const endpoints: Record<string, unknown>[] = agents.map((agent) => ({
+      kind: 'agent',
+      path: `/agents/${agent.name}/invoke`,
+      name: agent.name,
+      ...agent.metadata,
+    }));
+
+    if (tools.length > 0) {
+      endpoints.push({ kind: 'mcp', path: '/mcp' });
+    }
+
     return c.json({
       runtime: {
         name: 'reminix-runtime',
         version: VERSION,
         language: 'typescript',
-        framework: 'hono',
       },
-      agents: agents.map((agent) => ({
-        name: agent.name,
-        ...agent.metadata,
-      })),
+      endpoints,
     });
   });
 

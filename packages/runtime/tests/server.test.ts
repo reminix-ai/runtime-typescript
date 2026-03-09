@@ -78,7 +78,7 @@ describe('Health Endpoint', () => {
 });
 
 describe('Manifest Endpoint', () => {
-  it('GET /manifest should return runtime info and agents', async () => {
+  it('GET /manifest should return runtime info and endpoints', async () => {
     const app = createApp({
       agents: [new MockTaskAgent('agent-one'), new MockTaskAgent('agent-two')],
     });
@@ -91,13 +91,15 @@ describe('Manifest Endpoint', () => {
     expect(data.runtime.name).toBe('reminix-runtime');
     expect(data.runtime.version).toBe(VERSION);
     expect(data.runtime.language).toBe('typescript');
-    expect(data.runtime.framework).toBe('hono');
 
-    // Check agents
-    expect(data.agents).toHaveLength(2);
-    expect(data.agents[0].name).toBe('agent-one');
-    expect(data.agents[0].framework).toBe('mock');
-    expect(data.agents[0].capabilities.streaming).toBe(true);
+    // Check endpoints
+    expect(data.endpoints).toHaveLength(2);
+    expect(data.endpoints[0].kind).toBe('agent');
+    expect(data.endpoints[0].name).toBe('agent-one');
+    expect(data.endpoints[0].path).toBe('/agents/agent-one/invoke');
+    expect(data.endpoints[0].framework).toBe('mock');
+    expect(data.endpoints[0].capabilities.streaming).toBe(true);
+    expect(data.endpoints[1].name).toBe('agent-two');
   });
 });
 
