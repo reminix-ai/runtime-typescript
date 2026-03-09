@@ -43,6 +43,8 @@ export interface StepEvent {
     type: string;
     message: string;
     options?: string[];
+    inputSchema?: Record<string, unknown>;
+    assignee?: string;
   };
 }
 
