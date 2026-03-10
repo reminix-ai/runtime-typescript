@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { z } from 'zod';
 import { tool } from '../src/index.js';
 import { createApp } from '../src/server.js';
 import { VERSION } from '../src/version.js';
@@ -231,6 +232,79 @@ describe('MCP Endpoint', () => {
         name: 'reminix-runtime',
         version: VERSION,
       });
+    });
+  });
+
+  describe('Zod-defined tools', () => {
+    it('should list a Zod-defined tool via MCP', async () => {
+      const zodTool = tool('zod-greet', {
+        description: 'Greet with Zod schema',
+        inputSchema: z.object({
+          name: z.string().describe('Name to greet'),
+        }),
+        handler: async ({ name }) => ({ message: `Hello, ${name}!` }),
+      });
+
+      const app = createApp({ tools: [zodTool] });
+
+      const response = await mcpRequest(app, 'tools/list');
+      const result = response.result as {
+        tools: { name: string; description: string; inputSchema: Record<string, unknown> }[];
+      };
+
+      expect(result.tools).toHaveLength(1);
+      expect(result.tools[0].name).toBe('zod-greet');
+      expect(result.tools[0].inputSchema).toBeDefined();
+      expect(result.tools[0].inputSchema.type).toBe('object');
+      expect(result.tools[0].inputSchema.properties).toBeDefined();
+    });
+
+    it('should execute a Zod-defined tool via MCP', async () => {
+      const zodTool = tool('zod-add', {
+        description: 'Add with Zod',
+        inputSchema: z.object({
+          a: z.number(),
+          b: z.number(),
+        }),
+        handler: async ({ a, b }) => a + b,
+      });
+
+      const app = createApp({ tools: [zodTool] });
+
+      const response = await mcpRequest(app, 'tools/call', {
+        name: 'zod-add',
+        arguments: { a: 5, b: 3 },
+      });
+
+      const result = response.result as {
+        content: { type: string; text: string }[];
+      };
+      expect(JSON.parse(result.content[0].text)).toBe(8);
+    });
+
+    it('should work with mixed JSON Schema and Zod tools', async () => {
+      const jsonTool = tool('json-tool', {
+        description: 'JSON Schema tool',
+        inputSchema: {
+          type: 'object',
+          properties: { x: { type: 'number' } },
+          required: ['x'],
+        },
+        handler: async (args) => (args.x as number) * 2,
+      });
+
+      const zodTool = tool('zod-tool', {
+        description: 'Zod tool',
+        inputSchema: z.object({ y: z.number() }),
+        handler: async ({ y }) => y * 3,
+      });
+
+      const app = createApp({ tools: [jsonTool, zodTool] });
+
+      const listResponse = await mcpRequest(app, 'tools/list');
+      const tools = (listResponse.result as { tools: { name: string }[] }).tools;
+      expect(tools.map((t) => t.name)).toContain('json-tool');
+      expect(tools.map((t) => t.name)).toContain('zod-tool');
     });
   });
 });

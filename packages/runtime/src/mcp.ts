@@ -84,6 +84,29 @@ function jsonSchemaToZodShape(schema: JSONSchema | null | undefined): Record<str
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Zod shape extraction (for tools defined with Zod schemas)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Extract the flat shape from a z.object() schema for the MCP SDK.
+ *
+ * The MCP SDK expects `Record<string, ZodTypeAny>`, not a full z.object() wrapper.
+ * Falls back to converting via JSON Schema if the schema is not a z.object().
+ */
+function extractZodShape(schema: z.ZodType): Record<string, z.ZodTypeAny> {
+  // Zod v4 object schemas have a `shape` property
+  if (
+    '_zod' in schema &&
+    typeof (schema as unknown as Record<string, unknown>)._zod === 'object' &&
+    'shape' in schema
+  ) {
+    return (schema as z.ZodObject<Record<string, z.ZodTypeAny>>).shape;
+  }
+  // Fallback: not a z.object(), return empty shape
+  return {};
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -119,12 +142,23 @@ export function createMcpRoutes(tools: Tool[]): Hono {
       const meta = tool.metadata;
       const hasObjectOutput = isObjectSchema(meta.outputSchema);
 
+      // Prefer original Zod schemas when available (avoids lossy JSON→Zod round-trip)
+      const inputShape = tool.inputZodSchema
+        ? extractZodShape(tool.inputZodSchema)
+        : jsonSchemaToZodShape(meta.inputSchema);
+
+      const outputShape = hasObjectOutput
+        ? tool.outputZodSchema
+          ? extractZodShape(tool.outputZodSchema)
+          : jsonSchemaToZodShape(meta.outputSchema)
+        : undefined;
+
       server.registerTool(
         tool.name,
         {
           description: meta.description || `Tool: ${tool.name}`,
-          inputSchema: jsonSchemaToZodShape(meta.inputSchema),
-          ...(hasObjectOutput ? { outputSchema: jsonSchemaToZodShape(meta.outputSchema) } : {}),
+          inputSchema: inputShape,
+          ...(outputShape ? { outputSchema: outputShape } : {}),
         },
         async (args) => {
           const result = await tool.call({ arguments: args as Record<string, unknown> });

@@ -2,7 +2,9 @@
  * Reminix Runtime Tool definitions
  */
 
-import type { ToolRequest, ToolResponse, JSONSchema } from './types.js';
+import type { z } from 'zod';
+import type { ToolRequest, ToolResponse, JSONSchema, SchemaInput, InferSchema } from './types.js';
+import { resolveSchema } from './zod-utils.js';
 
 // === ToolMetadata ===
 
@@ -33,6 +35,8 @@ export abstract class Tool {
   private _description: string;
   private _inputSchema: JSONSchema;
   private _outputSchema: JSONSchema | undefined;
+  private _inputZodSchema: z.ZodType | undefined;
+  private _outputZodSchema: z.ZodType | undefined;
   private _tags: string[] | undefined;
   private _extraMetadata: Record<string, unknown> | undefined;
 
@@ -42,6 +46,8 @@ export abstract class Tool {
       description?: string;
       inputSchema?: JSONSchema;
       outputSchema?: JSONSchema;
+      inputZodSchema?: z.ZodType;
+      outputZodSchema?: z.ZodType;
       tags?: string[];
       metadata?: Record<string, unknown>;
     } = {}
@@ -50,12 +56,24 @@ export abstract class Tool {
     this._description = options.description ?? '';
     this._inputSchema = options.inputSchema ?? { type: 'object', properties: {} };
     this._outputSchema = options.outputSchema;
+    this._inputZodSchema = options.inputZodSchema;
+    this._outputZodSchema = options.outputZodSchema;
     this._tags = options.tags;
     this._extraMetadata = options.metadata;
   }
 
   get name(): string {
     return this._name;
+  }
+
+  /** Returns the original Zod input schema, if the tool was created with one. */
+  get inputZodSchema(): z.ZodType | undefined {
+    return this._inputZodSchema;
+  }
+
+  /** Returns the original Zod output schema, if the tool was created with one. */
+  get outputZodSchema(): z.ZodType | undefined {
+    return this._outputZodSchema;
   }
 
   get metadata(): ToolMetadata {
@@ -80,20 +98,31 @@ export abstract class Tool {
 
 // === Tool Options ===
 
-/** Options for creating a tool */
-export interface ToolOptions {
+/** Options for creating a tool — accepts JSON Schema or Zod for inputSchema / outputSchema. */
+export interface ToolOptions<
+  TInput extends SchemaInput = JSONSchema,
+  TOutput extends SchemaInput = JSONSchema,
+> {
   /** Human-readable description of what the tool does */
   description: string;
-  /** JSON Schema for input */
-  inputSchema: JSONSchema;
-  /** Optional JSON Schema for output (defaults to string) */
-  outputSchema?: JSONSchema;
+  /** Schema for input (JSON Schema object or Zod schema) */
+  inputSchema: TInput;
+  /** Optional schema for output (JSON Schema object or Zod schema) */
+  outputSchema?: TOutput;
   /** Optional list of tags for categorization */
   tags?: string[];
   /** Optional extra metadata */
   metadata?: Record<string, unknown>;
+  /**
+   * Whether to validate inputs at runtime using the Zod schema.
+   * Defaults to `true` when inputSchema is a Zod schema, `false` otherwise.
+   */
+  validate?: boolean;
   /** Handler function to execute when the tool is called */
-  handler: ToolHandler;
+  handler: (
+    args: InferSchema<TInput>,
+    context?: Record<string, unknown>
+  ) => Promise<unknown> | unknown;
 }
 
 // === tool() factory ===
@@ -104,23 +133,29 @@ export interface ToolOptions {
  * @example
  * ```typescript
  * import { tool } from '@reminix/runtime';
+ * import { z } from 'zod';
  *
+ * // With Zod schema (recommended) — typed handler, runtime validation
  * const getWeather = tool('get_weather', {
  *   description: 'Get current weather for a location',
+ *   inputSchema: z.object({
+ *     location: z.string().describe('City name'),
+ *     units: z.enum(['celsius', 'fahrenheit']).optional(),
+ *   }),
+ *   handler: async ({ location, units }) => {
+ *     return { temp: 22, condition: 'sunny' };
+ *   },
+ * });
+ *
+ * // With JSON Schema (still supported)
+ * const legacyTool = tool('legacy', {
+ *   description: 'Legacy tool',
  *   inputSchema: {
  *     type: 'object',
  *     properties: {
  *       location: { type: 'string', description: 'City name' },
- *       units: { type: 'string', default: 'celsius' },
  *     },
  *     required: ['location'],
- *   },
- *   outputSchema: {
- *     type: 'object',
- *     properties: {
- *       temp: { type: 'number' },
- *       condition: { type: 'string' },
- *     },
  *   },
  *   handler: async (args) => {
  *     const location = args.location as string;
@@ -129,14 +164,24 @@ export interface ToolOptions {
  * });
  * ```
  */
-export function tool(name: string, options: ToolOptions): Tool {
+export function tool<TInput extends SchemaInput, TOutput extends SchemaInput = JSONSchema>(
+  name: string,
+  options: ToolOptions<TInput, TOutput>
+): Tool {
+  const inputResolved = resolveSchema(options.inputSchema);
+  const outputResolved = options.outputSchema ? resolveSchema(options.outputSchema) : undefined;
+  const shouldValidate = options.validate ?? inputResolved.zodSchema !== undefined;
+
   return new _FunctionTool(name, {
     description: options.description,
-    inputSchema: options.inputSchema,
-    outputSchema: options.outputSchema,
+    inputSchema: inputResolved.jsonSchema,
+    outputSchema: outputResolved?.jsonSchema,
+    inputZodSchema: inputResolved.zodSchema,
+    outputZodSchema: outputResolved?.zodSchema,
     tags: options.tags,
     metadata: options.metadata,
-    handler: options.handler,
+    handler: options.handler as ToolHandler,
+    validate: shouldValidate,
   });
 }
 
@@ -144,6 +189,8 @@ export function tool(name: string, options: ToolOptions): Tool {
 
 class _FunctionTool extends Tool {
   private _handler: ToolHandler;
+  private _validate: boolean;
+  private _validationSchema: z.ZodType | undefined;
 
   constructor(
     name: string,
@@ -151,23 +198,34 @@ class _FunctionTool extends Tool {
       description: string;
       inputSchema: JSONSchema;
       outputSchema?: JSONSchema;
+      inputZodSchema?: z.ZodType;
+      outputZodSchema?: z.ZodType;
       tags?: string[];
       metadata?: Record<string, unknown>;
       handler: ToolHandler;
+      validate: boolean;
     }
   ) {
     super(name, {
       description: options.description,
       inputSchema: options.inputSchema,
       outputSchema: options.outputSchema,
+      inputZodSchema: options.inputZodSchema,
+      outputZodSchema: options.outputZodSchema,
       tags: options.tags,
       metadata: options.metadata,
     });
     this._handler = options.handler;
+    this._validate = options.validate;
+    this._validationSchema = options.inputZodSchema;
   }
 
   async call(request: ToolRequest): Promise<ToolResponse> {
-    const result = await this._handler(request.arguments, request.context);
+    let args = request.arguments;
+    if (this._validate && this._validationSchema) {
+      args = this._validationSchema.parse(args) as Record<string, unknown>;
+    }
+    const result = await this._handler(args, request.context);
     return { output: result };
   }
 }

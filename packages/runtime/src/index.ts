@@ -17,10 +17,14 @@ export type {
   ToolRequest,
   ToolResponse,
   JSONSchema,
+  SchemaInput,
+  InferSchema,
   Capabilities,
   RuntimeErrorInfo,
   RuntimeErrorResponse,
 } from './types.js';
+// Zod utilities
+export { isZodSchema, zodToJSONSchema, resolveSchema } from './zod-utils.js';
 // Schema exports
 export type { AgentType } from './schemas.js';
 export { AGENT_TYPES } from './schemas.js';

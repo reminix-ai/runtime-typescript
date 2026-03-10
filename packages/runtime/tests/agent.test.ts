@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { z } from 'zod';
 import { agent, type AgentRequest, type AgentResponse } from '../src/index.js';
 
 describe('agent() Factory', () => {
@@ -372,5 +373,139 @@ describe('Agent Types', () => {
     expect(output.steps[0].name).toBe('fetch');
     expect(output.steps[1].name).toBe('transform');
     expect(output.result.summary).toBe('Ran 2 steps for: process-data');
+  });
+});
+
+// ── Zod Schema Support ──────────────────────────────────────────────────────
+
+describe('Agent with Zod Schema', () => {
+  it('should accept Zod input schema and convert to JSON Schema in metadata', () => {
+    const calculator = agent('calculator', {
+      description: 'Add two numbers',
+      inputSchema: z.object({
+        a: z.number(),
+        b: z.number(),
+      }),
+      handler: async ({ a, b }) => a + b,
+    });
+
+    expect(calculator.name).toBe('calculator');
+    const meta = calculator.metadata;
+    expect(meta.inputSchema.type).toBe('object');
+    expect(meta.inputSchema.required).toContain('a');
+    expect(meta.inputSchema.required).toContain('b');
+  });
+
+  it('should accept Zod output schema', () => {
+    const calculator = agent('calculator', {
+      description: 'Add two numbers',
+      inputSchema: z.object({ a: z.number(), b: z.number() }),
+      outputSchema: z.number(),
+      handler: async ({ a, b }) => a + b,
+    });
+
+    expect(calculator.metadata.outputSchema).toEqual({ type: 'number' });
+  });
+
+  it('should invoke handler correctly with Zod schema', async () => {
+    const calculator = agent('calculator', {
+      inputSchema: z.object({ a: z.number(), b: z.number() }),
+      handler: async ({ a, b }) => a + b,
+    });
+
+    const response = await calculator.invoke({ input: { a: 10, b: 20 } });
+    expect(response.output).toBe(30);
+  });
+
+  it('should validate input by default when Zod schema is used', async () => {
+    const myAgent = agent('my-agent', {
+      inputSchema: z.object({ name: z.string() }),
+      handler: async ({ name }) => `Hello, ${name}!`,
+    });
+
+    // Invalid input: name should be string, not number
+    await expect(myAgent.invoke({ input: { name: 123 } })).rejects.toThrow();
+  });
+
+  it('should skip validation when validate: false', async () => {
+    const myAgent = agent('my-agent', {
+      inputSchema: z.object({ name: z.string() }),
+      validate: false,
+      handler: async ({ name }) => `Hello, ${name}!`,
+    });
+
+    const response = await myAgent.invoke({ input: { name: 123 } });
+    expect(response.output).toBe('Hello, 123!');
+  });
+
+  it('should not set a type when Zod input schema is provided without type', () => {
+    const myAgent = agent('my-agent', {
+      inputSchema: z.object({ x: z.string() }),
+      handler: async () => 'ok',
+    });
+
+    // When custom inputSchema is provided, no default type should be set
+    expect(myAgent.metadata.type).toBeUndefined();
+  });
+
+  it('should handle streaming with Zod schema', async () => {
+    const streamer = agent('streamer', {
+      inputSchema: z.object({ text: z.string() }),
+      stream: true,
+      handler: async function* ({ text }) {
+        for (const word of text.split(' ')) {
+          yield word + ' ';
+        }
+      },
+    });
+
+    expect(streamer.metadata.capabilities.streaming).toBe(true);
+
+    const chunks: string[] = [];
+    for await (const chunk of streamer.invokeStream!({ input: { text: 'hello world' } })) {
+      chunks.push(chunk);
+    }
+    expect(chunks).toEqual(['hello ', 'world ']);
+  });
+
+  it('should validate input in streaming mode too', async () => {
+    const streamer = agent('streamer', {
+      inputSchema: z.object({ text: z.string() }),
+      stream: true,
+      handler: async function* ({ text }) {
+        yield text;
+      },
+    });
+
+    // Streaming invoke with invalid input
+    const gen = streamer.invokeStream!({ input: { text: 42 } });
+    await expect(async () => {
+      for await (const _ of gen) {
+        /* consume */
+      }
+    }).rejects.toThrow();
+  });
+
+  it('should preserve original Zod schemas on agent instance', () => {
+    const inputZ = z.object({ x: z.number() });
+    const outputZ = z.string();
+    const myAgent = agent('my-agent', {
+      inputSchema: inputZ,
+      outputSchema: outputZ,
+      handler: async () => 'ok',
+    });
+
+    expect(myAgent.inputZodSchema).toBe(inputZ);
+    expect(myAgent.outputZodSchema).toBe(outputZ);
+  });
+
+  it('should have undefined Zod schemas for JSON Schema agents', () => {
+    const myAgent = agent('my-agent', {
+      inputSchema: { type: 'object', properties: { x: { type: 'number' } } },
+      handler: async () => 'ok',
+    });
+
+    expect(myAgent.inputZodSchema).toBeUndefined();
+    expect(myAgent.outputZodSchema).toBeUndefined();
   });
 });

@@ -2,6 +2,8 @@
  * Reminix Runtime Types
  */
 
+import type { z } from 'zod';
+
 /** Valid message roles. */
 export type Role = 'system' | 'user' | 'assistant' | 'tool';
 
@@ -100,6 +102,17 @@ export interface JSONSchema {
   default?: unknown;
   [key: string]: unknown;
 }
+
+/** A schema can be either a plain JSON Schema object or a Zod type. */
+export type SchemaInput = JSONSchema | z.ZodType;
+
+/**
+ * Infer the TypeScript type from a schema input.
+ *
+ * - Zod schema  -> z.infer<T>  (full type safety)
+ * - JSON Schema -> Record<string, unknown>  (same as today)
+ */
+export type InferSchema<T> = T extends z.ZodType ? z.infer<T> : Record<string, unknown>;
 
 // === Capabilities ===
 

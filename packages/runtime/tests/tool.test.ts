@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { z } from 'zod';
 import { tool } from '../src/index.js';
 
 describe('Tool Creation', () => {
@@ -300,5 +301,169 @@ describe('Tool with Complex Schema', () => {
       count: 3,
       items: ['a', 'b', 'c'],
     });
+  });
+});
+
+// ── Zod Schema Support ──────────────────────────────────────────────────────
+
+describe('Tool with Zod Schema', () => {
+  it('should accept a Zod input schema and convert to JSON Schema in metadata', () => {
+    const greet = tool('greet', {
+      description: 'Greet someone',
+      inputSchema: z.object({
+        name: z.string().describe('Name to greet'),
+      }),
+      handler: async ({ name }) => `Hello, ${name}!`,
+    });
+
+    expect(greet.name).toBe('greet');
+    const meta = greet.metadata;
+    expect(meta.inputSchema.type).toBe('object');
+    expect((meta.inputSchema.properties as Record<string, { type: string }>).name.type).toBe(
+      'string'
+    );
+    expect(meta.inputSchema.required).toContain('name');
+  });
+
+  it('should accept a Zod output schema', () => {
+    const myTool = tool('my-tool', {
+      description: 'Test',
+      inputSchema: z.object({ x: z.number() }),
+      outputSchema: z.object({
+        result: z.number(),
+        label: z.string(),
+      }),
+      handler: async ({ x }) => ({ result: x * 2, label: 'doubled' }),
+    });
+
+    const meta = myTool.metadata;
+    expect(meta.outputSchema).toBeDefined();
+    expect(meta.outputSchema!.type).toBe('object');
+    expect((meta.outputSchema!.properties as Record<string, { type: string }>).result.type).toBe(
+      'number'
+    );
+  });
+
+  it('should execute handler correctly with Zod schema', async () => {
+    const add = tool('add', {
+      description: 'Add two numbers',
+      inputSchema: z.object({
+        a: z.number(),
+        b: z.number(),
+      }),
+      handler: async ({ a, b }) => a + b,
+    });
+
+    const response = await add.call({ arguments: { a: 3, b: 7 } });
+    expect(response.output).toBe(10);
+  });
+
+  it('should validate input by default when Zod schema is used', async () => {
+    const greet = tool('greet', {
+      description: 'Greet',
+      inputSchema: z.object({
+        name: z.string(),
+      }),
+      handler: async ({ name }) => `Hello, ${name}!`,
+    });
+
+    // Invalid input: name should be string, not number
+    await expect(greet.call({ arguments: { name: 123 } })).rejects.toThrow();
+  });
+
+  it('should skip validation when validate: false', async () => {
+    const greet = tool('greet', {
+      description: 'Greet',
+      inputSchema: z.object({
+        name: z.string(),
+      }),
+      validate: false,
+      handler: async ({ name }) => `Hello, ${name}!`,
+    });
+
+    // Invalid input passes through without validation
+    const response = await greet.call({ arguments: { name: 123 } });
+    expect(response.output).toBe('Hello, 123!');
+  });
+
+  it('should not validate by default with JSON Schema', async () => {
+    const myTool = tool('my-tool', {
+      description: 'Test',
+      inputSchema: {
+        type: 'object',
+        properties: { name: { type: 'string' } },
+        required: ['name'],
+      },
+      handler: async (args) => `Hello, ${args.name}!`,
+    });
+
+    // Invalid input passes through (no Zod validation for JSON Schema)
+    const response = await myTool.call({ arguments: { name: 123 } });
+    expect(response.output).toBe('Hello, 123!');
+  });
+
+  it('should preserve original Zod schema on tool instance', () => {
+    const zodSchema = z.object({ name: z.string() });
+    const myTool = tool('my-tool', {
+      description: 'Test',
+      inputSchema: zodSchema,
+      handler: async () => 'ok',
+    });
+
+    expect(myTool.inputZodSchema).toBe(zodSchema);
+  });
+
+  it('should have undefined Zod schema for JSON Schema tools', () => {
+    const myTool = tool('my-tool', {
+      description: 'Test',
+      inputSchema: { type: 'object', properties: {} },
+      handler: async () => 'ok',
+    });
+
+    expect(myTool.inputZodSchema).toBeUndefined();
+    expect(myTool.outputZodSchema).toBeUndefined();
+  });
+
+  it('should handle optional fields in Zod schema', async () => {
+    const myTool = tool('my-tool', {
+      description: 'Test',
+      inputSchema: z.object({
+        required: z.string(),
+        optional: z.number().optional(),
+      }),
+      handler: async ({ required: req, optional: opt }) => ({
+        required: req,
+        optional: opt ?? 'default',
+      }),
+    });
+
+    const meta = myTool.metadata;
+    expect(meta.inputSchema.required).toContain('required');
+    expect(meta.inputSchema.required).not.toContain('optional');
+
+    const response = await myTool.call({ arguments: { required: 'hello' } });
+    expect(response.output).toEqual({ required: 'hello', optional: 'default' });
+  });
+
+  it('should handle complex Zod schemas (enums, arrays, nested)', async () => {
+    const myTool = tool('complex', {
+      description: 'Complex tool',
+      inputSchema: z.object({
+        role: z.enum(['admin', 'user']),
+        tags: z.array(z.string()),
+        config: z.object({ verbose: z.boolean() }).optional(),
+      }),
+      handler: async ({ role, tags }) => `${role}: ${tags.join(', ')}`,
+    });
+
+    const meta = myTool.metadata;
+    const props = meta.inputSchema.properties as Record<string, Record<string, unknown>>;
+    expect(props.role.enum).toEqual(['admin', 'user']);
+    expect(props.tags.type).toBe('array');
+
+    const response = await myTool.call({
+      arguments: { role: 'admin', tags: ['a', 'b'] },
+    });
+    expect(response.output).toBe('admin: a, b');
   });
 });
