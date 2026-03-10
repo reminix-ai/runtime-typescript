@@ -10,6 +10,7 @@ import type {
   Capabilities,
   SchemaInput,
   InferSchema,
+  InferOutput,
 } from './types.js';
 import type { StreamEvent } from './stream-events.js';
 import {
@@ -177,7 +178,10 @@ export interface AgentOptions<
    * Async generator (when stream: true): Yields string chunks
    */
   handler:
-    | ((input: InferSchema<TInput>, context?: Record<string, unknown>) => Promise<unknown>)
+    | ((
+        input: InferSchema<TInput>,
+        context?: Record<string, unknown>
+      ) => Promise<InferOutput<TOutput>>)
     | ((
         input: InferSchema<TInput>,
         context?: Record<string, unknown>

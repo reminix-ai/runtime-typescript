@@ -3,7 +3,14 @@
  */
 
 import type { z } from 'zod';
-import type { ToolRequest, ToolResponse, JSONSchema, SchemaInput, InferSchema } from './types.js';
+import type {
+  ToolRequest,
+  ToolResponse,
+  JSONSchema,
+  SchemaInput,
+  InferSchema,
+  InferOutput,
+} from './types.js';
 import { resolveSchema } from './zod-utils.js';
 
 // === ToolMetadata ===
@@ -122,7 +129,7 @@ export interface ToolOptions<
   handler: (
     args: InferSchema<TInput>,
     context?: Record<string, unknown>
-  ) => Promise<unknown> | unknown;
+  ) => Promise<InferOutput<TOutput>> | InferOutput<TOutput>;
 }
 
 // === tool() factory ===

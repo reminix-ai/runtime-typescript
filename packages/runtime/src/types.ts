@@ -107,12 +107,20 @@ export interface JSONSchema {
 export type SchemaInput = JSONSchema | z.ZodType;
 
 /**
- * Infer the TypeScript type from a schema input.
+ * Infer the TypeScript type from an input schema.
  *
  * - Zod schema  -> z.infer<T>  (full type safety)
- * - JSON Schema -> Record<string, unknown>  (same as today)
+ * - JSON Schema -> Record<string, unknown>
  */
 export type InferSchema<T> = T extends z.ZodType ? z.infer<T> : Record<string, unknown>;
+
+/**
+ * Infer the TypeScript type from an output schema.
+ *
+ * - Zod schema  -> z.infer<T>  (full type safety)
+ * - JSON Schema -> unknown  (output can be any type)
+ */
+export type InferOutput<T> = T extends z.ZodType ? z.infer<T> : unknown;
 
 // === Capabilities ===
 

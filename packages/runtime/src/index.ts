@@ -19,6 +19,7 @@ export type {
   JSONSchema,
   SchemaInput,
   InferSchema,
+  InferOutput,
   Capabilities,
   RuntimeErrorInfo,
   RuntimeErrorResponse,
