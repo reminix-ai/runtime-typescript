@@ -68,15 +68,11 @@ For agents that need a full thread of messages (including tool call and tool res
 import { openai } from '@ai-sdk/openai';
 import { VercelAIThreadAgent } from '@reminix/vercel-ai';
 import { tool, serve } from '@reminix/runtime';
+import { z } from 'zod';
 
-const getWeather = tool({
-  name: 'getWeather',
+const getWeather = tool('getWeather', {
   description: 'Get the current weather for a city',
-  input: {
-    type: 'object',
-    properties: { city: { type: 'string' } },
-    required: ['city'],
-  },
+  inputSchema: z.object({ city: z.string() }),
   handler: async ({ city }) => ({ city, temp: 72, condition: 'sunny' }),
 });
 

@@ -27,6 +27,7 @@
  */
 
 import { tool, serve } from '@reminix/runtime';
+import { z } from 'zod';
 
 // Weather data (simulated)
 const weatherData: Record<string, { temp: number; condition: string }> = {
@@ -40,42 +41,26 @@ const weatherData: Record<string, { temp: number; condition: string }> = {
 // Tool 1: Get weather for a location (with output schema)
 const getWeather = tool('get_weather', {
   description: 'Get the current weather for a city',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      location: {
-        type: 'string',
-        description: 'City name (e.g., "San Francisco", "New York")',
-      },
-      units: {
-        type: 'string',
-        enum: ['celsius', 'fahrenheit'],
-        default: 'fahrenheit',
-        description: 'Temperature units',
-      },
-    },
-    required: ['location'],
-  },
+  inputSchema: z.object({
+    location: z.string().describe('City name (e.g., "San Francisco", "New York")'),
+    units: z.enum(['celsius', 'fahrenheit']).default('fahrenheit').describe('Temperature units'),
+  }),
   // Optional: define the output schema for documentation
-  outputSchema: {
-    type: 'object',
-    properties: {
-      location: { type: 'string' },
-      temperature: { type: 'number' },
-      units: { type: 'string' },
-      condition: { type: 'string' },
-    },
-  },
+  outputSchema: z.object({
+    location: z.string(),
+    temperature: z.number(),
+    units: z.string(),
+    condition: z.string(),
+  }),
   handler: async (args) => {
-    const location = (args.location as string).toLowerCase();
-    const units = (args.units as string) || 'fahrenheit';
+    const location = args.location.toLowerCase();
+    const units = args.units;
 
     const weather = weatherData[location];
     if (!weather) {
-      return {
-        error: `Weather data not available for "${args.location}"`,
-        available_cities: Object.keys(weatherData),
-      };
+      throw new Error(
+        `Weather data not available for "${args.location}". Available: ${Object.keys(weatherData).join(', ')}`
+      );
     }
 
     let temp = weather.temp;
@@ -95,26 +80,18 @@ const getWeather = tool('get_weather', {
 // Tool 2: Simple calculator
 const calculate = tool('calculate', {
   description: 'Perform basic math operations',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      a: { type: 'number', description: 'First operand' },
-      b: { type: 'number', description: 'Second operand' },
-      operation: {
-        type: 'string',
-        enum: ['add', 'subtract', 'multiply', 'divide'],
-        description: 'Math operation to perform',
-      },
-    },
-    required: ['a', 'b', 'operation'],
-  },
+  inputSchema: z.object({
+    a: z.number().describe('First operand'),
+    b: z.number().describe('Second operand'),
+    operation: z
+      .enum(['add', 'subtract', 'multiply', 'divide'])
+      .describe('Math operation to perform'),
+  }),
   handler: async (args) => {
-    const a = args.a as number;
-    const b = args.b as number;
-    const op = args.operation as string;
+    const { a, b, operation } = args;
 
     let result: number;
-    switch (op) {
+    switch (operation) {
       case 'add':
         result = a + b;
         break;
@@ -131,33 +108,26 @@ const calculate = tool('calculate', {
         result = a / b;
         break;
       default:
-        return { error: `Unknown operation: ${op}` };
+        return { error: `Unknown operation: ${operation}` };
     }
 
-    return { a, b, operation: op, result };
+    return { a, b, operation, result };
   },
 });
 
 // Tool 3: String utilities
 const stringUtils = tool('string_utils', {
   description: 'Perform string operations',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      text: { type: 'string', description: 'Input text' },
-      operation: {
-        type: 'string',
-        enum: ['uppercase', 'lowercase', 'reverse', 'length'],
-        description: 'String operation to perform',
-      },
-    },
-    required: ['text', 'operation'],
-  },
+  inputSchema: z.object({
+    text: z.string().describe('Input text'),
+    operation: z
+      .enum(['uppercase', 'lowercase', 'reverse', 'length'])
+      .describe('String operation to perform'),
+  }),
   handler: async (args) => {
-    const text = args.text as string;
-    const op = args.operation as string;
+    const { text, operation } = args;
 
-    switch (op) {
+    switch (operation) {
       case 'uppercase':
         return { result: text.toUpperCase() };
       case 'lowercase':
@@ -167,7 +137,7 @@ const stringUtils = tool('string_utils', {
       case 'length':
         return { result: text.length };
       default:
-        return { error: `Unknown operation: ${op}` };
+        return { error: `Unknown operation: ${operation}` };
     }
   },
 });

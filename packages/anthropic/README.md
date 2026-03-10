@@ -52,15 +52,12 @@ serve({ agents: [agent] });
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicThreadAgent } from '@reminix/anthropic';
 import { serve, tool } from '@reminix/runtime';
+import { z } from 'zod';
 
 const getWeather = tool('get_weather', {
   description: 'Get the current weather for a city',
-  input: {
-    type: 'object',
-    properties: { city: { type: 'string' } },
-    required: ['city'],
-  },
-  handler: async (input) => ({ temperature: 72, condition: 'sunny' }),
+  inputSchema: z.object({ city: z.string() }),
+  handler: async ({ city }) => ({ temperature: 72, condition: 'sunny' }),
 });
 
 const client = new Anthropic();

@@ -36,38 +36,36 @@
  */
 
 import { agent, serve } from '@reminix/runtime';
+import { z } from 'zod';
+
+const inputSchema = z.object({
+  message: z.string().optional(),
+  messages: z
+    .array(
+      z.object({
+        role: z.string(),
+        content: z.string(),
+      })
+    )
+    .optional(),
+});
 
 // Create an agent with the agent() factory
 const echo = agent('echo', {
   description: 'A simple echo agent that demonstrates the factory pattern',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      message: { type: 'string' },
-      messages: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            role: { type: 'string' },
-            content: { type: 'string' },
-          },
-        },
-      },
-    },
-  },
+  inputSchema,
   stream: true,
   handler: async function* (input, context) {
-    const messages = input.messages as Array<{ role: string; content: string }> | undefined;
+    const { messages } = input;
 
     let response: string;
 
     // Check if this is a chat-style request (has messages)
-    if (messages && Array.isArray(messages)) {
-      const userMessage = messages.length > 0 ? messages[messages.length - 1].content : '';
+    if (messages && messages.length > 0) {
+      const userMessage = messages[messages.length - 1].content;
       response = `You said: ${userMessage}`;
     } else {
-      const message = (input.message as string) || '';
+      const message = input.message || '';
       const userId = context?.user_id;
       response = `Echo: ${message}`;
       if (userId) {

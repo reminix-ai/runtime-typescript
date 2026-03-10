@@ -52,15 +52,12 @@ serve({ agents: [agent] });
 import { GoogleGenAI } from '@google/genai';
 import { GoogleThreadAgent } from '@reminix/google';
 import { serve, tool } from '@reminix/runtime';
+import { z } from 'zod';
 
 const getWeather = tool('get_weather', {
   description: 'Get the current weather for a city',
-  input: {
-    type: 'object',
-    properties: { city: { type: 'string' } },
-    required: ['city'],
-  },
-  handler: async (input) => ({ temperature: 72, condition: 'sunny' }),
+  inputSchema: z.object({ city: z.string() }),
+  handler: async ({ city }) => ({ temperature: 72, condition: 'sunny' }),
 });
 
 const client = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });

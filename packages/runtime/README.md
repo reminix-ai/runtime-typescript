@@ -17,20 +17,15 @@ npm install @reminix/runtime
 ## Quick Start
 
 ```typescript
+import { z } from 'zod';
 import { agent, serve } from '@reminix/runtime';
 
-// Create an agent for task-oriented operations
 const calculator = agent('calculator', {
   description: 'Add two numbers',
-  inputSchema: {
-    type: 'object',
-    properties: { a: { type: 'number' }, b: { type: 'number' } },
-    required: ['a', 'b'],
-  },
-  handler: async ({ a, b }) => (a as number) + (b as number),
+  inputSchema: z.object({ a: z.number(), b: z.number() }),
+  handler: async ({ a, b }) => a + b,
 });
 
-// Serve the agent
 serve({ agents: [calculator] });
 ```
 
@@ -190,21 +185,17 @@ serve({ agents: [assistant] });
 Use `agent()` for task-oriented agents that take structured input and return output (or omit `type` / use `type: 'prompt'` or `type: 'task'` for standard shapes):
 
 ```typescript
+import { z } from 'zod';
 import { agent, serve } from '@reminix/runtime';
 
+// Zod schema (recommended) — typed handler, no casts needed
 const calculator = agent('calculator', {
   description: 'Add two numbers',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      a: { type: 'number' },
-      b: { type: 'number' },
-    },
-    required: ['a', 'b'],
-  },
-  handler: async ({ a, b }) => (a as number) + (b as number),
+  inputSchema: z.object({ a: z.number(), b: z.number() }),
+  handler: async ({ a, b }) => a + b,
 });
 
+// JSON Schema (also supported)
 const textProcessor = agent('text-processor', {
   description: 'Process text in various ways',
   inputSchema: {
@@ -229,17 +220,14 @@ serve({ agents: [calculator, textProcessor] });
 Agents support streaming via async generators. When you use an async generator function, the agent automatically supports streaming:
 
 ```typescript
+import { z } from 'zod';
 import { agent, serve } from '@reminix/runtime';
 
 const streamer = agent('streamer', {
   description: 'Stream text word by word',
-  inputSchema: {
-    type: 'object',
-    properties: { text: { type: 'string' } },
-    required: ['text'],
-  },
+  inputSchema: z.object({ text: z.string() }),
   handler: async function* ({ text }) {
-    for (const word of (text as string).split(' ')) {
+    for (const word of text.split(' ')) {
       yield word + ' ';
     }
   },
@@ -261,27 +249,20 @@ Tools are standalone functions exposed via [MCP](https://modelcontextprotocol.io
 Use the `tool()` factory function to create tools:
 
 ```typescript
+import { z } from 'zod';
 import { tool, serve } from '@reminix/runtime';
 
 const getWeather = tool('get_weather', {
   description: 'Get current weather for a location',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      location: { type: 'string', description: 'City name' },
-      units: { type: 'string', enum: ['celsius', 'fahrenheit'], default: 'celsius' },
-    },
-    required: ['location'],
-  },
-  outputSchema: {
-    type: 'object',
-    properties: {
-      temp: { type: 'number' },
-      condition: { type: 'string' },
-    },
-  },
-  handler: async (input) => {
-    const location = input.location as string;
+  inputSchema: z.object({
+    location: z.string().describe('City name'),
+    units: z.enum(['celsius', 'fahrenheit']).optional(),
+  }),
+  outputSchema: z.object({
+    temp: z.number(),
+    condition: z.string(),
+  }),
+  handler: async ({ location }) => {
     return { temp: 72, condition: 'sunny', location };
   },
 });
@@ -294,26 +275,19 @@ serve({ tools: [getWeather] });
 You can serve both agents and tools from the same runtime:
 
 ```typescript
+import { z } from 'zod';
 import { agent, tool, serve } from '@reminix/runtime';
 
 const summarizer = agent('summarizer', {
   description: 'Summarize text',
-  inputSchema: {
-    type: 'object',
-    properties: { text: { type: 'string' } },
-    required: ['text'],
-  },
-  handler: async ({ text }) => (text as string).slice(0, 100) + '...',
+  inputSchema: z.object({ text: z.string() }),
+  handler: async ({ text }) => text.slice(0, 100) + '...',
 });
 
 const calculator = tool('calculate', {
   description: 'Perform basic math operations',
-  inputSchema: {
-    type: 'object',
-    properties: { expression: { type: 'string' } },
-    required: ['expression'],
-  },
-  handler: async (input) => ({ result: eval(input.expression as string) }),
+  inputSchema: z.object({ expression: z.string() }),
+  handler: async ({ expression }) => ({ result: eval(expression) }),
 });
 
 serve({ agents: [summarizer], tools: [calculator] });
@@ -366,30 +340,27 @@ Factory function to create an agent. Use `type` for standard I/O shapes, or prov
 | `name` | `string` | Unique identifier for the agent |
 | `options.type` | `'prompt' \| 'chat' \| 'task' \| 'rag' \| 'thread' \| 'workflow'` | Optional. Standard input/output schema (default: `prompt` when no custom input/output). |
 | `options.description` | `string` | Human-readable description |
-| `options.inputSchema` | `object` | JSON Schema for input (ignored if `type` is set) |
-| `options.outputSchema` | `object` | Optional JSON Schema for output (ignored if `type` is set) |
+| `options.inputSchema` | `JSONSchema \| ZodType` | JSON Schema or Zod schema for input (ignored if `type` is set). Zod schemas provide typed handlers and runtime validation. |
+| `options.outputSchema` | `JSONSchema \| ZodType` | Optional JSON Schema or Zod schema for output (ignored if `type` is set) |
 | `options.handler` | `function` | Async function or async generator |
 
 ```typescript
+import { z } from 'zod';
 import { agent } from '@reminix/runtime';
 
-// Regular agent
+// Regular agent with Zod
 const myAgent = agent('my-agent', {
   description: 'Does something useful',
-  inputSchema: {
-    type: 'object',
-    properties: { input: { type: 'string' } },
-    required: ['input'],
-  },
+  inputSchema: z.object({ input: z.string() }),
   handler: async ({ input }) => ({ result: input }),
 });
 
 // Streaming agent
 const streamingAgent = agent('streaming-agent', {
   description: 'Streams output',
-  inputSchema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] },
+  inputSchema: z.object({ text: z.string() }),
   handler: async function* ({ text }) {
-    for (const word of (text as string).split(' ')) {
+    for (const word of text.split(' ')) {
       yield word + ' ';
     }
   },
@@ -406,33 +377,26 @@ Factory function to create a tool.
 |-----------|------|-------------|
 | `name` | `string` | Unique identifier for the tool |
 | `options.description` | `string` | Human-readable description |
-| `options.inputSchema` | `object` | JSON Schema for input |
-| `options.outputSchema` | `object` | Optional JSON Schema for output |
+| `options.inputSchema` | `JSONSchema \| ZodType` | JSON Schema or Zod schema for input. Zod schemas provide typed handlers and runtime validation. |
+| `options.outputSchema` | `JSONSchema \| ZodType` | Optional JSON Schema or Zod schema for output |
 | `options.handler` | `function` | Async function to call when invoked |
 
 ```typescript
+import { z } from 'zod';
 import { tool } from '@reminix/runtime';
 
 const myTool = tool('my_tool', {
   description: 'Does something useful',
-  inputSchema: {
-    type: 'object',
-    properties: { input: { type: 'string' } },
-    required: ['input'],
-  },
-  handler: async (input) => ({ result: input.input }),
+  inputSchema: z.object({ input: z.string() }),
+  handler: async ({ input }) => ({ result: input }),
 });
 
 // With context (optional second argument receives request context)
 const myToolWithContext = tool('my_tool', {
   description: 'Example with context',
-  inputSchema: {
-    type: 'object',
-    properties: { param: { type: 'string' } },
-    required: ['param'],
-  },
-  handler: async (input, context) => ({
-    param: input.param,
+  inputSchema: z.object({ param: z.string() }),
+  handler: async ({ param }, context) => ({
+    param,
     userId: (context as Record<string, unknown>)?.user_id ?? 'anonymous',
   }),
 });

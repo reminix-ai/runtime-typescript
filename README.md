@@ -49,16 +49,13 @@ serve({ agents: [agent] });
 ### With Factory Functions (No Framework)
 
 ```typescript
+import { z } from 'zod';
 import { agent, serve } from '@reminix/runtime';
 
 const calculator = agent('calculator', {
   description: 'Add two numbers',
-  input: {
-    type: 'object',
-    properties: { a: { type: 'number' }, b: { type: 'number' } },
-    required: ['a', 'b'],
-  },
-  handler: async ({ a, b }) => (a as number) + (b as number),
+  inputSchema: z.object({ a: z.number(), b: z.number() }),
+  handler: async ({ a, b }) => a + b,
 });
 
 serve({ agents: [calculator] });
