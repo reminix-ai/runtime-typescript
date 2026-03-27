@@ -266,24 +266,6 @@ describe('Agent Types', () => {
     expect(def.metadata.inputSchema?.required).toEqual(['prompt']);
   });
 
-  it('type rag: metadata and invoke', async () => {
-    const ragAgent = agent('rag', {
-      type: 'rag',
-      description: 'Answer from documents',
-      handler: async ({ query }) => `Answer for: ${query}`,
-    });
-
-    expect(ragAgent.metadata.type).toBe('rag');
-    expect(ragAgent.metadata.inputSchema?.required).toEqual(['query']);
-    expect(
-      (ragAgent.metadata.inputSchema?.properties as Record<string, unknown>)?.query
-    ).toBeDefined();
-    expect(ragAgent.metadata.outputSchema).toEqual({ type: 'string' });
-
-    const response = await ragAgent.invoke({ input: { query: 'What is X?' } });
-    expect(response.output).toBe('Answer for: What is X?');
-  });
-
   it('type thread: metadata and invoke (output is messages)', async () => {
     const threadAgent = agent('thread-agent', {
       type: 'thread',

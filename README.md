@@ -11,7 +11,7 @@ A lightweight runtime for serving AI agents via REST APIs. Turn any LLM framewor
 **Features:**
 - **REST API Server**: Execute endpoint powered by [Hono](https://hono.dev)
 - **Streaming Support**: Server-Sent Events (SSE) out of the box
-- **Agent Types**: Standard patterns (prompt, chat, task, rag, thread, workflow) for common agent I/O
+- **Agent Types**: Standard patterns (prompt, chat, task, thread, workflow) for common agent I/O
 - **Framework Agents**: Pre-built integrations for Vercel AI, LangChain, LangGraph, OpenAI, Anthropic
 
 ## Packages
@@ -66,9 +66,9 @@ Your agent is now available at:
 
 See the [runtime package docs](./packages/runtime) for agent types, tools, streaming, and advanced usage.
 
-## Using Platform Tools via MCP
+## Using Project Tools via MCP
 
-When deployed to Reminix Cloud, your agents can access platform tools (memory, knowledge search) and your project tools via the MCP server. The environment variables `REMINIX_MCP_URL` and `REMINIX_API_KEY` are injected automatically.
+When deployed to Reminix Cloud, your agents can discover and call your project's tools via the MCP server. The environment variables `REMINIX_MCP_URL` and `REMINIX_API_KEY` are injected automatically.
 
 Any framework with MCP client support works — no Reminix-specific SDK needed.
 
@@ -80,16 +80,10 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 
-const headers: Record<string, string> = {
-  Authorization: `Bearer ${process.env.REMINIX_API_KEY}`,
-};
-// Optional: scope memory to a specific user
-headers["X-Reminix-Identity"] = JSON.stringify({ user_id: "u_123" });
-
 const client = await createMCPClient({
   transport: new StreamableHTTPClientTransport(
     new URL(process.env.REMINIX_MCP_URL!),
-    { requestInit: { headers } }
+    { requestInit: { headers: { Authorization: `Bearer ${process.env.REMINIX_API_KEY}` } } }
   ),
 });
 
@@ -97,7 +91,7 @@ const tools = await client.tools();
 const result = await generateText({
   model: openai("gpt-4o"),
   tools,
-  prompt: "Store my preferred language as TypeScript",
+  prompt: "Use the search tool to find relevant docs",
 });
 
 await client.close();
@@ -119,11 +113,10 @@ const response = await client.messages.create({
       url: process.env.REMINIX_MCP_URL!,
       headers: {
         Authorization: `Bearer ${process.env.REMINIX_API_KEY}`,
-        "X-Reminix-Identity": JSON.stringify({ user_id: "u_123" }),
       },
     },
   ],
-  messages: [{ role: "user", content: "Search the knowledge base for auth docs" }],
+  messages: [{ role: "user", content: "Use the search tool to find relevant docs" }],
 });
 ```
 
