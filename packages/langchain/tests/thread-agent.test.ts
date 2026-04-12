@@ -50,7 +50,7 @@ describe('LangChainThreadAgent.invoke with CompiledStateGraph', () => {
       invoke: vi.fn().mockResolvedValue({
         messages: [new HumanMessage({ content: 'Hello' }), new AIMessage({ content: 'Hi there!' })],
       }),
-      getGraph: vi.fn(),
+      getState: vi.fn(),
     };
 
     const agent = new LangChainThreadAgent(mockGraph as any);
@@ -81,7 +81,7 @@ describe('LangChainThreadAgent.invoke with CompiledStateGraph', () => {
           new AIMessage({ content: 'The weather in London is 22C and sunny.' }),
         ],
       }),
-      getGraph: vi.fn(),
+      getState: vi.fn(),
     };
 
     const agent = new LangChainThreadAgent(mockGraph as any);
@@ -130,7 +130,7 @@ describe('LangChainThreadAgent.invokeStream', () => {
       invoke: vi.fn().mockResolvedValue({
         messages: [new HumanMessage({ content: 'Hello' }), new AIMessage({ content: 'Hi!' })],
       }),
-      getGraph: vi.fn(),
+      getState: vi.fn(),
     };
 
     const agent = new LangChainThreadAgent(mockGraph as any);

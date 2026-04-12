@@ -117,7 +117,7 @@ describe('LangChainChatAgent.invoke with CompiledStateGraph', () => {
           new AIMessage({ content: 'Hi from graph!' }),
         ],
       }),
-      getGraph: vi.fn(),
+      getState: vi.fn(),
     };
 
     const agent = new LangChainChatAgent(mockGraph as any);
