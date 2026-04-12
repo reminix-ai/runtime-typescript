@@ -35,8 +35,8 @@ export interface LangChainThreadAgentOptions {
  */
 function isCompiledStateGraph(agent: Runnable): agent is Runnable & { getGraph: () => unknown } {
   return (
-    'getGraph' in agent &&
-    typeof (agent as unknown as Record<string, unknown>).getGraph === 'function'
+    'getState' in agent &&
+    typeof (agent as unknown as Record<string, unknown>).getState === 'function'
   );
 }
 

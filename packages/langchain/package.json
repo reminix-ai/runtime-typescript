@@ -54,10 +54,9 @@
     "@reminix/runtime": "workspace:^"
   },
   "peerDependencies": {
-    "langchain": ">=1.0.0"
+    "@langchain/core": ">=1.0.0"
   },
   "devDependencies": {
-    "langchain": "^1.0.0",
     "@langchain/core": "^1.1.12",
     "@types/node": "^25.0.9",
     "typescript": "^5.9.3",

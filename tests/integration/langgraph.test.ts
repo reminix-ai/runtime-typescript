@@ -77,10 +77,12 @@ describe('LangGraph Agent Integration', () => {
     });
 
     expect(response.status).toBe(200);
-    const data = (await response.json()) as { output: string };
+    const data = (await response.json()) as {
+      output: Array<{ role: string; content: string }>;
+    };
     expect(data.output).toBeDefined();
-    // The agent should have called the tool and returned weather info
-    const output = data.output.toLowerCase();
+    // The thread agent returns an array of messages; stringify to check content
+    const output = JSON.stringify(data.output).toLowerCase();
     expect(output).toMatch(/sunny|22|paris/);
   });
 });
