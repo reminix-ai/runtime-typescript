@@ -60,7 +60,7 @@ Returns runtime information and available endpoints:
 {
   "runtime": {
     "name": "reminix-runtime",
-    "version": "0.0.18",
+    "version": "0.0.19",
     "language": "typescript"
   },
   "endpoints": [

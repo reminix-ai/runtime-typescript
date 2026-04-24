@@ -1,6 +1,6 @@
 {
   "name": "@reminix/vercel-ai",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Reminix agents for Vercel AI SDK - serve AI agents as REST APIs",
   "license": "Apache-2.0",
   "author": {
