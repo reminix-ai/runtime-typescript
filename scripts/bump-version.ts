@@ -248,15 +248,20 @@ function main() {
 
   let updatedCount = 0;
 
-  // Update TypeScript packages (only in packages/, not root or examples/)
+  // Update all package.json files in the workspace.
+  // - packages/*: bumps both the package's own version and its @reminix/* deps.
+  // - examples/*: bumps only the @reminix/* deps so example templates point at
+  //   the new publish target. Example own `version` stays at 0.0.0 because
+  //   `updatePackageJson` gates the version write behind `isManagedPackage`.
+  // - Root package.json is skipped (it has no @reminix/* deps to update).
   const packageFiles = findPackageJsonFiles(root);
 
   for (const filePath of packageFiles) {
     const relPath = relative(root, filePath);
     const parts = relPath.split('/');
 
-    // Skip root and examples
-    if (parts.length === 1 || parts.includes('examples')) {
+    // Skip root package.json
+    if (parts.length === 1) {
       continue;
     }
 
