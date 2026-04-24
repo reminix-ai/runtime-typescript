@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@reminix/runtime": "^0.0.19",
-    "@reminix/openai": "^0.0.19",
+    "@reminix/runtime": "^0.0.20",
+    "@reminix/openai": "^0.0.20",
     "openai": "^6.16.0"
   },
   "devDependencies": {

@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@reminix/runtime": "^0.0.19",
+    "@reminix/runtime": "^0.0.20",
     "zod": "^4.3.6"
   },
   "devDependencies": {

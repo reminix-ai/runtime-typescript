@@ -1,6 +1,6 @@
 {
   "name": "@reminix/langchain",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Reminix agents for LangChain - serve AI agents as REST APIs",
   "license": "Apache-2.0",
   "author": {
