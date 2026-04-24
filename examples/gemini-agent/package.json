@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@reminix/runtime": "^0.0.21",
-    "@reminix/google": "^0.0.21",
+    "@reminix/runtime": "^0.0.22",
+    "@reminix/google": "^0.0.22",
     "@google/genai": "^1.0.0"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 {
   "name": "@reminix/anthropic",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Reminix agents for Anthropic - serve AI agents as REST APIs",
   "license": "Apache-2.0",
   "author": {

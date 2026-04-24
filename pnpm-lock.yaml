@@ -42,10 +42,10 @@ importers:
         specifier: ^0.71.0
         version: 0.71.2(zod@4.3.6)
       '@reminix/anthropic':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/anthropic
       '@reminix/runtime':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/runtime
     devDependencies:
       '@types/node':
@@ -64,10 +64,10 @@ importers:
         specifier: ^1.0.0
         version: 1.50.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))
       '@reminix/google':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/google
       '@reminix/runtime':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/runtime
     devDependencies:
       '@types/node':
@@ -89,10 +89,10 @@ importers:
         specifier: ^1.2.1
         version: 1.4.4(@langchain/core@1.1.41(@opentelemetry/api@1.9.0)(openai@6.34.0(ws@8.20.0)(zod@4.3.6))(ws@8.20.0))(ws@8.20.0)
       '@reminix/langchain':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/langchain
       '@reminix/runtime':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/runtime
     devDependencies:
       '@types/node':
@@ -108,10 +108,10 @@ importers:
   examples/openai-agent:
     dependencies:
       '@reminix/openai':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/openai
       '@reminix/runtime':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/runtime
       openai:
         specifier: ^6.16.0
@@ -130,7 +130,7 @@ importers:
   examples/starter-agent:
     dependencies:
       '@reminix/runtime':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/runtime
       zod:
         specifier: ^4.3.6
@@ -149,7 +149,7 @@ importers:
   examples/starter-tool:
     dependencies:
       '@reminix/runtime':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/runtime
       zod:
         specifier: ^4.3.6
@@ -171,10 +171,10 @@ importers:
         specifier: ^3.0.0
         version: 3.0.53(zod@4.3.6)
       '@reminix/runtime':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/runtime
       '@reminix/vercel-ai':
-        specifier: ^0.0.21
+        specifier: ^0.0.22
         version: link:../../packages/vercel-ai
       ai:
         specifier: ^6.0.0

@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@reminix/runtime": "^0.0.21",
-    "@reminix/vercel-ai": "^0.0.21",
+    "@reminix/runtime": "^0.0.22",
+    "@reminix/vercel-ai": "^0.0.22",
     "ai": "^6.0.0",
     "@ai-sdk/openai": "^3.0.0",
     "zod": "^4.0.0"
