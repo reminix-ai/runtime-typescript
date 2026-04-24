@@ -113,6 +113,12 @@ jobs:
           fi
           echo "✓ Version verified: $ACTUAL_VERSION"
 
+      - name: Regenerate pnpm-lock.yaml with new versions
+        # bump-version rewrites package.json specs; the lockfile must be
+        # refreshed in the same commit or publish.yml's frozen-lockfile
+        # install will reject the mismatch.
+        run: pnpm install --lockfile-only
+
       - name: Commit version changes
         run: |
           git add -A
