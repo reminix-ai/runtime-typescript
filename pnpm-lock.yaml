@@ -58,6 +58,28 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  examples/gemini-agent:
+    dependencies:
+      '@google/genai':
+        specifier: ^1.0.0
+        version: 1.50.1(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6))
+      '@reminix/google':
+        specifier: ^0.0.21
+        version: link:../../packages/google
+      '@reminix/runtime':
+        specifier: ^0.0.21
+        version: link:../../packages/runtime
+    devDependencies:
+      '@types/node':
+        specifier: ^25.0.9
+        version: 25.6.0
+      tsx:
+        specifier: ^4.19.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   examples/langchain-agent:
     dependencies:
       '@langchain/core':
