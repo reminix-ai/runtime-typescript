@@ -1,8 +1,8 @@
 {
-  "name": "example-anthropic-basic",
+  "name": "openai-agent",
   "version": "0.0.0",
   "private": true,
-  "description": "Basic Anthropic agent example",
+  "description": "Reminix agent using the OpenAI SDK directly",
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
@@ -10,10 +10,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@reminix/runtime": "workspace:*",
-    "@reminix/anthropic": "workspace:*",
-    "@anthropic-ai/sdk": "^0.71.0",
-    "dotenv": "^16.4.0"
+    "@reminix/runtime": "^0.0.18",
+    "@reminix/openai": "^0.0.18",
+    "openai": "^6.16.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",

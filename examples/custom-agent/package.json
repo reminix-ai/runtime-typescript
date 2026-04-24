@@ -10,7 +10,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@reminix/runtime": "workspace:*",
+    "@reminix/runtime": "^0.0.18",
     "zod": "^4.3.6"
   },
   "devDependencies": {

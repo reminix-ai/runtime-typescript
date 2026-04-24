@@ -145,7 +145,7 @@ pnpm build
 
 ```bash
 # Run the LangChain example
-cd examples/langchain-basic
+cd examples/langchain-agent
 pnpm start
 ```
 

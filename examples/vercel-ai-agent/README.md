@@ -1,70 +1,20 @@
-# Vercel AI Agent Example
+# Vercel AI SDK Agent
 
-An example showing how to serve a Vercel AI ToolLoopAgent with tool calling via Reminix Runtime.
+Agent built with the Vercel AI SDK. Streaming responses, tool calling, and structured output with minimal boilerplate.
 
-## Setup
+[![Deploy to Reminix](https://reminix.com/badge/deploy.svg)](https://reminix.com/new/deploy?repo=reminix-ai/runtime-typescript&folder=examples/vercel-ai-agent)
 
-```bash
-# From the repository root
-pnpm install
+## Required environment variables
 
-# Navigate to this example
-cd examples/vercel-ai-agent
-```
-
-## Environment
-
-Create a `.env` file in the repository root with your API key:
-
-```bash
-OPENAI_API_KEY=your-api-key
-```
-
-## Usage
-
-```bash
-pnpm start
-```
-
-## Endpoints
-
-Once running, the following endpoints are available:
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/manifest` | GET | Agent discovery |
-| `/agents/vercel-ai-agent/invoke` | POST | Execute agent |
-
-## Available Tools
-
-- `getWeather(city)`: Get weather for Paris, London, Tokyo, or New York
-
-## Testing
-
-```bash
-# Health check
-curl http://localhost:8080/health
-
-# Discovery
-curl http://localhost:8080/manifest
-
-# Invoke (with tool use)
-curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
-  -H "Content-Type: application/json" \
-  -d '{"input": {"prompt": "What is the weather in Paris?"}}'
-
-# Chat
-curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
-  -H "Content-Type: application/json" \
-  -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}}'
-```
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | Your [OpenAI API key](https://platform.openai.com/api-keys) |
 
 ## How it works
 
-1. Define tools using `tool` from `ai`
-2. Create a Vercel AI ToolLoopAgent
-3. Serve it with `@reminix/vercel-ai`
+`VercelAIChatAgent` wraps a Vercel AI SDK `ToolLoopAgent` so it runs inside the Reminix runtime. Define your tools with `ai`'s `tool()`, plug a provider model into a `ToolLoopAgent`, and the SDK handles the tool-use loop while Reminix serves the whole thing as a streaming REST API. This example ships one `getWeather` tool to demonstrate the pattern.
+
+## What it does
 
 ```typescript
 import { openai } from '@ai-sdk/openai';
@@ -76,7 +26,7 @@ import { serve } from '@reminix/runtime';
 const getWeather = tool({
   description: 'Get the current weather for a city',
   inputSchema: z.object({ city: z.string() }),
-  execute: async ({ city }) => `Weather in ${city}: Sunny, 22°C`,
+  execute: async ({ city }) => `The weather in ${city} is sunny, 22°C.`,
 });
 
 const toolAgent = new ToolLoopAgent({
@@ -84,6 +34,34 @@ const toolAgent = new ToolLoopAgent({
   tools: { getWeather },
 });
 
-const agent = new VercelAIChatAgent(toolAgent, { name: 'vercel-ai-agent' });
-serve({ agents: [agent] });
+serve({ agents: [new VercelAIChatAgent(toolAgent, { name: 'vercel-ai-agent' })] });
+```
+
+## Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/manifest` | GET | Agent discovery |
+| `/agents/vercel-ai-agent/invoke` | POST | Execute the agent |
+
+## Testing
+
+```bash
+# Tool-use question
+curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"input": {"prompt": "What is the weather in Paris?"}}'
+
+# Chat-style messages
+curl -X POST http://localhost:8080/agents/vercel-ai-agent/invoke \
+  -H "Content-Type: application/json" \
+  -d '{"input": {"messages": [{"role": "user", "content": "What is the weather in Tokyo?"}]}}'
+```
+
+## Run locally
+
+```bash
+pnpm install
+OPENAI_API_KEY=... pnpm start
 ```

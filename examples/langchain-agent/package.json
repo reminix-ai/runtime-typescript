@@ -1,8 +1,8 @@
 {
-  "name": "vercel-ai-agent",
+  "name": "langchain-agent",
   "version": "0.0.0",
   "private": true,
-  "description": "Reminix agent built with the Vercel AI SDK",
+  "description": "Reminix agent built with LangChain.js",
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
@@ -11,10 +11,9 @@
   },
   "dependencies": {
     "@reminix/runtime": "^0.0.18",
-    "@reminix/vercel-ai": "^0.0.18",
-    "ai": "^6.0.0",
-    "@ai-sdk/openai": "^3.0.0",
-    "zod": "^4.0.0"
+    "@reminix/langchain": "^0.0.18",
+    "@langchain/openai": "^1.2.1",
+    "@langchain/core": "^1.1.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",

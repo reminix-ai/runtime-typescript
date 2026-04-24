@@ -1,8 +1,8 @@
 {
-  "name": "example-openai-basic",
+  "name": "starter-tool",
   "version": "0.0.0",
   "private": true,
-  "description": "Basic OpenAI agent example",
+  "description": "Minimal starter tool — the fastest way to build a tool on Reminix",
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
@@ -10,10 +10,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@reminix/runtime": "workspace:*",
-    "@reminix/openai": "workspace:*",
-    "openai": "^6.16.0",
-    "dotenv": "^16.4.0"
+    "@reminix/runtime": "^0.0.18",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",

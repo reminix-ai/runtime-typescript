@@ -1,8 +1,8 @@
 {
-  "name": "example-langchain-basic",
+  "name": "anthropic-agent",
   "version": "0.0.0",
   "private": true,
-  "description": "Basic LangChain agent example",
+  "description": "Reminix agent using the Anthropic SDK directly",
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
@@ -10,11 +10,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@reminix/runtime": "workspace:*",
-    "@reminix/langchain": "workspace:*",
-    "@langchain/openai": "^1.2.1",
-    "@langchain/core": "^1.1.0",
-    "dotenv": "^16.4.0"
+    "@reminix/runtime": "^0.0.18",
+    "@reminix/anthropic": "^0.0.18",
+    "@anthropic-ai/sdk": "^0.71.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.9",
