@@ -9,8 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@reminix/runtime": "^0.0.18",
-    "@reminix/langchain": "^0.0.18",
+    "@reminix/runtime": "^0.0.19",
+    "@reminix/langchain": "^0.0.19",
     "@langchain/openai": "^1.2.1",
     "@langchain/core": "^1.1.0"
   },

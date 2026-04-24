@@ -105,7 +105,11 @@ function updatePackageJson(
   return false;
 }
 
-function updateDependencyVersion(current: string, oldVersion: string, newVersion: string): string {
+function updateDependencyVersion(current: string, _oldVersion: string, newVersion: string): string {
+  // Always rewrite @reminix/* dep specs to the new version, regardless of what
+  // they currently point at. This keeps examples/packages in sync even if a
+  // prior bump skipped them (e.g. because they drifted to an older version).
+  // Workspace-protocol specs are left alone — pnpm publish rewrites them itself.
   if (current.startsWith('workspace:')) {
     return current;
   }
@@ -116,11 +120,6 @@ function updateDependencyVersion(current: string, oldVersion: string, newVersion
   }
 
   const prefix = match[1] ?? '';
-  const version = match[2];
-  if (version !== oldVersion) {
-    return current;
-  }
-
   return `${prefix}${newVersion}`;
 }
 
