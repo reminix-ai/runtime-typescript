@@ -54,7 +54,11 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        # Use --no-frozen-lockfile so a stale lockfile (e.g. from a prior
+        # failed release that didn't regenerate it) doesn't block bump-version.
+        # The later "Regenerate pnpm-lock.yaml with new versions" step writes
+        # the canonical lockfile for this release.
+        run: pnpm install --no-frozen-lockfile
 
       - name: Get current version
         id: current_version
